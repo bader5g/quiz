@@ -332,7 +332,7 @@ export default function ProfilePage() {
                   <Tabs defaultValue="level">
                     <TabsList className="grid grid-cols-2 mb-4">
                       <TabsTrigger value="level">المستوى</TabsTrigger>
-                      <TabsTrigger value="cards">البطاقات</TabsTrigger>
+                      <TabsTrigger value="cards">الكروت</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="level" className="space-y-4">
@@ -416,7 +416,7 @@ export default function ProfilePage() {
                       ) : userCards ? (
                         <div className="space-y-4">
                           <div className="flex justify-between">
-                            <h3 className="text-lg font-bold">بطاقاتي</h3>
+                            <h3 className="text-lg font-bold">كروتي</h3>
                             <Badge variant="outline" className="px-4">
                               المجموع: {userCards.totalCards}
                             </Badge>
@@ -429,9 +429,9 @@ export default function ProfilePage() {
                                   <Gift className="h-5 w-5 text-green-500" />
                                 </div>
                                 <div>
-                                  <p className="text-sm text-muted-foreground">بطاقات مجانية</p>
+                                  <p className="text-sm text-muted-foreground">كروت مجانية</p>
                                   <div className="font-bold flex items-center justify-between">
-                                    {userCards.freeCards} بطاقة
+                                    {userCards.freeCards} كرت
                                     <span className="text-xs text-muted-foreground mr-2">
                                       ({userCards.usedFreeCards} مستخدمة)
                                     </span>
@@ -446,9 +446,9 @@ export default function ProfilePage() {
                                   <CreditCard className="h-5 w-5 text-blue-500" />
                                 </div>
                                 <div>
-                                  <p className="text-sm text-muted-foreground">بطاقات مدفوعة</p>
+                                  <p className="text-sm text-muted-foreground">كروت مدفوعة</p>
                                   <div className="font-bold flex items-center justify-between">
-                                    {userCards.paidCards} بطاقة
+                                    {userCards.paidCards} كرت
                                     <span className="text-xs text-muted-foreground mr-2">
                                       ({userCards.usedPaidCards} مستخدمة)
                                     </span>
@@ -459,7 +459,7 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       ) : (
-                        <p>لا توجد معلومات متاحة عن البطاقات</p>
+                        <p>لا توجد معلومات متاحة عن الكروت</p>
                       )}
                     </TabsContent>
                   </Tabs>
@@ -496,7 +496,11 @@ export default function ProfilePage() {
                           <div>
                             <p className="text-sm text-muted-foreground">آخر لعبة</p>
                             <p className="font-bold" dir="ltr">
-                              {new Date(userStats.lastPlayed).toLocaleDateString('ar-SA')}
+                              {new Date(userStats.lastPlayed).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                              })}
                             </p>
                           </div>
                         </CardContent>
