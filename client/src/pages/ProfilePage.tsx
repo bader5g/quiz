@@ -492,18 +492,24 @@ export default function ProfilePage() {
           );
           
         case 'phone':
-          return (
+          return !isPhoneReady ? (
+            <div className="py-6 text-center">
+              <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-e-transparent mx-auto mb-2"></span>
+              <p>جاري جلب رمز الدولة...</p>
+            </div>
+          ) : (
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">رقم الهاتف</Label>
                 <div className="flex space-x-1 items-center">
                   <div className="bg-muted text-muted-foreground text-sm px-3 py-2 rounded-l-md border border-r-0 border-input h-10 flex items-center">
-                    {phonePrefix || '+966'}
+                    {phonePrefix}
                   </div>
                   <Input 
                     id="phone" 
                     className="rounded-l-none flex-1"
                     placeholder="أدخل رقم هاتفك بدون الرمز الدولي" 
+                    autoComplete="off"
                     value={formValue}
                     onChange={(e) => {
                       // حذف كل الأحرف غير الرقمية
@@ -628,7 +634,7 @@ export default function ProfilePage() {
             </Button>
             <Button 
               onClick={handleSubmit} 
-              disabled={isSubmitting}
+              disabled={isSubmitting || formValue === originalValue}
             >
               {isSubmitting ? (
                 <>
