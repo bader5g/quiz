@@ -472,13 +472,13 @@ export default function GameLogPage() {
             </CardContent>
           </Card>
           
-          {/* أعلى فريق بالنقاط */}
+          {/* أفضل فريق */}
           <Card className="mb-2 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg text-amber-900 flex items-center justify-between">
                 <div className="flex items-center">
                   <Trophy className="h-5 w-5 text-amber-600 ml-2" />
-                  <span>أعلى فريق بالنقاط</span>
+                  <span>أفضل فريق</span>
                 </div>
                 <Medal className="h-6 w-6 text-amber-500" />
               </CardTitle>
