@@ -137,8 +137,8 @@ export default function ProfilePage() {
   if (!user || profileLoading) {
     return (
       <Layout>
-        <div className="container mx-auto py-8" dir="rtl">
-          <div className="grid gap-8 md:grid-cols-3">
+        <div className="container mx-auto py-8 px-4 md:px-8" dir="rtl">
+          <div className="grid gap-6 md:gap-8 md:grid-cols-3">
             <div className="md:col-span-1">
               <Card>
                 <CardHeader className="pb-2">
@@ -563,8 +563,8 @@ export default function ProfilePage() {
   
   return (
     <Layout>
-      <div className="container mx-auto py-8" dir="rtl">
-        <div className="grid gap-8 md:grid-cols-3">
+      <div className="container mx-auto py-8 px-4 md:px-8" dir="rtl">
+        <div className="grid gap-6 md:gap-8 md:grid-cols-3">
           {/* بطاقة الملف الشخصي */}
           <div className="md:col-span-1">
             <Card>
@@ -636,7 +636,7 @@ export default function ProfilePage() {
                   )}
                   
                   {/* أزرار الإجراءات */}
-                  <div className="w-full space-y-2 mt-6">
+                  <div className="w-full space-y-1.5 mt-4">
                     {isOwner && (
                       <>
                         <Button 
@@ -737,10 +737,10 @@ export default function ProfilePage() {
                       <div className="text-2xl font-bold text-blue-800">
                         {userStats ? userStats.gamesPlayed : 0}
                       </div>
-                      <div className="text-sm text-blue-600">الألعاب الملعوبة</div>
+                      <div className="text-sm text-blue-600">عدد الألعاب</div>
                     </div>
                     
-                    {/* آخر لعبة */}
+                    {/* آخر نشاط */}
                     <div className="bg-gray-50 p-4 rounded-lg text-center">
                       <Clock className="h-8 w-8 mx-auto mb-2 text-gray-600" />
                       <div className="text-lg font-bold text-gray-800 h-12 flex items-center justify-center">
@@ -748,7 +748,7 @@ export default function ProfilePage() {
                           ? new Date(userStats.lastPlayed).toLocaleDateString('ar-EG') 
                           : 'لا يوجد'}
                       </div>
-                      <div className="text-sm text-gray-600">آخر لعبة</div>
+                      <div className="text-sm text-gray-600">آخر نشاط</div>
                     </div>
                   </div>
                 </CardContent>
