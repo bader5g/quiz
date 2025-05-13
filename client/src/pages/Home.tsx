@@ -6,8 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser } from '@/context/UserContext';
-import { CategorySelectionModal } from '@/components/game/CategorySelectionModal';
 import { GameSettingsModal } from '@/components/game/GameSettingsModal';
+import { CategorySidebar } from '@/components/game/CategorySidebar';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/layout/Layout';
 
@@ -50,7 +50,7 @@ export default function Home() {
 
   // State for UI
   const [selectedCategories, setSelectedCategories] = useState<CategoryChild[]>([]);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showCategorySidebar, setShowCategorySidebar] = useState(false);
   const [showGameSettingsModal, setShowGameSettingsModal] = useState(false);
 
   // Fetch categories and game settings on load
@@ -136,8 +136,8 @@ export default function Home() {
     // Update selected categories
     setSelectedCategories(newSelectedCategories);
     
-    // Show modal after selection/deselection
-    setShowCategoryModal(true);
+    // Show sidebar after selection/deselection
+    setShowCategorySidebar(true);
   };
 
   // Start the game setup process
@@ -157,7 +157,7 @@ export default function Home() {
             description: `لديك ${totalAvailableCards} كروت فقط، بينما اخترت ${selectedCategories.length} فئات. الرجاء اختيار عدد أقل من الفئات أو الحصول على المزيد من الكروت.`,
             variant: "destructive",
           });
-          setShowCategoryModal(false);
+          setShowCategorySidebar(false);
           return;
         }
       } catch (error) {
@@ -166,7 +166,7 @@ export default function Home() {
     }
     
     // If all good, proceed to game settings
-    setShowCategoryModal(false);
+    setShowCategorySidebar(false);
     setShowGameSettingsModal(true);
   };
 
@@ -264,7 +264,7 @@ export default function Home() {
                 });
                 navigate('/login');
               } else if (selectedCategories.length > 0) {
-                setShowCategoryModal(true);
+                setShowCategorySidebar(true);
               } else {
                 toast({
                   title: "اختيار الفئات",
@@ -280,14 +280,14 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* Category Selection Modal */}
-        <CategorySelectionModal
-          open={showCategoryModal}
-          onOpenChange={setShowCategoryModal}
+        {/* Category Sidebar */}
+        <CategorySidebar
           selectedCategories={selectedCategories}
+          onRemoveCategory={(category) => handleCategoryClick(category)}
           onStartGame={handleStartGame}
           minCategories={gameSettings?.minCategories || 4}
           maxCategories={gameSettings?.maxCategories || 8}
+          visible={showCategorySidebar}
         />
 
         {/* Game Settings Modal */}
