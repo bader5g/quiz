@@ -369,12 +369,16 @@ export default function ProfilePage() {
 
           // محاكاة إرسال البيانات للخادم (في الواقع ستستخدم mutation)
           setTimeout(() => {
-            // تحديث حالة المستخدم في الواجهة
+            // تحديث حالة المستخدم في الواجهة وفي السياق العام
             if (user && editType !== 'password') {
+              // تحديث في الواجهة
               setUser({
                 ...user,
                 ...updateData
               });
+              
+              // تحديث في السياق العام
+              updateUser(updateData);
             }
 
             // إظهار رسالة نجاح
@@ -631,9 +635,15 @@ export default function ProfilePage() {
 
     return (
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-md" dir="rtl" aria-describedby="dialog-description">
           <DialogHeader>
             <DialogTitle>{getModalTitle()}</DialogTitle>
+            <DialogDescription id="dialog-description" className="sr-only">
+              {`نافذة تحرير ${editType === 'name' ? 'الاسم' : 
+                editType === 'email' ? 'البريد الإلكتروني' : 
+                editType === 'phone' ? 'رقم الهاتف' : 
+                editType === 'password' ? 'كلمة المرور' : 'الصورة الشخصية'}`}
+            </DialogDescription>
           </DialogHeader>
 
           {renderModalContent()}
