@@ -134,18 +134,15 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-sm sm:rounded-lg p-4" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">إعادة اللعب</DialogTitle>
-          <DialogDescription className="text-center">
-            أدخل أسماء الفرق فقط، وسيتم استخدام نفس الفئات والأسئلة السابقة.
-          </DialogDescription>
+      <DialogContent className="w-full max-w-xs sm:rounded-lg p-3" dir="rtl">
+        <DialogHeader className="pb-1.5">
+          <DialogTitle className="text-lg font-bold text-center">اللعب مجدداً</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-wrap justify-center gap-2 my-3">
+        <div className="flex flex-wrap justify-center gap-1.5 mb-3">
           {game.categories.map((category) => (
-            <Badge key={category.id} className="bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-full border-0">
-              <span className="mr-1">{category.icon}</span>
+            <Badge key={category.id} className="bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-full border-0 px-2 py-0.5 text-xs">
+              <span className="mr-0.5">{category.icon}</span>
               {category.name}
             </Badge>
           ))}
@@ -159,26 +156,26 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
         )}
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2.5">
 
             {/* أسماء الفرق */}
-            <div className="space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-medium text-gray-700">أسماء الفرق</h3>
-                <Badge variant="outline" className="bg-blue-50">
-                  <Users className="h-3 w-3 mr-1" />
+            <div className="space-y-1.5 border border-gray-200 rounded-md p-2 bg-gray-50">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-xs font-medium text-gray-700">أسماء الفرق</h3>
+                <Badge variant="outline" className="bg-blue-50 text-xs px-1.5 py-0.5 h-5">
+                  <Users className="h-2.5 w-2.5 mr-0.5" />
                   {game.teamsCount} فرق
                 </Badge>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {Array.from({ length: game.teamsCount }).map((_, index) => (
                   <FormField
                     key={index}
                     control={form.control}
                     name={`teamNames.${index}`}
                     render={({ field }) => (
-                      <FormItem className="space-y-1">
-                        <FormLabel className="text-xs text-gray-600">
+                      <FormItem className="space-y-0.5">
+                        <FormLabel className="text-xs text-gray-600 block mb-0">
                           الفريق {index + 1}
                         </FormLabel>
                         <FormControl>
@@ -186,6 +183,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                             placeholder={`اسم الفريق ${index + 1}`}
                             maxLength={gameSettings?.maxTeamNameLength || 45}
                             {...field}
+                            className="h-8 text-xs py-1 px-2"
                           />
                         </FormControl>
                         <FormMessage className="text-xs" />
@@ -197,12 +195,12 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
 
             </div>
 
-            <div className="space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-medium text-gray-700">أوقات الإجابة</h3>
-                <Badge variant="outline" className="bg-blue-50">
-                  <Clock className="h-3 w-3 mr-1" />
-                  نفس الفئات
+            <div className="space-y-1.5 border border-gray-200 rounded-md p-2 bg-gray-50">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-xs font-medium text-gray-700">أوقات الإجابة</h3>
+                <Badge variant="outline" className="bg-blue-50 text-xs px-1.5 py-0.5 h-5">
+                  <Clock className="h-2.5 w-2.5 mr-0.5" />
+                  وقت الإجابة
                 </Badge>
               </div>
             
@@ -211,26 +209,26 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                 control={form.control}
                 name="answerTimeFirst"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>وقت الإجابة الأولى (ثانية)</FormLabel>
+                  <FormItem className="space-y-0.5">
+                    <FormLabel className="text-xs text-gray-600 block mb-0">وقت الإجابة الأولى</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر وقت الإجابة الأولى" />
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="اختر الوقت" className="text-xs" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {(gameSettings?.allowedFirstAnswerTimes || [15, 30, 45, 60]).map((time) => (
-                          <SelectItem key={time} value={time.toString()}>
+                          <SelectItem key={time} value={time.toString()} className="text-xs">
                             {time} ثانية
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -240,43 +238,46 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                 control={form.control}
                 name="answerTimeSecond"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>وقت الإجابة الثانية (ثانية)</FormLabel>
+                  <FormItem className="space-y-0.5">
+                    <FormLabel className="text-xs text-gray-600 block mb-0">وقت الإجابة الثانية</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر وقت الإجابة الثانية" />
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="اختر الوقت" className="text-xs" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {(gameSettings?.allowedSecondAnswerTimes || [10, 15, 20, 30]).map((time) => (
-                          <SelectItem key={time} value={time.toString()}>
+                          <SelectItem key={time} value={time.toString()} className="text-xs">
                             {time} ثانية
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
             </div>
 
-            <DialogFooter className="flex justify-between mt-4">
+            <DialogFooter className="flex justify-between mt-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                size="sm"
+                className="text-xs h-8"
               >
                 إلغاء
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 text-white text-xs h-8"
+                size="sm"
               >
                 {loading ? 'جاري الإنشاء...' : 'بدء اللعبة'}
               </Button>
