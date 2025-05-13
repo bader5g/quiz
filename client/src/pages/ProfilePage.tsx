@@ -76,6 +76,8 @@ export default function ProfilePage() {
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [uploadedAvatar, setUploadedAvatar] = useState<File | null>(null);
+  const [formValue, setFormValue] = useState<string>('');
+  const [confirmValue, setConfirmValue] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
   const [phonePrefix, setPhonePrefix] = useState<string>('');
   const [isPhoneReady, setIsPhoneReady] = useState<boolean>(false);
@@ -659,11 +661,14 @@ export default function ProfilePage() {
                         className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         onClick={() => {
                           setEditType('avatar');
+                          setSelectedAvatar('');
+                          setUploadedAvatar(null);
+                          setFormError('');
                           setEditModalOpen(true);
                         }}
                       >
                         <div className="text-white flex flex-col items-center">
-                          <Pencil className="h-5 w-5" />
+                          <Pencil className="h-4 w-4" />
                           <span className="text-xs mt-1">تغيير</span>
                         </div>
                       </div>
