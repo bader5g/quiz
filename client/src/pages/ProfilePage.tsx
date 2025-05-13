@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import { 
   UserIcon, 
   Medal, 
@@ -69,6 +70,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  const { toast } = useToast();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
@@ -76,6 +78,8 @@ export default function ProfilePage() {
   const [uploadedAvatar, setUploadedAvatar] = useState<File | null>(null);
   const [formError, setFormError] = useState<string>('');
   const [phonePrefix, setPhonePrefix] = useState<string>('');
+  const [isPhoneReady, setIsPhoneReady] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   
   // تحديد ما إذا كان المستخدم مالك الملف الشخصي
   const isOwner = true; // في تطبيق حقيقي، ستقارن بين معرف المستخدم الحالي والملف الشخصي المعروض
@@ -85,13 +89,20 @@ export default function ProfilePage() {
     fetch("https://ipapi.co/json/")
       .then(res => res.json())
       .then(data => {
-        const countryCode = data.country_calling_code; // مثل: +965
-        setPhonePrefix(countryCode || '+966'); // استخدام +966 (السعودية) كقيمة افتراضية إذا لم يتم العثور على الرمز
+        const countryCode = data.country_calling_code;
+        // التحقق من صحة رمز الدولة باستخدام regex
+        if (countryCode && /^\+\d+$/.test(countryCode)) {
+          setPhonePrefix(countryCode);
+        } else {
+          setPhonePrefix('+966'); // استخدام +966 (السعودية) كقيمة افتراضية
+        }
         console.log("Country calling code:", countryCode);
+        setIsPhoneReady(true);
       })
       .catch(err => {
         console.error("فشل جلب معلومات الدولة:", err);
         setPhonePrefix('+966'); // استخدام +966 (السعودية) كقيمة افتراضية في حالة الخطأ
+        setIsPhoneReady(true);
       });
   }, []);
   
@@ -330,13 +341,28 @@ export default function ProfilePage() {
           // تسجيل البيانات المحدثة
           console.log(`Updating ${editType} with value: ${formValue}`);
           
-          // تحديث حالة المستخدم في الواجهة
-          if (user && editType !== 'password') {
-            setUser({
-              ...user,
-              ...updateData
+          // تعيين حالة الإرسال
+          setIsSubmitting(true);
+          
+          // محاكاة إرسال البيانات للخادم (في الواقع ستستخدم mutation)
+          setTimeout(() => {
+            // تحديث حالة المستخدم في الواجهة
+            if (user && editType !== 'password') {
+              setUser({
+                ...user,
+                ...updateData
+              });
+            }
+            
+            // إظهار رسالة نجاح
+            toast({
+              title: "تم التحديث بنجاح",
+              description: "تم حفظ بياناتك الجديدة",
             });
-          }
+            
+            // إعادة تعيين حالة الإرسال
+            setIsSubmitting(false);
+          }, 500);
         }
         
         // إغلاق المودال بعد التحديث
@@ -657,10 +683,12 @@ export default function ProfilePage() {
                         className="ml-2 h-7 w-7 p-0"
                         onClick={() => {
                           setEditType('name');
+                          setFormValue(user?.name || '');
+                          setFormError('');
                           setEditModalOpen(true);
                         }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
