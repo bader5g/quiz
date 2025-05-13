@@ -74,9 +74,26 @@ export default function ProfilePage() {
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [uploadedAvatar, setUploadedAvatar] = useState<File | null>(null);
+  const [formError, setFormError] = useState<string>('');
+  const [phonePrefix, setPhonePrefix] = useState<string>('');
   
   // تحديد ما إذا كان المستخدم مالك الملف الشخصي
   const isOwner = true; // في تطبيق حقيقي، ستقارن بين معرف المستخدم الحالي والملف الشخصي المعروض
+  
+  // جلب رمز الدولة تلقائيًا من IP المستخدم
+  useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then(res => res.json())
+      .then(data => {
+        const countryCode = data.country_calling_code; // مثل: +965
+        setPhonePrefix(countryCode || '+966'); // استخدام +966 (السعودية) كقيمة افتراضية إذا لم يتم العثور على الرمز
+        console.log("Country calling code:", countryCode);
+      })
+      .catch(err => {
+        console.error("فشل جلب معلومات الدولة:", err);
+        setPhonePrefix('+966'); // استخدام +966 (السعودية) كقيمة افتراضية في حالة الخطأ
+      });
+  }, []);
   
   // مجموعة الصور الشخصية الافتراضية
   const defaultAvatars = [
@@ -287,20 +304,23 @@ export default function ProfilePage() {
               updateData.name = formValue;
               break;
             case 'email':
-              // التحقق من صحة البريد الإلكتروني
-              if (!/\S+@\S+\.\S+/.test(formValue)) {
+              // التحقق من صحة البريد الإلكتروني باستخدام الـ regex المطلوب
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(formValue.trim())) {
                 setFormError('الرجاء إدخال بريد إلكتروني صحيح');
                 return;
               }
-              updateData.email = formValue;
+              updateData.email = formValue.trim();
               break;
             case 'phone':
               // التحقق من صحة رقم الهاتف
-              if (!/^\d{10,15}$/.test(formValue.replace(/\D/g, ''))) {
+              const phoneRaw = formValue.replace(/\D/g, '');
+              if (!/^\d{8,12}$/.test(phoneRaw)) {
                 setFormError('الرجاء إدخال رقم هاتف صحيح');
                 return;
               }
-              updateData.phone = formValue;
+              // إضافة رمز الدولة إلى رقم الهاتف
+              updateData.phone = phonePrefix + phoneRaw;
               break;
             case 'password':
               updateData.password = formValue;
@@ -414,8 +434,20 @@ export default function ProfilePage() {
                   type="email" 
                   placeholder="أدخل بريدك الإلكتروني" 
                   value={formValue}
-                  onChange={(e) => setFormValue(e.target.value)}
+                  onChange={(e) => {
+                    setFormValue(e.target.value);
+                    // التحقق من البريد الإلكتروني أثناء الكتابة
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (e.target.value && !emailRegex.test(e.target.value.trim())) {
+                      setFormError('الرجاء إدخال بريد إلكتروني صحيح');
+                    } else {
+                      setFormError('');
+                    }
+                  }}
                 />
+                {formError && (
+                  <p className="text-sm text-red-500">{formError}</p>
+                )}
               </div>
             </div>
           );
@@ -425,12 +457,25 @@ export default function ProfilePage() {
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">رقم الهاتف</Label>
-                <Input 
-                  id="phone" 
-                  placeholder="أدخل رقم هاتفك" 
-                  value={formValue}
-                  onChange={(e) => setFormValue(e.target.value)}
-                />
+                <div className="flex space-x-1 items-center">
+                  <div className="bg-muted text-muted-foreground text-sm px-3 py-2 rounded-l-md border border-r-0 border-input h-10 flex items-center">
+                    {phonePrefix || '+966'}
+                  </div>
+                  <Input 
+                    id="phone" 
+                    className="rounded-l-none flex-1"
+                    placeholder="أدخل رقم هاتفك بدون الرمز الدولي" 
+                    value={formValue}
+                    onChange={(e) => {
+                      // حذف كل الأحرف غير الرقمية
+                      const raw = e.target.value.replace(/\D/g, '');
+                      setFormValue(raw);
+                    }}
+                  />
+                </div>
+                {formError && (
+                  <p className="text-sm text-red-500">{formError}</p>
+                )}
               </div>
             </div>
           );
