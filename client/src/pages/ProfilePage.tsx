@@ -128,13 +128,26 @@ export default function ProfilePage() {
   
   // تحديث حالة المستخدم عند جلب البيانات
   useEffect(() => {
+    console.log("🟡 userProfile:", userProfile);
     if (userProfile) {
+      console.log("✅ تم العثور على معلومات المستخدم:", userProfile);
       setUser(userProfile);
     }
   }, [userProfile]);
   
+  // اختبار مباشر للـ API
+  useEffect(() => {
+    fetch('/api/user-profile')
+      .then(res => res.json())
+      .then(data => console.log("✅ بيانات API user-profile:", data))
+      .catch(err => console.error("❌ خطأ في API user-profile:", err));
+  }, []);
+  
   // حالة التحميل
-  if (!user || levelLoading || cardsLoading || profileLoading) {
+  console.log("💡 حالة التحميل:", { user, levelLoading, cardsLoading, profileLoading });
+  
+  // استخدم هذا الشرط المؤقت للتحقق فقط من تحميل البيانات الرئيسية
+  if (profileLoading) {
     return (
       <Layout>
         <div className="container mx-auto py-8" dir="rtl">

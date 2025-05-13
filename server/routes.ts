@@ -386,6 +386,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.json(userLevel);
   });
+  
+  // User profile API endpoint
+  app.get('/api/user-profile', (_req, res) => {
+    // Sample user profile data
+    const userProfile = {
+      id: 1,
+      username: "ahmed_88",
+      name: "أحمد محمد",
+      email: "ahmed@example.com",
+      phone: "966512345678",
+      avatarUrl: "/assets/avatars/avatar1.png"
+    };
+    
+    res.json(userProfile);
+  });
+  
+  // User stats API endpoint
+  app.get('/api/user-stats', (_req, res) => {
+    // Sample user stats data
+    const userStats = {
+      gamesPlayed: 15,
+      lastPlayed: "2025-04-28T14:30:00Z"
+    };
+    
+    res.json(userStats);
+  });
 
   // User cards API endpoint
   app.get('/api/user-cards', (_req, res) => {
@@ -395,7 +421,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       paidCards: 10,
       totalCards: 15,
       freeIcon: "🎫",
-      paidIcon: "💳"
+      paidIcon: "💳",
+      usedFreeCards: 3,
+      usedPaidCards: 2
     };
     
     res.json(userCards);
