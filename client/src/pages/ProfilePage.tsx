@@ -128,23 +128,10 @@ export default function ProfilePage() {
   
   // تحديث حالة المستخدم عند جلب البيانات
   useEffect(() => {
-    console.log("🟡 userProfile:", userProfile);
     if (userProfile) {
-      console.log("✅ تم العثور على معلومات المستخدم:", userProfile);
       setUser(userProfile);
     }
   }, [userProfile]);
-  
-  // اختبار مباشر للـ API
-  useEffect(() => {
-    fetch('/api/user-profile')
-      .then(res => res.json())
-      .then(data => console.log("✅ بيانات API user-profile:", data))
-      .catch(err => console.error("❌ خطأ في API user-profile:", err));
-  }, []);
-  
-  // حالة التحميل
-  console.log("💡 حالة التحميل:", { user, levelLoading, cardsLoading, profileLoading });
   
   // الانتظار حتى تصل البيانات (المستخدم موجود)
   if (!user || profileLoading) {
@@ -255,11 +242,8 @@ export default function ProfilePage() {
         if (editType === 'avatar') {
           // إذا اختار المستخدم صورة من المكتبة
           if (selectedAvatar) {
-            // في بيئة الإنتاج: يتم إرسال الصورة المختارة إلى الخادم
+            // تحديث الصورة المختارة
             console.log(`Updating avatar with library image: ${selectedAvatar}`);
-            
-            // تحديث القاعدة مع مسار الصورة المختارة
-            // apiRequest('POST', '/api/profile/avatar', { avatarPath: selectedAvatar });
             
             // تحديث الواجهة
             if (user) {
@@ -275,25 +259,10 @@ export default function ProfilePage() {
             const formData = new FormData();
             formData.append('avatar', uploadedAvatar);
             
-            // في بيئة الإنتاج: يتم إرسال الصورة للخادم
+            // رفع الصورة
             console.log(`Uploading custom avatar: ${uploadedAvatar.name}`);
             
-            // رفع الصورة مع تتبع userId
-            // const response = await fetch('/api/profile/avatar/upload', {
-            //   method: 'POST',
-            //   body: formData
-            // });
-            // 
-            // if (response.ok) {
-            //   const data = await response.json();
-            //   // تحديث الواجهة بمسار الصورة الجديدة
-            //   setUser({
-            //     ...user,
-            //     avatarUrl: data.avatarUrl
-            //   });
-            // }
-            
-            // لأغراض التطوير: نقوم بمحاكاة الاستجابة
+            // محاكاة رفع الصورة للتطوير
             if (user) {
               const mockAvatarUrl = `/uploads/avatars/${user.id}.png`;
               setUser({
@@ -338,11 +307,8 @@ export default function ProfilePage() {
               break;
           }
           
-          // في بيئة الإنتاج: إرسال البيانات للخادم
+          // تسجيل البيانات المحدثة
           console.log(`Updating ${editType} with value: ${formValue}`);
-          
-          // تحديث معلومات المستخدم
-          // await apiRequest('POST', '/api/profile/update', updateData);
           
           // تحديث حالة المستخدم في الواجهة
           if (user && editType !== 'password') {
@@ -510,10 +476,10 @@ export default function ProfilePage() {
                     {defaultAvatars.map((avatar, index) => (
                       <div 
                         key={index} 
-                        className={`p-2 cursor-pointer rounded-md border-2 ${selectedAvatar === avatar ? 'border-blue-500' : 'border-gray-200'} relative`}
+                        className={`p-1.5 cursor-pointer rounded-md border ${selectedAvatar === avatar ? 'border-blue-500' : 'border-gray-200'} relative`}
                         onClick={() => handleAvatarSelect(avatar)}
                       >
-                        <Avatar className="h-16 w-16 mx-auto">
+                        <Avatar className="h-12 w-12 mx-auto">
                           <AvatarImage src={avatar} alt={`Avatar ${index + 1}`} />
                           <AvatarFallback>{index + 1}</AvatarFallback>
                         </Avatar>
@@ -681,7 +647,7 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <Image className="ml-2 h-4 w-4" />
+                          <Image className="ml-1.5 h-3 w-3" />
                           تغيير الصورة الشخصية
                         </Button>
                         
@@ -693,7 +659,7 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <UserIcon className="ml-2 h-4 w-4" />
+                          <UserIcon className="ml-1.5 h-3 w-3" />
                           تعديل الاسم
                         </Button>
                         
@@ -705,7 +671,7 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <Mail className="ml-2 h-4 w-4" />
+                          <Mail className="ml-1.5 h-3 w-3" />
                           تعديل البريد الإلكتروني
                         </Button>
                         
@@ -717,7 +683,7 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <Phone className="ml-2 h-4 w-4" />
+                          <Phone className="ml-1.5 h-3 w-3" />
                           تعديل رقم الهاتف
                         </Button>
                         
@@ -729,7 +695,7 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <Lock className="ml-2 h-4 w-4" />
+                          <Lock className="ml-1.5 h-3 w-3" />
                           تعديل كلمة المرور
                         </Button>
                         
@@ -741,7 +707,7 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <CreditCardIcon className="ml-2 h-4 w-4" />
+                          <CreditCardIcon className="ml-1.5 h-3 w-3" />
                           شراء كروت
                         </Button>
                       </>
