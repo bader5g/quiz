@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Users } from 'lucide-react';
 
 interface GameCategory {
   id: number;
@@ -33,6 +34,8 @@ interface ReplayGameProps {
     name: string;
     categories: GameCategory[];
     teamsCount: number;
+    answerTimeFirst: number;
+    answerTimeSecond: number;
   };
 }
 
@@ -61,8 +64,8 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
     defaultValues: {
       gameName: `${game.name} (إعادة)`,
       teamNames: Array(game.teamsCount).fill("").map((_, idx) => `الفريق ${idx + 1}`),
-      answerTimeFirst: "30",
-      answerTimeSecond: "15",
+      answerTimeFirst: game.answerTimeFirst.toString(),
+      answerTimeSecond: game.answerTimeSecond.toString(),
     },
   });
 
@@ -107,11 +110,14 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md" dir="rtl" aria-describedby="replay-game-description">
+        <div id="replay-game-description" className="sr-only">
+          إعادة تشغيل اللعبة بنفس الفئات المختارة
+        </div>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center">
             إعادة اللعب
           </DialogTitle>
-          <DialogDescription id="replay-game-description" className="text-center">
+          <DialogDescription className="text-center">
             قم بإعداد معلومات اللعبة الجديدة باستخدام نفس الفئات
           </DialogDescription>
         </DialogHeader>
@@ -144,7 +150,13 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
 
             {/* أسماء الفرق */}
             <div className="space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
-              <h3 className="text-sm font-medium text-gray-700">أسماء الفرق</h3>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium text-gray-700">أسماء الفرق</h3>
+                <Badge variant="outline" className="bg-blue-50">
+                  <Users className="h-3 w-3 mr-1" />
+                  {game.teamsCount} فرق
+                </Badge>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {Array.from({ length: game.teamsCount }).map((_, index) => (
                   <FormField
@@ -169,65 +181,78 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                   />
                 ))}
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                <span className="text-amber-600">ملاحظة:</span> لا يمكن تغيير عدد الفرق عند إعادة اللعب. يمكنك فقط تحديث أسماء الفرق وأوقات الإجابة.
+              </p>
             </div>
 
-            {/* وقت الإجابة الأولى */}
-            <FormField
-              control={form.control}
-              name="answerTimeFirst"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>وقت الإجابة الأولى (ثانية)</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر وقت الإجابة الأولى" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {[15, 30, 45, 60].map((time) => (
-                        <SelectItem key={time} value={time.toString()}>
-                          {time} ثانية
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium text-gray-700">أوقات الإجابة</h3>
+                <Badge variant="outline" className="bg-blue-50">
+                  <Clock className="h-3 w-3 mr-1" />
+                  نفس الفئات
+                </Badge>
+              </div>
+            
+              {/* وقت الإجابة الأولى */}
+              <FormField
+                control={form.control}
+                name="answerTimeFirst"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>وقت الإجابة الأولى (ثانية)</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر وقت الإجابة الأولى" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {[15, 30, 45, 60].map((time) => (
+                          <SelectItem key={time} value={time.toString()}>
+                            {time} ثانية
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* وقت الإجابة الثانية */}
-            <FormField
-              control={form.control}
-              name="answerTimeSecond"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>وقت الإجابة الثانية (ثانية)</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر وقت الإجابة الثانية" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {[10, 15, 20, 30].map((time) => (
-                        <SelectItem key={time} value={time.toString()}>
-                          {time} ثانية
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* وقت الإجابة الثانية */}
+              <FormField
+                control={form.control}
+                name="answerTimeSecond"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>وقت الإجابة الثانية (ثانية)</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر وقت الإجابة الثانية" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {[10, 15, 20, 30].map((time) => (
+                          <SelectItem key={time} value={time.toString()}>
+                            {time} ثانية
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <DialogFooter className="flex justify-between">
               <Button

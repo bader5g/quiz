@@ -8,18 +8,39 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarIcon, ClipboardIcon, RefreshCwIcon } from 'lucide-react';
+import { CalendarIcon, ClipboardIcon, RefreshCwIcon, Users, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 // @ts-ignore - تجاهل مشكلة استيراد المكون
 import ReplayGameModal from '@/components/game/ReplayGameModal';
 import Layout from '@/components/layout/Layout';
+import { useUser } from '@/context/UserContext';
 
+// تعريف نوع Category لتحويل البيانات من API
 interface GameCategory {
   id: number; 
   name: string;
   icon: string;
 }
 
+// تعريف نوع Team
+interface GameTeam {
+  name: string;
+  score: number;
+}
+
+// تعريف نوع GameSession كما تعود من API
+interface GameSessionResponse {
+  id: number;
+  userId: number;
+  gameName: string;
+  teams: GameTeam[];
+  answerTimeFirst: number;
+  answerTimeSecond: number;
+  selectedCategories: number[];
+  createdAt: string;
+}
+
+// تعريف نوع GameSummary كما نستخدمه في واجهة المستخدم
 interface GameSummary {
   id: string;
   name: string;
@@ -27,6 +48,24 @@ interface GameSummary {
   createdAt: string;
   playCount: number;
   teamsCount: number;
+  answerTimeFirst: number;
+  answerTimeSecond: number;
+}
+
+// حساب عدد الصفحات
+function getPaginationRange(totalItems: number, itemsPerPage: number, currentPage: number = 1) {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage - 1, totalItems - 1);
+  
+  return {
+    totalPages,
+    startIndex,
+    endIndex,
+    currentPage,
+    hasNextPage: currentPage < totalPages,
+    hasPrevPage: currentPage > 1
+  };
 }
 
 export default function MyGamesPage() {
@@ -34,24 +73,66 @@ export default function MyGamesPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [maxGamesPerPage, setMaxGamesPerPage] = useState<number>(15);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedGame, setSelectedGame] = useState<GameSummary | null>(null);
   const [replayModalOpen, setReplayModalOpen] = useState<boolean>(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useUser();
 
+  // تحويل معرفات الفئات إلى كائنات الفئات
+  const getCategoryInfo = (categoryId: number): GameCategory => {
+    // قائمة بجميع الفئات المتاحة
+    const allCategories: GameCategory[] = [
+      { id: 11, name: "كيمياء", icon: "⚗️" },
+      { id: 12, name: "فيزياء", icon: "🔬" },
+      { id: 13, name: "أحياء", icon: "🧬" },
+      { id: 14, name: "فلك", icon: "🔭" },
+      { id: 21, name: "جبر", icon: "➗" },
+      { id: 22, name: "هندسة", icon: "📐" },
+      { id: 23, name: "إحصاء", icon: "📊" },
+      { id: 24, name: "حساب", icon: "🔢" },
+      { id: 31, name: "تاريخ", icon: "🏛️" },
+      { id: 32, name: "جغرافيا", icon: "🌍" },
+      { id: 33, name: "فن", icon: "🎨" },
+      { id: 34, name: "أدب", icon: "📖" },
+      { id: 35, name: "موسيقى", icon: "🎵" },
+      { id: 36, name: "رياضة", icon: "⚽" },
+      { id: 41, name: "برمجة", icon: "👨‍💻" },
+      { id: 42, name: "شبكات", icon: "🌐" },
+      { id: 43, name: "ذكاء صناعي", icon: "🤖" },
+      { id: 44, name: "تطبيقات", icon: "📱" }
+    ];
+    
+    return allCategories.find(cat => cat.id === categoryId) || 
+           { id: categoryId, name: "فئة غير معروفة", icon: "❓" };
+  };
+  
   useEffect(() => {
     const fetchGames = async () => {
       try {
         setLoading(true);
-        // استخدام معرف المستخدم الحالي (1 للاختبار)
-        const userId = 1; // في التطبيق الحقيقي، يمكن الحصول عليه من سياق المستخدم
+        // استخدام معرف المستخدم من السياق، أو الافتراضي للاختبار
+        const userId = user?.id || 1;
         const [gamesResponse, settingsResponse] = await Promise.all([
-          axios.get<GameSummary[]>(`/api/users/${userId}/game-sessions`),
+          axios.get<GameSessionResponse[]>(`/api/users/${userId}/game-sessions`),
           axios.get('/api/admin-settings')
         ]);
         
+        // تحويل البيانات من بنية GameSessionResponse إلى GameSummary
+        const formattedGames: GameSummary[] = gamesResponse.data.map(session => ({
+          id: session.id.toString(),
+          name: session.gameName,
+          categories: session.selectedCategories.map(catId => getCategoryInfo(catId)),
+          createdAt: session.createdAt,
+          playCount: 1, // في التطبيق الحقيقي يمكن أن يكون لديك حقل playCount
+          teamsCount: session.teams.length,
+          answerTimeFirst: session.answerTimeFirst,
+          answerTimeSecond: session.answerTimeSecond
+        }));
+        
         // تحميل الألعاب
-        setGames(gamesResponse.data);
+        setGames(formattedGames);
         
         // تحديث الحد الأقصى للألعاب في الصفحة إذا كان متاحًا
         if (settingsResponse.data && settingsResponse.data.max_games_per_page) {
@@ -71,7 +152,7 @@ export default function MyGamesPage() {
     };
 
     fetchGames();
-  }, [toast]);
+  }, [toast, user]);
 
   const handleViewGameLog = (gameId: string) => {
     navigate(`/game-log/${gameId}`);
@@ -91,6 +172,11 @@ export default function MyGamesPage() {
     } catch (error) {
       return 'تاريخ غير صالح';
     }
+  };
+  
+  // التنقل بين الصفحات
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
   };
 
   // إذا كان جاري التحميل، نعرض هيكل تحميل
@@ -167,6 +253,10 @@ export default function MyGamesPage() {
     );
   }
 
+  // حساب معلومات التصفح
+  const pagination = getPaginationRange(games.length, maxGamesPerPage, currentPage);
+  const paginatedGames = games.slice(pagination.startIndex, pagination.endIndex + 1);
+
   // عرض الألعاب
   return (
     <Layout>
@@ -174,17 +264,20 @@ export default function MyGamesPage() {
         <h1 className="text-3xl font-bold mb-8 text-right">ألعابي</h1>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {games.slice(0, maxGamesPerPage).map((game) => (
+          {paginatedGames.map((game) => (
             <Card key={game.id} className="shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-lg">{game.name}</CardTitle>
-                <CardDescription className="flex items-center gap-1 text-sm">
-                  <span className="text-blue-700">{game.playCount} مرة لعب</span>
+                <CardDescription className="flex items-center gap-2 text-sm">
+                  <span className="flex items-center text-blue-700">
+                    <RefreshCwIcon className="h-3.5 w-3.5 mr-1" />
+                    {game.playCount} مرة لعب
+                  </span>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="flex items-center text-gray-500 text-xs">
-                          <CalendarIcon className="h-3 w-3 mr-1" />
+                          <CalendarIcon className="h-3.5 w-3.5 mr-1" />
                           {formatCreatedAt(game.createdAt)}
                         </span>
                       </TooltipTrigger>
@@ -204,6 +297,18 @@ export default function MyGamesPage() {
                       {category.name}
                     </Badge>
                   ))}
+                </div>
+                
+                {/* معلومات إضافية عن اللعبة */}
+                <div className="mt-3 flex justify-between text-xs text-gray-500">
+                  <span className="flex items-center">
+                    <Users className="h-3.5 w-3.5 mr-1" />
+                    {game.teamsCount} فرق
+                  </span>
+                  <span className="flex items-center">
+                    <Clock className="h-3.5 w-3.5 mr-1" />
+                    {game.answerTimeFirst}/{game.answerTimeSecond} ث
+                  </span>
                 </div>
               </CardContent>
               
@@ -230,6 +335,42 @@ export default function MyGamesPage() {
             </Card>
           ))}
         </div>
+        
+        {/* التصفح عبر الصفحات */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPrevPage}
+              >
+                السابق
+              </Button>
+              
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+              >
+                التالي
+              </Button>
+            </div>
+          </div>
+        )}
         
         {/* مودال إعادة اللعب */}
         {selectedGame && (
