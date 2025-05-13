@@ -13,7 +13,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarIcon, ArrowLeft, Users } from 'lucide-react';
+import { 
+  CalendarIcon, 
+  ArrowLeft, 
+  Users, 
+  Eye, 
+  Award, 
+  CheckCircle2, 
+  XCircle,
+  Clock
+} from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/layout/Layout';
 
@@ -34,18 +50,26 @@ interface GameRound {
   category: GameCategory;
   question: string;
   correctAnswer: string;
-  winningTeam: string | null;
+  teamAnswered: string | null;
+  isCorrect: boolean;
+  points: number;
   timestamp: string;
+}
+
+interface GameSession {
+  sessionId: string;
+  createdAt: string;
+  teams: GameTeam[];
+  winningTeam: string | null;
+  rounds: GameRound[];
 }
 
 interface GameLog {
   id: string;
   name: string;
   categories: GameCategory[];
-  createdAt: string;
-  teams: GameTeam[];
   playCount: number;
-  rounds: GameRound[];
+  games: GameSession[];
 }
 
 export default function GameLogPage() {
@@ -54,6 +78,8 @@ export default function GameLogPage() {
   const [gameLog, setGameLog] = useState<GameLog | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<GameSession | null>(null);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,8 +88,34 @@ export default function GameLogPage() {
       
       try {
         setLoading(true);
-        const response = await axios.get<GameLog>(`/api/game-log/${gameId}`);
-        setGameLog(response.data);
+        const response = await axios.get<any>(`/api/game-log/${gameId}`);
+        
+        // تحويل البيانات القادمة من الواجهة الخلفية إلى النموذج الجديد
+        // هذا مؤقت حتى يتم تحديث الواجهة الخلفية
+        const adaptedData: GameLog = {
+          id: response.data.id,
+          name: response.data.name,
+          categories: response.data.categories,
+          playCount: response.data.playCount,
+          games: response.data.playCount > 0 ? [
+            {
+              sessionId: "session-1",
+              createdAt: response.data.createdAt || new Date().toISOString(),
+              teams: response.data.teams || [],
+              winningTeam: response.data.teams && response.data.teams.length > 0 
+                ? response.data.teams.sort((a: any, b: any) => b.score - a.score)[0].name 
+                : null,
+              rounds: response.data.rounds?.map((round: any) => ({
+                ...round,
+                teamAnswered: round.winningTeam,
+                isCorrect: !!round.winningTeam,
+                points: 3 // قيمة افتراضية للنقاط
+              })) || []
+            }
+          ] : []
+        };
+        
+        setGameLog(adaptedData);
       } catch (err) {
         console.error('Error fetching game log:', err);
         setError('حدث خطأ أثناء تحميل سجل اللعبة');
@@ -94,6 +146,101 @@ export default function GameLogPage() {
       return 'وقت غير صالح';
     }
   };
+  
+  const openSessionDetails = (session: GameSession) => {
+    setSelectedSession(session);
+    setModalOpen(true);
+  };
+  
+  const GameSessionDetailsModal = () => {
+    if (!selectedSession) return null;
+    
+    return (
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-3xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl mb-2">تفاصيل اللعبة</DialogTitle>
+            {selectedSession.winningTeam && (
+              <div className="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                <Award className="w-4 h-4 mr-1" />
+                الفريق الفائز: {selectedSession.winningTeam}
+              </div>
+            )}
+          </DialogHeader>
+          
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex gap-2">
+              {selectedSession.teams.map((team, idx) => (
+                <Badge 
+                  key={idx} 
+                  className={`${
+                    selectedSession.winningTeam === team.name 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {team.name}: {team.score} نقطة
+                </Badge>
+              ))}
+            </div>
+            <div className="text-sm text-gray-500">
+              <Clock className="w-4 h-4 inline mr-1" />
+              {new Date(selectedSession.createdAt).toLocaleDateString('ar-SA')}
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">رقم السؤال</TableHead>
+                  <TableHead className="text-right">السؤال</TableHead>
+                  <TableHead className="text-right">الفريق الذي أجاب</TableHead>
+                  <TableHead className="text-right">النتيجة</TableHead>
+                  <TableHead className="text-right">النقاط</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedSession.rounds.map((round) => (
+                  <TableRow key={round.id}>
+                    <TableCell className="font-medium">{round.roundNumber}</TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      <div className="flex gap-1">
+                        <span className="font-semibold">{round.category.icon}</span>
+                        {round.question}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        الإجابة الصحيحة: {round.correctAnswer}
+                      </div>
+                    </TableCell>
+                    <TableCell>{round.teamAnswered || 'لم يجب أحد'}</TableCell>
+                    <TableCell>
+                      {round.isCorrect ? (
+                        <span className="flex items-center text-green-600">
+                          <CheckCircle2 className="w-4 h-4 mr-1" /> صحيحة
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-red-600">
+                          <XCircle className="w-4 h-4 mr-1" /> خاطئة
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {round.points > 0 ? `+${round.points}` : round.points}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setModalOpen(false)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   if (loading) {
     return (
@@ -107,40 +254,40 @@ export default function GameLogPage() {
             <Skeleton className="h-8 w-64" />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <Skeleton className="h-6 w-32 mb-2" />
-                  <Skeleton className="h-4 w-64" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-64 w-full" />
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div>
-              <Card className="mb-6">
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2" />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
+          <div className="grid grid-cols-1 gap-6">
+            <Card className="mb-2">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-6 w-32 mb-2" />
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-20" />
                   <Skeleton className="h-6 w-24" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-32 w-full" />
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardHeader>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex justify-between items-center border-b pb-3">
+                      <div className="space-y-2">
+                        <Skeleton className="h-5 w-24" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-6 w-16" />
+                          <Skeleton className="h-6 w-16" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-8 w-28" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </Layout>
@@ -174,6 +321,7 @@ export default function GameLogPage() {
     );
   }
 
+  // إضافة مكون المودال للعرض
   return (
     <Layout>
       <div className="container mx-auto py-8" dir="rtl">
@@ -185,133 +333,124 @@ export default function GameLogPage() {
           <h1 className="text-2xl font-bold">سجل اللعبة: {gameLog.name}</h1>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>جولات اللعبة</span>
-                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 font-normal">
-                    {gameLog.rounds.length} جولة
+        <div className="grid grid-cols-1 gap-6">
+          {/* معلومات اللعبة */}
+          <Card className="mb-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center justify-between">
+                <span>معلومات اللعبة</span>
+                <Badge variant="outline" className="font-normal">
+                  <span className="mr-1">{gameLog.playCount}</span>
+                  مرة لعب
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {gameLog.categories.map((category) => (
+                  <Badge key={category.id} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-0">
+                    <span className="mr-1">{category.icon}</span>
+                    {category.name}
                   </Badge>
-                </CardTitle>
-                <CardDescription>سجل تفصيلي لجميع الجولات والأسئلة والإجابات الصحيحة</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {gameLog.rounds.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">الجولة</TableHead>
-                          <TableHead className="text-right">الفئة</TableHead>
-                          <TableHead className="text-right">السؤال</TableHead>
-                          <TableHead className="text-right">الإجابة الصحيحة</TableHead>
-                          <TableHead className="text-right">الفريق الفائز</TableHead>
-                          <TableHead className="text-right">الوقت</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {gameLog.rounds.map((round) => (
-                          <TableRow key={round.id}>
-                            <TableCell className="font-medium">{round.roundNumber}</TableCell>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* جدول مرات اللعب */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>سجل مرات اللعب</span>
+              </CardTitle>
+              <CardDescription>اضغط على "عرض التفاصيل" لرؤية معلومات تفصيلية عن جولات وأسئلة كل لعبة</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {gameLog.games.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">الرقم</TableHead>
+                        <TableHead className="text-right">الفريق الفائز</TableHead>
+                        <TableHead className="text-right">الفرق المشاركة</TableHead>
+                        <TableHead className="text-right">النتيجة</TableHead>
+                        <TableHead className="text-right">التاريخ</TableHead>
+                        <TableHead className="text-right"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {gameLog.games.map((game, index) => {
+                        // ترتيب الفرق حسب النقاط الأعلى
+                        const sortedTeams = [...game.teams].sort((a, b) => b.score - a.score);
+                        const winningTeam = sortedTeams[0] || null;
+                        
+                        return (
+                          <TableRow key={game.sessionId}>
+                            <TableCell className="font-medium">{index + 1}</TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="font-normal">
-                                <span className="mr-1">{round.category.icon}</span>
-                                {round.category.name}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate">{round.question}</TableCell>
-                            <TableCell>{round.correctAnswer}</TableCell>
-                            <TableCell>
-                              {round.winningTeam ? (
-                                <span className="text-green-600 font-semibold">{round.winningTeam}</span>
+                              {game.winningTeam ? (
+                                <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                                  <Award className="w-3.5 h-3.5 mr-1" />
+                                  {game.winningTeam}
+                                </Badge>
                               ) : (
-                                <span className="text-gray-500 text-sm">لا يوجد فائز</span>
+                                <span className="text-sm text-gray-500">لا يوجد فائز</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {formatTimestamp(round.timestamp)}
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {game.teams.map((team, idx) => (
+                                  <Badge 
+                                    key={idx} 
+                                    variant="outline" 
+                                    className={`${game.winningTeam === team.name ? 'border-green-500' : ''}`}
+                                  >
+                                    {team.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {sortedTeams.map((team, idx) => (
+                                <div key={idx} className="whitespace-nowrap">
+                                  {team.name}: <span className={game.winningTeam === team.name ? 'text-green-600 font-semibold' : ''}>{team.score}</span>
+                                  {idx < sortedTeams.length - 1 && <span className="mx-1">|</span>}
+                                </div>
+                              ))}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(game.createdAt).toLocaleDateString('ar-SA')}
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                onClick={() => openSessionDetails(game)}
+                              >
+                                <Eye className="w-4 h-4 ml-1" />
+                                عرض التفاصيل
+                              </Button>
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-center py-10 text-gray-500">
-                    لا توجد جولات مسجلة لهذه اللعبة
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div>
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">معلومات اللعبة</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 font-semibold">تاريخ الإنشاء:</span>
-                  <span className="flex items-center">
-                    <CalendarIcon className="h-4 w-4 mr-1 text-blue-500" />
-                    {new Date(gameLog.createdAt).toLocaleDateString('ar-SA')}
-                  </span>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 font-semibold">عدد مرات اللعب:</span>
-                  <Badge variant="outline" className="font-normal">
-                    {gameLog.playCount} مرة
-                  </Badge>
+              ) : (
+                <div className="text-center py-10 text-gray-500">
+                  لا توجد جلسات لعب مسجلة
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 font-semibold">عدد الفرق:</span>
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-1 text-violet-500" />
-                    {gameLog.teams.length} فريق
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-600 font-semibold block mb-2">الفئات:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {gameLog.categories.map((category) => (
-                      <Badge key={category.id} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-0">
-                        <span className="mr-1">{category.icon}</span>
-                        {category.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">نتائج الفرق</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {gameLog.teams.map((team, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="font-medium">{team.name}</span>
-                      <Badge className={`${
-                        index === 0 ? 'bg-amber-100 text-amber-800 border-amber-200' : 
-                        index === 1 ? 'bg-slate-100 text-slate-800 border-slate-200' : 
-                        index === 2 ? 'bg-orange-100 text-orange-800 border-orange-200' : 
-                        'bg-gray-100 text-gray-800 border-gray-200'
-                      } border hover:bg-opacity-80`}>
-                        {team.score} نقطة
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
+      
+      {/* مودال تفاصيل جلسة اللعب */}
+      <GameSessionDetailsModal />
     </Layout>
   );
 }
