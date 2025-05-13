@@ -47,6 +47,68 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentSessionId = 1;
     
+    // إضافة مستخدم افتراضي للاختبار
+    this.users.set(1, {
+      id: 1,
+      username: "أحمد",
+      password: "hashed_password", // في التطبيق الحقيقي ستكون كلمة المرور مشفرة
+    });
+    
+    // إضافة جلسات لعب تجريبية
+    // Game Session 1
+    const gameSession1: GameSession = {
+      id: 1,
+      userId: 1,
+      gameName: "لعبة العلوم والثقافة",
+      teams: [
+        { name: "النجوم", score: 12 },
+        { name: "العباقرة", score: 9 }
+      ],
+      answerTimeFirst: 30,
+      answerTimeSecond: 15,
+      selectedCategories: [12, 13, 31, 34], // فيزياء، أحياء، تاريخ، أدب
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // قبل أسبوع
+    };
+    
+    // Game Session 2
+    const gameSession2: GameSession = {
+      id: 2,
+      userId: 1,
+      gameName: "مسابقة التقنية",
+      teams: [
+        { name: "المبرمجون", score: 15 },
+        { name: "الشبكات", score: 10 },
+        { name: "الذكاء الصناعي", score: 8 }
+      ],
+      answerTimeFirst: 45,
+      answerTimeSecond: 20,
+      selectedCategories: [41, 42, 43, 44], // برمجة، شبكات، ذكاء صناعي، تطبيقات
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // قبل 3 أيام
+    };
+    
+    // Game Session 3
+    const gameSession3: GameSession = {
+      id: 3,
+      userId: 1,
+      gameName: "تحدي الرياضيات",
+      teams: [
+        { name: "فريق الجبر", score: 7 },
+        { name: "فريق الهندسة", score: 10 }
+      ],
+      answerTimeFirst: 30,
+      answerTimeSecond: 15,
+      selectedCategories: [21, 22, 23, 24], // جبر، هندسة، إحصاء، حساب
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // قبل يوم
+    };
+    
+    // إضافة جلسات اللعب إلى المخزن
+    this.gameSessions.set(gameSession1.id, gameSession1);
+    this.gameSessions.set(gameSession2.id, gameSession2);
+    this.gameSessions.set(gameSession3.id, gameSession3);
+    
+    // تحديث currentSessionId
+    this.currentSessionId = 4;
+    
     // Initialize default game settings
     this.gameSettings = {
       id: 1,

@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Format data from new API format to storage format
       const gameData = {
         gameName: req.body.gameName,
-        teams: req.body.teamNames.slice(0, req.body.teamsCount).map(name => ({ name })),
+        teams: req.body.teamNames.slice(0, req.body.teamsCount).map((name: string) => ({ name })),
         answerTimeFirst: parseInt(req.body.firstAnswerTime, 10),
         answerTimeSecond: parseInt(req.body.secondAnswerTime, 10),
         selectedCategories: req.body.categories
