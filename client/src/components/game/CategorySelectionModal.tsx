@@ -1,11 +1,12 @@
 import React from 'react';
 import { 
   Dialog, 
-  DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogContent
 } from '@/components/ui/dialog';
+import { ModalDialogContent } from '@/components/ui/modal-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -36,7 +37,8 @@ export function CategorySelectionModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" dir="rtl">
+      <DialogContent className="hidden" />
+      <ModalDialogContent className="sm:max-w-md" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center mb-2">
             الفئات المختارة ({selectedCategories.length}/{maxCategories})
@@ -83,7 +85,7 @@ export function CategorySelectionModal({
             ابدأ اللعب
           </Button>
         </DialogFooter>
-      </DialogContent>
+      </ModalDialogContent>
     </Dialog>
   );
 }
