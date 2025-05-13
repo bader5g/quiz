@@ -3,7 +3,7 @@ import Layout from "@/components/layout/Layout";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogPortal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -637,36 +637,38 @@ export default function ProfilePage() {
     
     return (
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>{getModalTitle()}</DialogTitle>
-          </DialogHeader>
-          
-          {renderModalContent()}
-          
-          {formError && (
-            <div className="text-sm text-red-500 mt-2">{formError}</div>
-          )}
-          
-          <DialogFooter className="flex flex-row justify-between sm:justify-between">
-            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
-              إلغاء
-            </Button>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isSubmitting || formValue === originalValue}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
-                  جارٍ التحديث...
-                </>
-              ) : (
-                'حفظ التغييرات'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+        <DialogPortal>
+          <DialogContent className="sm:max-w-md z-50" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>{getModalTitle()}</DialogTitle>
+            </DialogHeader>
+            
+            {renderModalContent()}
+            
+            {formError && (
+              <div className="text-sm text-red-500 mt-2">{formError}</div>
+            )}
+            
+            <DialogFooter className="flex flex-row justify-between sm:justify-between">
+              <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+                إلغاء
+              </Button>
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isSubmitting || formValue === originalValue}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
+                    جارٍ التحديث...
+                  </>
+                ) : (
+                  'حفظ التغييرات'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>
     );
   };
