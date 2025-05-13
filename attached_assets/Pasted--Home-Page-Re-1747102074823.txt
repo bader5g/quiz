@@ -1,0 +1,135 @@
+ الصفحة الرئيسية لمشروع جاوب
+
+الوصف:
+
+قم بتنفيذ الصفحة الرئيسية (Home Page) للعبة "جاوب" باستخدام React + Tailwind CSS مع الشروط التالية:
+
+
+---
+
+المتطلبات الوظيفية والتصميمية:
+
+1. موقع أزرار تسجيل الدخول وتسجيل الحساب:
+
+يجب عرض زر "تسجيل الدخول" و "إنشاء حساب" في الركن العلوي الأيسر من الصفحة.
+
+
+2. الشعار والنص التعريفي:
+
+يتم عرض شعار اللعبة (نص: جاوب) بخط كبير وواضح في وسط الصفحة.
+
+أسفل الشعار يظهر نص تعريفي بسيط عن اللعبة (مثلاً: "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!").
+
+
+3. عرض الفئات:
+
+يتم جلب الفئات من API:
+GET /api/categories-with-children
+
+كل فئة رئيسية (أب) تُعرض كعنوان مع أيقونة.
+
+أسفل كل فئة، تُعرض الفئات الفرعية (أبناء) كمربعات (icon + name).
+
+يجب عرض الفئات الفرعية في شبكة Grid مكونة من 4 أعمدة.
+
+
+4. زر "ابدأ اللعب":
+
+يتم وضعه في أسفل الصفحة، بشكل بارز.
+
+عند الضغط عليه يتم التوجيه إلى مسار /categories.
+
+
+
+---
+
+شكل البيانات المتوقع من API:
+
+[
+  {
+    "id": 1,
+    "name": "علوم",
+    "icon": "⚙️",
+    "children": [
+      { "id": 11, "name": "كيمياء", "icon": "⚗️" },
+      { "id": 12, "name": "فيزياء", "icon": "🔬" }
+    ]
+  },
+  ...
+]
+
+
+---
+
+كود مقترح جاهز للاستخدام (Home.jsx):
+
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+export default function Home() {
+  const [categories, setCategories] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    axios.get('/api/categories-with-children')
+      .then(res => setCategories(res.data))
+      .catch(err => console.error("فشل تحميل الفئات", err));
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-sky-50 p-6 relative text-center">
+      {/* أزرار التسجيل */}
+      <div className="absolute top-4 left-6 flex gap-4">
+        <button onClick={() => navigate('/login')} className="text-blue-600 hover:underline">تسجيل الدخول</button>
+        <button onClick={() => navigate('/register')} className="text-blue-600 hover:underline">إنشاء حساب</button>
+      </div>
+
+      {/* الشعار والنص */}
+      <h1 className="text-6xl font-extrabold text-blue-700 mb-2 mt-16">جاوب</h1>
+      <p className="text-gray-600 text-lg mb-8">اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!</p>
+
+      {/* عرض الفئات */}
+      <div className="space-y-10">
+        {categories.map((parent) => (
+          <div key={parent.id}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center justify-center gap-2">
+              <span>{parent.icon}</span>
+              <span>{parent.name}</span>
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-5xl mx-auto">
+              {parent.children.map((child) => (
+                <div key={child.id} className="bg-white p-4 rounded-xl shadow-md hover:shadow-lg cursor-pointer">
+                  <div className="text-3xl mb-2">{child.icon}</div>
+                  <div className="text-gray-800 font-medium">{child.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* زر بدء اللعبة */}
+      <div className="mt-16">
+        <button
+          onClick={() => navigate('/categories')}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-4 rounded-full text-xl shadow-lg"
+        >
+          ابدأ اللعب
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+---
+
+ملاحظات إضافية:
+
+يجب التأكد من أن Tailwind CSS مفعّل في المشروع.
+
+تأكد من وجود react-router-dom وتفعيل navigate() بشكل صحيح.
+
+هذا التصميم يتناسب مع الجوال والكمبيوتر تلقائيًا.
+
