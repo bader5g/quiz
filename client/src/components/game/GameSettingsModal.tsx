@@ -140,19 +140,14 @@ export function GameSettingsModal({
     try {
       const numTeams = parseInt(data.teamCount, 10);
       
-      // استخدام أسماء الفرق من النموذج
-      const teamNames = data.teamNames
-        .slice(0, numTeams)
-        .map(name => ({ name }));
-      
-      // إنشاء بيانات جلسة اللعبة
+      // إنشاء بيانات جلسة اللعبة بالتنسيق المطلوب
       const gameData = {
         gameName: data.gameName,
-        teams: teamNames,
         teamsCount: numTeams,
+        teamNames: data.teamNames.slice(0, numTeams),
         firstAnswerTime: parseInt(data.answerTimeFirst, 10),
         secondAnswerTime: parseInt(data.answerTimeSecond, 10),
-        selectedCategories: selectedCategories.map(cat => cat.id)
+        categories: selectedCategories.map(cat => cat.id)
       };
       
       // تحديث نقطة النهاية للإنشاء إلى الصحيحة حسب المواصفات
@@ -197,7 +192,7 @@ export function GameSettingsModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg" dir="rtl">
+      <DialogContent className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center mb-4">
             {settings.modalTitle}
@@ -259,28 +254,30 @@ export function GameSettingsModal({
             {/* أسماء الفرق */}
             <div className="space-y-3 border border-gray-200 rounded-md p-3 bg-gray-50">
               <h3 className="text-sm font-medium text-gray-700">أسماء الفرق</h3>
-              {watchTeamCount && Array.from({ length: parseInt(watchTeamCount, 10) }).map((_, index) => (
-                <FormField
-                  key={index}
-                  control={form.control}
-                  name={`teamNames.${index}`}
-                  render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormLabel className="text-xs text-gray-600">
-                        الفريق {index + 1}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={`اسم الفريق ${index + 1}`}
-                          maxLength={settings.maxTeamNameLength}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-              ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {watchTeamCount && Array.from({ length: parseInt(watchTeamCount, 10) }).map((_, index) => (
+                  <FormField
+                    key={index}
+                    control={form.control}
+                    name={`teamNames.${index}`}
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-xs text-gray-600">
+                          الفريق {index + 1}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={`اسم الفريق ${index + 1}`}
+                            maxLength={settings.maxTeamNameLength}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </div>
               <p className="text-xs text-gray-500">
                 الحد الأقصى لاسم الفريق: {settings.maxTeamNameLength} حرف
               </p>
@@ -335,11 +332,17 @@ export function GameSettingsModal({
             {/* زر بدء اللعبة */}
             <Button
               type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mt-4"
+              disabled={loading || selectedCategories.length < settings.minCategories}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-4 text-lg"
             >
-              {loading ? 'جاري الإنشاء...' : 'ابدأ اللعبة'}
+              {loading ? 'جاري الإنشاء...' : '🎮 ابدأ اللعبة'}
             </Button>
+            
+            {selectedCategories.length < settings.minCategories && (
+              <p className="text-red-500 text-xs text-center mt-2">
+                يجب اختيار {settings.minCategories} فئات على الأقل للبدء
+              </p>
+            )}
           </form>
         </Form>
       </DialogContent>
