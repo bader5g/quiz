@@ -604,7 +604,21 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   
-                  <h2 className="text-xl font-bold">{user?.name || user?.username}</h2>
+                  <div className="flex items-center">
+                    <h2 className="text-xl font-bold">{user?.name || user?.username}</h2>
+                    {isOwner && (
+                      <Button 
+                        variant="ghost" 
+                        className="ml-2 h-7 w-7 p-0"
+                        onClick={() => {
+                          setEditType('name');
+                          setEditModalOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                   
                   <div className="flex items-center mt-2 mb-4">
                     <Badge style={{ backgroundColor: userLevel?.color || '#FFD700' }} className="text-white">
@@ -639,30 +653,6 @@ export default function ProfilePage() {
                   <div className="w-full space-y-1.5 mt-4">
                     {isOwner && (
                       <>
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start"
-                          onClick={() => {
-                            setEditType('avatar');
-                            setEditModalOpen(true);
-                          }}
-                        >
-                          <Pencil className="ml-1.5 h-3 w-3" />
-                          الصورة الشخصية
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start"
-                          onClick={() => {
-                            setEditType('name');
-                            setEditModalOpen(true);
-                          }}
-                        >
-                          <UserIcon className="ml-1.5 h-3 w-3" />
-                          تعديل الاسم
-                        </Button>
-                        
                         <Button 
                           variant="outline" 
                           className="w-full justify-start"
