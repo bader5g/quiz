@@ -721,8 +721,8 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <Image className="ml-2 h-4 w-4" />
-                          تغيير الصورة الشخصية
+                          <CreditCardIcon className="ml-2 h-4 w-4" />
+                          شراء كروت
                         </Button>
                       </>
                     )}
