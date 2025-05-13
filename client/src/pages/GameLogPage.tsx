@@ -217,36 +217,37 @@ export default function GameLogPage() {
     setCurrentPage(page);
   };
   
-  // حساب أعلى فريق في تسجيل النقاط عبر كل الجلسات
+  // حساب أعلى فريق في تسجيل النقاط في جلسة واحدة
   const getTopScoringTeam = () => {
     if (!gameLog || !gameLog.games || gameLog.games.length === 0) {
       return null;
     }
     
-    // تجميع نقاط كل فريق من كل الجلسات
-    const teamScores: Record<string, number> = {};
+    // تجميع جميع الفرق من جميع الجلسات في مصفوفة واحدة
+    const allTeams: { name: string; score: number; sessionId: string; date: string }[] = [];
     
-    // المرور على كل جلسة وجمع النقاط لكل فريق
+    // المرور على كل جلسة وإضافة فرقها إلى المصفوفة
     gameLog.games.forEach(game => {
       game.teams.forEach(team => {
-        // توحيد أسماء الفرق (تحويل الحروف إلى حروف صغيرة لتجنب فروق الكتابة)
-        const normalizedName = team.name.trim();
-        
-        if (!teamScores[normalizedName]) {
-          teamScores[normalizedName] = 0;
-        }
-        
-        teamScores[normalizedName] += team.score;
+        allTeams.push({
+          name: team.name.trim(),
+          score: team.score,
+          sessionId: game.sessionId,
+          date: game.createdAt
+        });
       });
     });
     
-    // تحويل السجل إلى مصفوفة وترتيبها تنازليًا حسب النقاط
-    const sortedTeams = Object.entries(teamScores)
-      .map(([name, score]) => ({ name, score }))
-      .sort((a, b) => b.score - a.score);
+    // ترتيب المصفوفة تنازليًا حسب النقاط للحصول على أعلى فريق
+    const sortedTeams = [...allTeams].sort((a, b) => b.score - a.score);
     
-    // إرجاع الفريق الأعلى في النقاط
-    return sortedTeams.length > 0 ? sortedTeams[0] : null;
+    // إرجاع الفريق الأعلى في النقاط من جلسة واحدة
+    return sortedTeams.length > 0 ? {
+      name: sortedTeams[0].name,
+      score: sortedTeams[0].score,
+      sessionId: sortedTeams[0].sessionId,
+      date: sortedTeams[0].date
+    } : null;
   };
   
   // الحصول على الفريق الأعلى نقاطًا
@@ -493,9 +494,7 @@ export default function GameLogPage() {
                     <span className="font-semibold">{topTeam.score}</span>
                     <span className="mr-1">نقطة</span>
                   </div>
-                  <div className="text-xs text-amber-600 mt-2">
-                    (مجموع النقاط عبر جميع الجلسات)
-                  </div>
+
                 </div>
               ) : (
                 <div className="text-center py-4 text-amber-700">
