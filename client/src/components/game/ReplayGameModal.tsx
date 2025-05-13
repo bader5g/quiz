@@ -9,7 +9,6 @@ import {
   Dialog,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
   DialogContent
 } from '@/components/ui/dialog';
@@ -31,7 +30,6 @@ interface GameCategory {
 interface GameSettings {
   allowedFirstAnswerTimes: number[];
   allowedSecondAnswerTimes: number[];
-  maxGameNameLength: number;
   maxTeamNameLength: number;
   minTeams: number;
   maxTeams: number;
@@ -89,7 +87,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
   });
 
   // تقديم النموذج
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormSchemaType) => {
     setLoading(true);
     setFormError(null);
     
@@ -220,7 +218,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                     >
                       <FormControl>
                         <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="اختر الوقت" className="text-xs" />
+                          <SelectValue placeholder="اختر الوقت" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -249,7 +247,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                     >
                       <FormControl>
                         <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="اختر الوقت" className="text-xs" />
+                          <SelectValue placeholder="اختر الوقت" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
