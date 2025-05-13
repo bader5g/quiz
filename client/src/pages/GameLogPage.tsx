@@ -191,9 +191,12 @@ export default function GameLogPage() {
     
     return (
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-3xl" dir="rtl">
+        <DialogContent className="max-w-3xl" dir="rtl" aria-describedby="game-details-description">
           <DialogHeader>
             <DialogTitle className="text-xl mb-2">تفاصيل اللعبة</DialogTitle>
+            <p id="game-details-description" className="text-sm text-gray-500">
+              تفاصيل جولات اللعبة والأسئلة والإجابات والنقاط
+            </p>
             {selectedSession.winningTeam && (
               <div className="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
                 <Award className="w-4 h-4 mr-1" />
@@ -219,7 +222,11 @@ export default function GameLogPage() {
             </div>
             <div className="text-sm text-gray-500">
               <Clock className="w-4 h-4 inline mr-1" />
-              {new Date(selectedSession.createdAt).toLocaleDateString('ar-SA')}
+              {new Date(selectedSession.createdAt).toLocaleDateString('ar', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+              })}
             </div>
           </div>
           
@@ -459,7 +466,11 @@ export default function GameLogPage() {
                               ))}
                             </TableCell>
                             <TableCell>
-                              {new Date(game.createdAt).toLocaleDateString('ar-SA')}
+                              {new Date(game.createdAt).toLocaleDateString('ar', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                              })}
                             </TableCell>
                             <TableCell>
                               <Button 
