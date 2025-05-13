@@ -49,6 +49,11 @@ const formSchema = z.object({
     .min(1, { message: "يرجى إدخال اسم للعبة" })
     .max(30, { message: "يجب أن لا يتجاوز اسم اللعبة 30 حرفاً" }),
   teamCount: z.string(),
+  teamNames: z.array(
+    z.string()
+      .min(1, { message: "يرجى إدخال اسم للفريق" })
+      .max(20, { message: "يجب أن لا يتجاوز اسم الفريق 20 حرفاً" })
+  ),
   answerTimeFirst: z.string()
     .refine(val => {
       const num = parseInt(val, 10);
@@ -79,6 +84,7 @@ export function GameSettingsModal({
     defaultValues: {
       gameName: "لعبتي الجديدة",
       teamCount: "2",
+      teamNames: ["الفريق الأول", "الفريق الثاني", "الفريق الثالث", "الفريق الرابع"],
       answerTimeFirst: "30",
       answerTimeSecond: "15",
     },
@@ -109,29 +115,48 @@ export function GameSettingsModal({
     }
   }, [open, toast, form]);
 
+  // متابعة عدد الفرق وتحديث أسماء الفرق
+  const watchTeamCount = form.watch("teamCount");
+  
+  // عند تغيير عدد الفرق، نتأكد من توفر أسماء كافية للفرق
+  useEffect(() => {
+    const count = parseInt(watchTeamCount, 10);
+    const currentTeamNames = form.getValues("teamNames");
+    
+    // إذا كان عدد الأسماء أقل من عدد الفرق المطلوبة، نضيف أسماء افتراضية
+    if (currentTeamNames.length < count) {
+      const newTeamNames = [...currentTeamNames];
+      for (let i = currentTeamNames.length; i < count; i++) {
+        newTeamNames.push(`الفريق ${i + 1}`);
+      }
+      form.setValue("teamNames", newTeamNames);
+    }
+  }, [watchTeamCount, form]);
+  
   // معالجة تقديم النموذج
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
     
     try {
       const numTeams = parseInt(data.teamCount, 10);
-      const teamNames = [];
       
-      // إضافة أسماء الفرق الافتراضية حسب العدد المختار
-      for (let i = 0; i < numTeams; i++) {
-        teamNames.push({ name: `الفريق ${i + 1}` });
-      }
+      // استخدام أسماء الفرق من النموذج
+      const teamNames = data.teamNames
+        .slice(0, numTeams)
+        .map(name => ({ name }));
       
       // إنشاء بيانات جلسة اللعبة
       const gameData = {
         gameName: data.gameName,
         teams: teamNames,
-        answerTimeFirst: parseInt(data.answerTimeFirst, 10),
-        answerTimeSecond: parseInt(data.answerTimeSecond, 10),
+        teamsCount: numTeams,
+        firstAnswerTime: parseInt(data.answerTimeFirst, 10),
+        secondAnswerTime: parseInt(data.answerTimeSecond, 10),
         selectedCategories: selectedCategories.map(cat => cat.id)
       };
       
-      const response = await axios.post('/api/game-sessions', gameData);
+      // تحديث نقطة النهاية للإنشاء إلى الصحيحة حسب المواصفات
+      const response = await axios.post('/api/create-game', gameData);
       
       // تخزين جلسة اللعبة في التخزين المحلي للوصول السهل
       localStorage.setItem('currentGameSession', JSON.stringify({
@@ -163,7 +188,7 @@ export function GameSettingsModal({
   }
   
   // إعداد خيارات عدد الفرق
-  const teamOptions = [];
+  const teamOptions: JSX.Element[] = [];
   for (let i = settings.minTeams; i <= settings.maxTeams; i++) {
     teamOptions.push(
       <SelectItem key={i} value={i.toString()}>{i} فرق</SelectItem>
@@ -230,6 +255,36 @@ export function GameSettingsModal({
                 </FormItem>
               )}
             />
+            
+            {/* أسماء الفرق */}
+            <div className="space-y-3 border border-gray-200 rounded-md p-3 bg-gray-50">
+              <h3 className="text-sm font-medium text-gray-700">أسماء الفرق</h3>
+              {watchTeamCount && Array.from({ length: parseInt(watchTeamCount, 10) }).map((_, index) => (
+                <FormField
+                  key={index}
+                  control={form.control}
+                  name={`teamNames.${index}`}
+                  render={({ field }) => (
+                    <FormItem className="space-y-1">
+                      <FormLabel className="text-xs text-gray-600">
+                        الفريق {index + 1}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={`اسم الفريق ${index + 1}`}
+                          maxLength={settings.maxTeamNameLength}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+              ))}
+              <p className="text-xs text-gray-500">
+                الحد الأقصى لاسم الفريق: {settings.maxTeamNameLength} حرف
+              </p>
+            </div>
             
             {/* وقت الإجابة الأولى */}
             <FormField

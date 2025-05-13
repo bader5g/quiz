@@ -4,6 +4,7 @@ import { useUser } from '@/context/UserContext';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Zap, GamepadIcon } from 'lucide-react';
 import LeaderboardModal from '@/components/user/LeaderboardModal';
 import UserStatus from '@/components/user/UserStatus'; 
 
@@ -124,8 +125,19 @@ export default function Header() {
             {isLoading ? (
               <Skeleton className="h-10 w-24" />
             ) : (
-              <div className="block">
+              <div className="flex gap-2">
                 <LeaderboardModal />
+                
+                {/* زر ألعابي */}
+                <div 
+                  className="bg-green-100 px-3 py-1 rounded-full cursor-pointer hover:bg-green-200 transition-colors"
+                  onClick={() => navigate('/my-games')}
+                >
+                  <span className="text-green-800 font-bold whitespace-nowrap flex items-center">
+                    <GamepadIcon className="h-4 w-4 ml-1.5" />
+                    ألعابي
+                  </span>
+                </div>
               </div>
             )}
           </div>
