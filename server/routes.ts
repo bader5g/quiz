@@ -172,14 +172,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Game session not found' });
       }
       
-      // تحويل نوع البيانات للتوافق مع عمليات الوصول اللاحقة
-      const typedGameSession = gameSession as {
-        id: string;
-        name: string;
-        categories: { id: number; name: string; icon: string }[];
-        teams: { name: string; score: number }[];
-        createdAt: string;
-        playCount: number;
+      // تحويل نوع البيانات ومعالجة الفئات
+      const gameSessionAny = gameSession as any;
+      
+      // معالجة مصفوفة معرفات الفئات
+      const categoryIds = Array.isArray(gameSessionAny.selectedCategories) 
+        ? gameSessionAny.selectedCategories 
+        : [];
+      
+      // بناء مصفوفة الفئات المطلوبة
+      const categoryObjects: { id: number; name: string; icon: string }[] = [];
+      
+      // جمع الفئات من الفئات المتاحة (المعرفة سابقاً)
+      const allCategories = [
+        { id: 11, name: "كيمياء", icon: "⚗️" },
+        { id: 12, name: "فيزياء", icon: "🔬" },
+        { id: 13, name: "أحياء", icon: "🧬" },
+        { id: 14, name: "فلك", icon: "🔭" },
+        { id: 21, name: "جبر", icon: "➗" },
+        { id: 22, name: "هندسة", icon: "📐" },
+        { id: 23, name: "إحصاء", icon: "📊" },
+        { id: 24, name: "حساب", icon: "🔢" },
+        { id: 31, name: "تاريخ", icon: "🏛️" },
+        { id: 32, name: "جغرافيا", icon: "🌍" },
+        { id: 33, name: "فن", icon: "🎨" },
+        { id: 34, name: "أدب", icon: "📖" },
+        { id: 35, name: "موسيقى", icon: "🎵" },
+        { id: 36, name: "رياضة", icon: "⚽" },
+        { id: 41, name: "برمجة", icon: "👨‍💻" },
+        { id: 42, name: "شبكات", icon: "🌐" },
+        { id: 43, name: "ذكاء صناعي", icon: "🤖" },
+        { id: 44, name: "تطبيقات", icon: "📱" }
+      ];
+      
+      // البحث عن الفئات المطابقة
+      categoryIds.forEach((id: number) => {
+        const found = allCategories.find(cat => cat.id === id);
+        if (found) {
+          categoryObjects.push(found);
+        }
+      });
+      
+      // تكوين كائن اللعبة المطلوب
+      const typedGameSession = {
+        id: gameSessionAny.id.toString(),
+        name: gameSessionAny.gameName,
+        categories: categoryObjects,
+        teams: gameSessionAny.teams as { name: string; score: number }[],
+        createdAt: gameSessionAny.createdAt,
+        playCount: 1 // افتراضي للعرض التجريبي
       };
       
       // إضافة بيانات افتراضية للجولات للعرض التجريبي
@@ -250,15 +291,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Original game not found' });
       }
       
+      // تحويل نوع البيانات للتطابق
+      const originalGameAny = originalGame as any;
+      const selectedCategories = Array.isArray(originalGameAny.selectedCategories) 
+        ? originalGameAny.selectedCategories 
+        : [];
+      
       // إنشاء بيانات اللعبة الجديدة
       const gameData = {
         gameName: validatedData.gameName,
         teams: validatedData.teamNames.map(name => ({ name, score: 0 })),
         answerTimeFirst: validatedData.answerTimeFirst,
         answerTimeSecond: validatedData.answerTimeSecond,
-        selectedCategories: originalGame.categories,
-        // تعيين قيمة أولية لعدد مرات اللعب
-        playCount: 1
+        selectedCategories: selectedCategories
       };
       
       const newSession = await storage.createGameSession(userId, gameData);
