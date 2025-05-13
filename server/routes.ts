@@ -154,6 +154,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leaderboard API endpoint
+  app.get('/api/leaderboard', (_req, res) => {
+    // Sample leaderboard data
+    const leaderboard = [
+      { id: 1, username: "أحمد", level: "ذهبي", stars: 15, badge: "🥇" },
+      { id: 2, username: "ليلى", level: "فضي", stars: 12, badge: "🥈" },
+      { id: 3, username: "محمد", level: "فضي", stars: 10, badge: "🥉" },
+      { id: 4, username: "سارة", level: "برونزي", stars: 8, badge: "🏅" },
+      { id: 5, username: "زياد", level: "برونزي", stars: 7, badge: "🏅" },
+      { id: 6, username: "فاطمة", level: "مبتدئ", stars: 5, badge: "🎖️" },
+      { id: 7, username: "يوسف", level: "مبتدئ", stars: 4, badge: "🎖️" },
+      { id: 8, username: "مريم", level: "مبتدئ", stars: 3, badge: "🎖️" },
+      { id: 9, username: "خالد", level: "مبتدئ", stars: 2, badge: "🎖️" },
+      { id: 10, username: "هدى", level: "مبتدئ", stars: 1, badge: "🎖️" }
+    ];
+    
+    res.json(leaderboard);
+  });
+
+  // User level API endpoint
+  app.get('/api/user-level', (_req, res) => {
+    // Sample user level data
+    const userLevel = {
+      level: "ذهبي",
+      badge: "🥇",
+      color: "#FFD700",
+      progress: 75,
+      nextLevel: "بلاتيني",
+      requiredStars: 20,
+      currentStars: 15
+    };
+    
+    res.json(userLevel);
+  });
+
+  // User cards API endpoint
+  app.get('/api/user-cards', (_req, res) => {
+    // Sample user cards data
+    const userCards = {
+      freeCards: 5,
+      paidCards: 10,
+      totalCards: 15,
+      freeIcon: "🎫",
+      paidIcon: "💳"
+    };
+    
+    res.json(userCards);
+  });
+
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 

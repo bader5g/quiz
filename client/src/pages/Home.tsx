@@ -9,6 +9,8 @@ import { useUser } from '@/context/UserContext';
 import { CategorySelectionModal } from '@/components/game/CategorySelectionModal';
 import { GameSettingsModal } from '@/components/game/GameSettingsModal';
 import { useToast } from '@/hooks/use-toast';
+import UserStatus from '@/components/user/UserStatus';
+import LeaderboardModal from '@/components/user/LeaderboardModal';
 
 interface CategoryChild {
   id: number;
@@ -151,34 +153,42 @@ export default function Home() {
   return (
     <div dir="rtl" className="min-h-screen bg-sky-50 p-6 relative">
       {/* أزرار التسجيل */}
-      <div className="absolute top-4 left-6 flex gap-4">
+      <div className="absolute top-4 left-6 flex gap-3">
         {isAuthenticated ? (
-          <div className="text-blue-600 font-medium flex items-center gap-2">
-            <span>مرحباً بك</span>
+          <>
             <button
               onClick={() => navigate('/profile')}
-              className="text-blue-700 font-bold hover:underline"
+              className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-md font-medium flex items-center gap-1.5"
             >
-              {user?.username || "مستخدم"}
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>الملف الشخصي</span>
             </button>
             <button 
               onClick={() => logout()}
-              className="text-red-600 hover:text-red-800 transition-colors hover:underline font-medium mr-4"
+              className="border border-red-300 text-red-600 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5"
             >
-              تسجيل الخروج
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>تسجيل الخروج</span>
             </button>
-          </div>
+          </>
         ) : (
           <>
             <button 
               onClick={() => navigate('/login')} 
-              className="text-blue-600 hover:text-blue-800 transition-colors hover:underline font-medium"
+              className="text-blue-600 hover:bg-blue-50 border border-blue-300 transition-colors px-3 py-1.5 rounded-md font-medium"
             >
               تسجيل الدخول
             </button>
             <button 
               onClick={() => navigate('/register')} 
-              className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1 rounded-full font-medium"
+              className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-md font-medium"
             >
               إنشاء حساب
             </button>
@@ -186,10 +196,20 @@ export default function Home() {
         )}
       </div>
 
+      {/* User status section - only visible for authenticated users */}
+      {isAuthenticated && (
+        <div className="pt-8 md:pt-12 pb-2">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <LeaderboardModal />
+          </div>
+          <UserStatus />
+        </div>
+      )}
+
       {/* الشعار والنص */}
-      <div className="text-center pt-8 md:pt-12 pb-8">
-        <h1 className="text-6xl md:text-7xl font-extrabold text-blue-700 mb-3 mt-10">جاوب</h1>
-        <p className="text-gray-600 text-lg md:text-xl mb-10 max-w-2xl mx-auto">{pageDescription}</p>
+      <div className="text-center pt-6 md:pt-8 pb-8">
+        <h1 className="text-6xl md:text-7xl font-extrabold text-blue-700 mb-3 mt-4">جاوب</h1>
+        <p className="text-gray-600 text-lg md:text-xl mb-8 max-w-2xl mx-auto">{pageDescription}</p>
       </div>
 
       {/* عرض الفئات */}
