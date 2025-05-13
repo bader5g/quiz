@@ -637,8 +637,8 @@ export default function ProfilePage() {
     
     return (
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogPortal>
-          <DialogContent className="sm:max-w-md z-[100]" dir="rtl">
+        <DialogPortal container={document?.getElementById('modal-root') ?? undefined}>
+          <DialogContent className="sm:max-w-md z-[100] bg-white" dir="rtl">
             <DialogHeader>
               <DialogTitle>{getModalTitle()}</DialogTitle>
             </DialogHeader>
