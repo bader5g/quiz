@@ -42,8 +42,8 @@ export default function EditModal({
       setTimeout(() => {
         inputRef.current?.focus();
         
-        // تعبئة القيمة الحالية حسب النوع
-        if (user) {
+        // تعبئة القيمة الحالية حسب النوع إذا كان مرجع الإدخال موجوداً
+        if (user && inputRef.current) {
           switch (editType) {
             case 'name':
               inputRef.current.value = user.name || '';

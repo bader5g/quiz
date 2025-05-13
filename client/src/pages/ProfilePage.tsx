@@ -180,13 +180,22 @@ export default function ProfilePage() {
     
     // عرض رسالة نجاح
     toast({
-      title: "تم التحديث بنجاح",
-      description: "تم تحديث بياناتك الشخصية"
+      title: "✅ تم التحديث",
+      description: "تم حفظ التغييرات بنجاح"
     });
   };
 
-  // الانتظار حتى تصل البيانات (المستخدم موجود)
-  if (!user || profileLoading) {
+  // التحقق من وجود بيانات المستخدم
+  if (!user) {
+    return (
+      <Layout>
+        <div className="py-10 text-center text-muted-foreground">جارٍ تحميل الملف الشخصي...</div>
+      </Layout>
+    );
+  }
+  
+  // عرض حالة التحميل المتقدمة (سكيلتون) عند الحاجة
+  if (profileLoading) {
     return (
       <Layout>
         <div className="container mx-auto py-8 px-4 md:px-8" dir="rtl">
@@ -516,14 +525,16 @@ export default function ProfilePage() {
         </div>
 
         {/* مودال تعديل الملف الشخصي */}
-        <EditModal 
-          open={editModalOpen} 
-          onOpenChange={setEditModalOpen} 
-          editType={editType} 
-          user={user} 
-          onSave={handleSaveProfileChanges}
-          phonePrefix={phonePrefix}
-        />
+        {user && (
+          <EditModal 
+            open={editModalOpen} 
+            onOpenChange={setEditModalOpen} 
+            editType={editType} 
+            user={user} 
+            onSave={handleSaveProfileChanges}
+            phonePrefix={phonePrefix}
+          />
+        )}
       </div>
     </Layout>
   );
