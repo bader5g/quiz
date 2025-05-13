@@ -25,7 +25,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Medal,
+  Trophy
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -214,6 +216,41 @@ export default function GameLogPage() {
     if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
   };
+  
+  // حساب أعلى فريق في تسجيل النقاط عبر كل الجلسات
+  const getTopScoringTeam = () => {
+    if (!gameLog || !gameLog.games || gameLog.games.length === 0) {
+      return null;
+    }
+    
+    // تجميع نقاط كل فريق من كل الجلسات
+    const teamScores: Record<string, number> = {};
+    
+    // المرور على كل جلسة وجمع النقاط لكل فريق
+    gameLog.games.forEach(game => {
+      game.teams.forEach(team => {
+        // توحيد أسماء الفرق (تحويل الحروف إلى حروف صغيرة لتجنب فروق الكتابة)
+        const normalizedName = team.name.trim();
+        
+        if (!teamScores[normalizedName]) {
+          teamScores[normalizedName] = 0;
+        }
+        
+        teamScores[normalizedName] += team.score;
+      });
+    });
+    
+    // تحويل السجل إلى مصفوفة وترتيبها تنازليًا حسب النقاط
+    const sortedTeams = Object.entries(teamScores)
+      .map(([name, score]) => ({ name, score }))
+      .sort((a, b) => b.score - a.score);
+    
+    // إرجاع الفريق الأعلى في النقاط
+    return sortedTeams.length > 0 ? sortedTeams[0] : null;
+  };
+  
+  // الحصول على الفريق الأعلى نقاطًا
+  const topTeam = getTopScoringTeam();
   
   // مكون مودال تفاصيل جلسة اللعب
   const GameSessionDetailsModal = () => {
@@ -406,7 +443,7 @@ export default function GameLogPage() {
           <h1 className="text-2xl font-bold">سجل اللعبة: {gameLog.name}</h1>
         </div>
         
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* معلومات اللعبة */}
           <Card className="mb-2">
             <CardHeader className="pb-3">
@@ -434,8 +471,45 @@ export default function GameLogPage() {
             </CardContent>
           </Card>
           
+          {/* أعلى فريق بالنقاط */}
+          <Card className="mb-2 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg text-amber-900 flex items-center justify-between">
+                <div className="flex items-center">
+                  <Trophy className="h-5 w-5 text-amber-600 ml-2" />
+                  <span>أعلى فريق بالنقاط</span>
+                </div>
+                <Medal className="h-6 w-6 text-amber-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topTeam ? (
+                <div className="flex flex-col">
+                  <div className="text-2xl font-bold text-amber-900 mb-1">
+                    {topTeam.name}
+                  </div>
+                  <div className="flex items-center text-amber-700">
+                    <Award className="h-5 w-5 ml-1" />
+                    <span className="font-semibold">{topTeam.score}</span>
+                    <span className="mr-1">نقطة</span>
+                  </div>
+                  <div className="text-xs text-amber-600 mt-2">
+                    (مجموع النقاط عبر جميع الجلسات)
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4 text-amber-700">
+                  <div className="mb-2 text-amber-600">
+                    <Trophy className="h-10 w-10 mx-auto opacity-30" />
+                  </div>
+                  لا توجد بيانات نقاط كافية
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
           {/* جدول مرات اللعب */}
-          <Card>
+          <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>سجل مرات اللعب</span>
