@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/context/UserContext";
 import { 
   UserIcon, 
   Medal, 
@@ -71,6 +72,7 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { toast } = useToast();
+  const { user: contextUser, updateUser } = useUser();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
@@ -286,12 +288,16 @@ export default function ProfilePage() {
             // تحديث الصورة المختارة
             console.log(`Updating avatar with library image: ${selectedAvatar}`);
 
-            // تحديث الواجهة
+            // تحديث الواجهة والسياق
             if (user) {
+              const updatedData = { avatarUrl: selectedAvatar };
+              // تحديث بيانات المستخدم في الصفحة
               setUser({
                 ...user,
-                avatarUrl: selectedAvatar
+                ...updatedData
               });
+              // تحديث بيانات المستخدم في السياق العام
+              updateUser(updatedData);
             }
           } 
           // إذا رفع المستخدم صورة من جهازه
@@ -306,10 +312,14 @@ export default function ProfilePage() {
             // محاكاة رفع الصورة للتطوير
             if (user) {
               const mockAvatarUrl = `/uploads/avatars/${user.id}.png`;
+              const updatedData = { avatarUrl: mockAvatarUrl };
+              // تحديث بيانات المستخدم في الصفحة
               setUser({
                 ...user,
-                avatarUrl: mockAvatarUrl
+                ...updatedData
               });
+              // تحديث بيانات المستخدم في السياق العام
+              updateUser(updatedData);
             }
           }
         } 
