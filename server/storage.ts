@@ -72,6 +72,7 @@ export class MemStorage implements IStorage {
       logoUrl: "/assets/jaweb-logo.png",
       appName: "جاوب",
       faviconUrl: "/favicon.ico",
+      modalStyle: "default", // قيمة افتراضية لنمط المودال
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
-  DialogContent, 
   DialogHeader, 
   DialogTitle,
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import { ModalDialogContent } from '@/components/ui/modal-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -186,7 +186,7 @@ export function GameSettingsModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+      <ModalDialogContent className="w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center mb-4">
             {settings.modalTitle}
@@ -351,7 +351,7 @@ export function GameSettingsModal({
             )}
           </form>
         </Form>
-      </DialogContent>
+      </ModalDialogContent>
     </Dialog>
   );
 }

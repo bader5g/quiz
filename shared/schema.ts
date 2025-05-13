@@ -56,6 +56,7 @@ export const siteSettings = pgTable("site_settings", {
   logoUrl: text("logo_url").default("/assets/jaweb-logo.png"),
   appName: text("app_name").notNull().default("جاوب"),
   faviconUrl: text("favicon_url").default("/favicon.ico"),
+  modalStyle: text("modal_style").notNull().default("default"), // تحكم بشكل المودالات
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
   updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
 });
