@@ -374,13 +374,13 @@ export default function ProfilePage() {
         case 'name': 
           return 'تعديل الاسم';
         case 'email': 
-          return 'تعديل البريد الإلكتروني';
+          return 'البريد الإلكتروني';
         case 'phone': 
           return 'تعديل رقم الهاتف';
         case 'password': 
           return 'تعديل كلمة المرور';
         case 'avatar': 
-          return 'تغيير الصورة الشخصية';
+          return 'الصورة الشخصية';
         default: 
           return 'تعديل الملف الشخصي';
       }
@@ -648,7 +648,7 @@ export default function ProfilePage() {
                           }}
                         >
                           <Pencil className="ml-1.5 h-3 w-3" />
-                          تغيير الصورة الشخصية
+                          الصورة الشخصية
                         </Button>
                         
                         <Button 
@@ -672,7 +672,7 @@ export default function ProfilePage() {
                           }}
                         >
                           <Mail className="ml-1.5 h-3 w-3" />
-                          تعديل البريد الإلكتروني
+                          البريد الإلكتروني
                         </Button>
                         
                         <Button 
