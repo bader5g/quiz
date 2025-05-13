@@ -290,46 +290,39 @@ export default function MyGamesPage() {
               </CardHeader>
               
               <CardContent className="p-4 pt-2">
-                <div className="flex flex-wrap gap-1 mb-3 mt-1">
+                <div className="grid grid-cols-2 gap-2 mb-3 mt-1">
                   {game.categories.map((category) => (
-                    <Badge key={category.id} className="px-2 py-0.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-full border-0">
+                    <Badge key={category.id} className="flex items-center px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-full border-0">
                       <span className="mr-1">{category.icon}</span>
                       {category.name}
                     </Badge>
                   ))}
                 </div>
-                
-                {/* معلومات إضافية عن اللعبة */}
-                <div className="mt-3 flex justify-between text-xs text-gray-500">
+
+                <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
                   <span className="flex items-center">
-                    <Users className="h-3.5 w-3.5 mr-1" />
+                    <Users className="h-4 w-4 mr-1" />
                     {game.teamsCount} فرق
-                  </span>
-                  <span className="flex items-center">
-                    <Clock className="h-3.5 w-3.5 mr-1" />
-                    {game.answerTimeFirst}/{game.answerTimeSecond} ث
                   </span>
                 </div>
               </CardContent>
               
               <CardFooter className="flex justify-between p-4 pt-0">
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
-                  className="text-gray-700 border-gray-200 hover:bg-gray-100"
+                  className="text-gray-600 hover:bg-gray-100 rounded-lg"
                   onClick={() => handleViewGameLog(game.id)}
                 >
-                  <ClipboardIcon className="h-4 w-4 mr-1" />
-                  سجل اللعبة
+                  🗂️ سجل اللعبة
                 </Button>
                 
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-500 hover:bg-green-600 text-white rounded-lg"
                   onClick={() => handleReplayGame(game)}
                 >
-                  <RefreshCwIcon className="h-4 w-4 mr-1" />
-                  إعادة اللعب
+                  ♻️ إعادة اللعب
                 </Button>
               </CardFooter>
             </Card>
