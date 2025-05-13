@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useUser } from '@/context/UserContext';
+import { CategorySelectionModal } from '@/components/game/CategorySelectionModal';
+import { GameSettingsModal } from '@/components/game/GameSettingsModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface CategoryChild {
   id: number;
@@ -19,16 +23,42 @@ interface CategoryParent {
   children: CategoryChild[];
 }
 
+interface GameSettings {
+  minCategories: number;
+  maxCategories: number;
+  minTeams: number;
+  maxTeams: number;
+  maxGameNameLength: number;
+  maxTeamNameLength: number;
+  defaultFirstAnswerTime: number;
+  defaultSecondAnswerTime: number;
+  modalTitle: string;
+  pageDescription: string;
+}
+
 export default function Home() {
+  const { isAuthenticated } = useUser();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+  
+  // State for data
   const [categories, setCategories] = useState<CategoryParent[]>([]);
+  const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [, navigate] = useLocation();
 
+  // State for UI
+  const [selectedCategories, setSelectedCategories] = useState<CategoryChild[]>([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showGameSettingsModal, setShowGameSettingsModal] = useState(false);
+
+  // Fetch categories and game settings on load
   useEffect(() => {
     fetchCategories();
+    fetchGameSettings();
   }, []);
 
+  // Fetch categories from API
   const fetchCategories = async () => {
     setLoading(true);
     setError(null);
@@ -44,28 +74,110 @@ export default function Home() {
     }
   };
 
+  // Fetch game settings from API
+  const fetchGameSettings = async () => {
+    try {
+      const res = await axios.get('/api/game-settings');
+      setGameSettings(res.data);
+    } catch (err) {
+      console.error("فشل تحميل إعدادات اللعبة", err);
+      // Use default settings if API fails
+      setGameSettings({
+        minCategories: 4,
+        maxCategories: 8,
+        minTeams: 2,
+        maxTeams: 4,
+        maxGameNameLength: 30,
+        maxTeamNameLength: 20,
+        defaultFirstAnswerTime: 30,
+        defaultSecondAnswerTime: 15,
+        modalTitle: "إعدادات اللعبة",
+        pageDescription: "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!"
+      });
+    }
+  };
+
+  // Handle category selection
+  const handleCategoryClick = (category: CategoryChild) => {
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      toast({
+        title: "تسجيل الدخول مطلوب",
+        description: "يرجى تسجيل الدخول لاختيار الفئات وبدء اللعبة",
+        variant: "default",
+      });
+      navigate('/login');
+      return;
+    }
+
+    // Check if category is already selected
+    const alreadySelected = selectedCategories.some(cat => cat.id === category.id);
+    let newSelectedCategories: CategoryChild[];
+    
+    if (alreadySelected) {
+      // Remove if already selected
+      newSelectedCategories = selectedCategories.filter(cat => cat.id !== category.id);
+    } else {
+      // Check if max categories limit reached
+      if (selectedCategories.length >= (gameSettings?.maxCategories || 8)) {
+        toast({
+          title: "الحد الأقصى للفئات",
+          description: `لا يمكنك اختيار أكثر من ${gameSettings?.maxCategories || 8} فئات`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Add new category
+      newSelectedCategories = [...selectedCategories, category];
+    }
+    
+    // Update selected categories
+    setSelectedCategories(newSelectedCategories);
+    
+    // Show modal after selection/deselection
+    setShowCategoryModal(true);
+  };
+
+  // Start the game setup process
+  const handleStartGame = () => {
+    setShowCategoryModal(false);
+    setShowGameSettingsModal(true);
+  };
+
+  // Render page description dynamically
+  const pageDescription = gameSettings?.pageDescription || "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!";
+
   return (
     <div dir="rtl" className="min-h-screen bg-sky-50 p-6 relative">
       {/* أزرار التسجيل */}
       <div className="absolute top-4 left-6 flex gap-4">
-        <button 
-          onClick={() => navigate('/login')} 
-          className="text-blue-600 hover:text-blue-800 transition-colors hover:underline font-medium"
-        >
-          تسجيل الدخول
-        </button>
-        <button 
-          onClick={() => navigate('/register')} 
-          className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1 rounded-full font-medium"
-        >
-          إنشاء حساب
-        </button>
+        {isAuthenticated ? (
+          <div className="text-blue-600 font-medium">
+            مرحباً بك
+          </div>
+        ) : (
+          <>
+            <button 
+              onClick={() => navigate('/login')} 
+              className="text-blue-600 hover:text-blue-800 transition-colors hover:underline font-medium"
+            >
+              تسجيل الدخول
+            </button>
+            <button 
+              onClick={() => navigate('/register')} 
+              className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1 rounded-full font-medium"
+            >
+              إنشاء حساب
+            </button>
+          </>
+        )}
       </div>
 
       {/* الشعار والنص */}
       <div className="text-center pt-8 md:pt-12 pb-8">
         <h1 className="text-6xl md:text-7xl font-extrabold text-blue-700 mb-3 mt-10">جاوب</h1>
-        <p className="text-gray-600 text-lg md:text-xl mb-10 max-w-2xl mx-auto">اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!</p>
+        <p className="text-gray-600 text-lg md:text-xl mb-10 max-w-2xl mx-auto">{pageDescription}</p>
       </div>
 
       {/* عرض الفئات */}
@@ -110,16 +222,26 @@ export default function Home() {
                   <span>{parent.name}</span>
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                  {parent.children.map((child) => (
-                    <div 
-                      key={child.id} 
-                      className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all duration-200 hover:bg-blue-50 flex flex-col items-center"
-                      onClick={() => navigate(`/categories/${child.id}`)}
-                    >
-                      <div className="text-3xl mb-3 transition-transform category-icon">{child.icon}</div>
-                      <div className="text-gray-800 font-medium text-center">{child.name}</div>
-                    </div>
-                  ))}
+                  {parent.children.map((child) => {
+                    const isSelected = selectedCategories.some(cat => cat.id === child.id);
+                    return (
+                      <div 
+                        key={child.id} 
+                        className={`p-5 rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all duration-200 flex flex-col items-center category-item ${
+                          isSelected 
+                            ? 'bg-blue-100 border-2 border-blue-500' 
+                            : 'bg-white hover:bg-blue-50'
+                        }`}
+                        onClick={() => handleCategoryClick(child)}
+                      >
+                        <div className="text-3xl mb-3 category-icon">{child.icon}</div>
+                        <div className="text-gray-800 font-medium text-center">{child.name}</div>
+                        {isSelected && (
+                          <div className="mt-2 text-blue-600 text-sm font-bold">✓ تم الاختيار</div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -130,13 +252,47 @@ export default function Home() {
       {/* زر بدء اللعبة */}
       <div className="text-center py-10 pb-14">
         <Button
-          onClick={() => navigate('/categories')}
+          onClick={() => {
+            if (!isAuthenticated) {
+              toast({
+                title: "تسجيل الدخول مطلوب",
+                description: "يرجى تسجيل الدخول لاختيار الفئات وبدء اللعبة",
+                variant: "default",
+              });
+              navigate('/login');
+            } else if (selectedCategories.length > 0) {
+              setShowCategoryModal(true);
+            } else {
+              toast({
+                title: "اختيار الفئات",
+                description: "يرجى اختيار الفئات التي ترغب باللعب بها أولاً",
+                variant: "default",
+              });
+            }
+          }}
           className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-6 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
           size="lg"
         >
-          ابدأ اللعب
+          {selectedCategories.length > 0 ? 'متابعة اللعب' : 'ابدأ اللعب'}
         </Button>
       </div>
+
+      {/* Category Selection Modal */}
+      <CategorySelectionModal
+        open={showCategoryModal}
+        onOpenChange={setShowCategoryModal}
+        selectedCategories={selectedCategories}
+        onStartGame={handleStartGame}
+        minCategories={gameSettings?.minCategories || 4}
+        maxCategories={gameSettings?.maxCategories || 8}
+      />
+
+      {/* Game Settings Modal */}
+      <GameSettingsModal
+        open={showGameSettingsModal}
+        onOpenChange={setShowGameSettingsModal}
+        selectedCategories={selectedCategories}
+      />
     </div>
   );
 }
