@@ -28,7 +28,10 @@ import {
   Image,
   Upload,
   Check,
-  X
+  X,
+  Pencil,
+  CheckCircle2,
+  CreditCard as CreditCardIcon
 } from "lucide-react";
 
 interface UserLevel {
@@ -197,6 +200,30 @@ export default function ProfilePage() {
     const [formValue, setFormValue] = useState('');
     const [confirmValue, setConfirmValue] = useState('');
     const [formError, setFormError] = useState('');
+    
+    // تعبئة قيم النموذج تلقائيًا عند فتح المودال
+    useEffect(() => {
+      if (editModalOpen && user) {
+        switch (editType) {
+          case 'name':
+            setFormValue(user.name || '');
+            break;
+          case 'email':
+            setFormValue(user.email || '');
+            break;
+          case 'phone':
+            setFormValue(user.phone || '');
+            break;
+          case 'password':
+            setFormValue('');
+            setConfirmValue('');
+            break;
+          case 'avatar':
+            setSelectedAvatar(user.avatarUrl || defaultAvatars[0]);
+            break;
+        }
+      }
+    }, [editModalOpen, editType, user]);
     
     // إرسال التحديثات إلى الخادم
     const handleSubmit = async () => {
@@ -388,7 +415,6 @@ export default function ProfilePage() {
                   placeholder="أدخل اسمك" 
                   value={formValue}
                   onChange={(e) => setFormValue(e.target.value)}
-                  defaultValue={user?.name}
                 />
               </div>
             </div>
@@ -405,7 +431,6 @@ export default function ProfilePage() {
                   placeholder="أدخل بريدك الإلكتروني" 
                   value={formValue}
                   onChange={(e) => setFormValue(e.target.value)}
-                  defaultValue={user?.email}
                 />
               </div>
             </div>
@@ -421,7 +446,6 @@ export default function ProfilePage() {
                   placeholder="أدخل رقم هاتفك" 
                   value={formValue}
                   onChange={(e) => setFormValue(e.target.value)}
-                  defaultValue={user?.phone}
                 />
               </div>
             </div>
@@ -550,15 +574,36 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center">
-                  <Avatar className="h-24 w-24 mb-4">
-                    <AvatarImage 
-                      src={user.avatarUrl || defaultAvatars[0]} 
-                      alt={user.name || user.username} 
-                    />
-                    <AvatarFallback>
-                      <UserIcon className="h-12 w-12 text-gray-400" />
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative group mb-4">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage 
+                        src={user.avatarUrl || defaultAvatars[0]} 
+                        alt={user.name || user.username} 
+                      />
+                      <AvatarFallback>
+                        <UserIcon className="h-12 w-12 text-gray-400" />
+                      </AvatarFallback>
+                    </Avatar>
+                    {isOwner && (
+                      <div 
+                        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={() => {
+                          setEditType('avatar');
+                          setEditModalOpen(true);
+                        }}
+                      >
+                        <div className="text-white flex flex-col items-center">
+                          <Pencil className="h-5 w-5" />
+                          <span className="text-xs mt-1">تغيير</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 right-0">
+                      <Badge className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center p-0" variant="secondary">
+                        <Check className="h-3 w-3 text-white" />
+                      </Badge>
+                    </div>
+                  </div>
                   
                   <h2 className="text-xl font-bold">{user.name || user.username}</h2>
                   
@@ -739,17 +784,29 @@ export default function ProfilePage() {
                   <h3 className="text-sm font-semibold mb-3 text-gray-600">الكروت المستخدمة:</h3>
                   <div className="flex items-center justify-center bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-5">
                     <div className="text-center mx-8">
-                      <div className="text-3xl font-bold text-blue-500 mb-2">
-                        {userCards?.usedFreeCards || 0}
+                      <div className="flex items-center justify-center mb-2">
+                        <span className="text-3xl font-bold text-blue-400" style={{ fontStyle: 'italic' }}>
+                          {userCards?.usedFreeCards || 0}
+                        </span>
+                        <CheckCircle2 className="h-5 w-5 text-blue-400 ml-1" />
                       </div>
-                      <div className="text-sm text-blue-600">كروت مجانية</div>
+                      <div className="text-sm text-blue-500 flex items-center justify-center">
+                        <Gift className="h-4 w-4 ml-1" />
+                        كروت مجانية
+                      </div>
                     </div>
                     
                     <div className="text-center mx-8">
-                      <div className="text-3xl font-bold text-indigo-500 mb-2">
-                        {userCards?.usedPaidCards || 0}
+                      <div className="flex items-center justify-center mb-2">
+                        <span className="text-3xl font-bold text-indigo-400" style={{ fontStyle: 'italic' }}>
+                          {userCards?.usedPaidCards || 0}
+                        </span>
+                        <CheckCircle2 className="h-5 w-5 text-indigo-400 ml-1" />
                       </div>
-                      <div className="text-sm text-indigo-600">كروت مدفوعة</div>
+                      <div className="text-sm text-indigo-500 flex items-center justify-center">
+                        <CreditCardIcon className="h-4 w-4 ml-1" />
+                        كروت مدفوعة
+                      </div>
                     </div>
                   </div>
                   
