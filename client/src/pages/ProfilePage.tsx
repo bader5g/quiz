@@ -647,7 +647,7 @@ export default function ProfilePage() {
                             setEditModalOpen(true);
                           }}
                         >
-                          <Image className="ml-1.5 h-3 w-3" />
+                          <Pencil className="ml-1.5 h-3 w-3" />
                           تغيير الصورة الشخصية
                         </Button>
                         
