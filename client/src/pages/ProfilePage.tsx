@@ -371,6 +371,7 @@ export default function ProfilePage() {
             toast({
               title: "تم التحديث بنجاح",
               description: "تم حفظ بياناتك الجديدة",
+              variant: "default",
             });
             
             // إعادة تعيين حالة الإرسال
@@ -456,6 +457,7 @@ export default function ProfilePage() {
                 <Input 
                   id="name" 
                   placeholder="أدخل اسمك" 
+                  autoComplete="off"
                   value={formValue}
                   onChange={(e) => setFormValue(e.target.value)}
                 />
@@ -534,6 +536,7 @@ export default function ProfilePage() {
                   id="password" 
                   type="password" 
                   placeholder="أدخل كلمة المرور الجديدة" 
+                  autoComplete="new-password"
                   value={formValue}
                   onChange={(e) => setFormValue(e.target.value)}
                 />
@@ -545,6 +548,7 @@ export default function ProfilePage() {
                   id="confirmPassword" 
                   type="password" 
                   placeholder="أعد إدخال كلمة المرور" 
+                  autoComplete="new-password"
                   value={confirmValue}
                   onChange={(e) => setConfirmValue(e.target.value)}
                 />
