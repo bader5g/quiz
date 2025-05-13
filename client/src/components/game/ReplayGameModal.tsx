@@ -64,11 +64,6 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
 
   // إنشاء سكيما للتحقق من صحة النموذج
   const formSchema = z.object({
-    gameName: z.string()
-      .min(1, { message: "يرجى إدخال اسم للعبة" })
-      .max(gameSettings?.maxGameNameLength || 45, { 
-        message: `يجب أن لا يتجاوز اسم اللعبة ${gameSettings?.maxGameNameLength || 45} حرفاً` 
-      }),
     teamNames: z.array(
       z.string()
         .min(1, { message: "يرجى إدخال اسم للفريق" })
@@ -84,7 +79,6 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      gameName: `${game.name} (إعادة)`,
       teamNames: Array(game.teamsCount).fill("").map((_, idx) => `الفريق ${idx + 1}`),
       answerTimeFirst: game.answerTimeFirst.toString(),
       answerTimeSecond: game.answerTimeSecond.toString(),
@@ -97,11 +91,11 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
     setFormError(null);
     
     try {
-      // إنشاء بيانات اللعبة الجديدة
+      // إنشاء بيانات اللعبة الجديدة مع توليد اسم اللعبة تلقائيًا
       const replayData = {
         originalGameId: game.id,
-        gameName: values.gameName,
-        teamNames: values.teamNames,
+        gameName: `${game.name} (إعادة)`, // هذا سيتم إنشاؤه تلقائيًا وليس من النموذج
+        ...values, // نستخدم باقي قيم النموذج كما هي
         answerTimeFirst: parseInt(values.answerTimeFirst),
         answerTimeSecond: parseInt(values.answerTimeSecond),
       };
@@ -140,20 +134,15 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" dir="rtl" aria-describedby="replay-game-description">
-        <div id="replay-game-description" className="sr-only">
-          إعادة تشغيل اللعبة بنفس الفئات المختارة
-        </div>
+      <DialogContent className="w-full max-w-sm sm:rounded-lg p-4" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">
-            إعادة اللعب
-          </DialogTitle>
+          <DialogTitle className="text-xl font-bold text-center">إعادة اللعب</DialogTitle>
           <DialogDescription className="text-center">
-            قم بإعداد معلومات اللعبة الجديدة باستخدام نفس الفئات
+            أدخل أسماء الفرق فقط، وسيتم استخدام نفس الفئات والأسئلة السابقة.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap gap-1 my-3 justify-center">
+        <div className="flex flex-wrap justify-center gap-2 my-3">
           {game.categories.map((category) => (
             <Badge key={category.id} className="bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-full border-0">
               <span className="mr-1">{category.icon}</span>
@@ -171,24 +160,6 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* اسم اللعبة */}
-            <FormField
-              control={form.control}
-              name="gameName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>اسم اللعبة</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="أدخل اسماً للعبة" 
-                      maxLength={gameSettings?.maxGameNameLength || 45} 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* أسماء الفرق */}
             <div className="space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
@@ -296,19 +267,18 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
               />
             </div>
 
-            <DialogFooter className="flex justify-between">
+            <DialogFooter className="flex justify-between mt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="mr-2"
               >
                 إلغاء
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {loading ? 'جاري الإنشاء...' : 'بدء اللعبة'}
               </Button>
