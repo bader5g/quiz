@@ -1,20 +1,20 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
-import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useUser } from '@/context/UserContext';
-import { GameSettingsModal } from '@/components/game/GameSettingsModal';
-import { CategorySidebar } from '@/components/game/CategorySidebar';
-import { useToast } from '@/hooks/use-toast';
-import Layout from '@/components/layout/Layout';
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, X } from "lucide-react";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { useUser } from "@/context/UserContext";
+import { GameSettingsModal } from "@/components/game/GameSettingsModal";
+import { useToast } from "@/hooks/use-toast";
+import Layout from "@/components/layout/Layout";
 
 interface CategoryChild {
   id: number;
   name: string;
   icon: string;
+  availableQuestions: number;
 }
 
 interface CategoryParent {
@@ -35,54 +35,47 @@ interface GameSettings {
   defaultSecondAnswerTime: number;
   modalTitle: string;
   pageDescription: string;
+  minQuestionsPerCategory: number;
 }
 
 export default function Home() {
-  const { user, isAuthenticated, logout } = useUser();
+  const { isAuthenticated } = useUser();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  
-  // State for data
+
   const [categories, setCategories] = useState<CategoryParent[]>([]);
   const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // State for UI
-  const [selectedCategories, setSelectedCategories] = useState<CategoryChild[]>([]);
-  const [showCategorySidebar, setShowCategorySidebar] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<CategoryChild[]>(
+    [],
+  );
   const [showGameSettingsModal, setShowGameSettingsModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch categories and game settings on load
   useEffect(() => {
     fetchCategories();
     fetchGameSettings();
   }, []);
 
-  // Fetch categories from API
   const fetchCategories = async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      const res = await axios.get('/api/categories-with-children');
+      const res = await axios.get("/api/categories-with-children");
       setCategories(res.data);
-      setLoading(false);
-    } catch (err) {
-      console.error("فشل تحميل الفئات", err);
-      setError("حدث خطأ أثناء تحميل الفئات، يرجى المحاولة مرة أخرى");
+    } catch {
+      setError("حدث خطأ أثناء تحميل الفئات");
+    } finally {
       setLoading(false);
     }
   };
 
-  // Fetch game settings from API
   const fetchGameSettings = async () => {
     try {
-      const res = await axios.get('/api/game-settings');
+      const res = await axios.get("/api/game-settings");
       setGameSettings(res.data);
-    } catch (err) {
-      console.error("فشل تحميل إعدادات اللعبة", err);
-      // Use default settings if API fails
+    } catch {
       setGameSettings({
         minCategories: 4,
         maxCategories: 8,
@@ -93,166 +86,190 @@ export default function Home() {
         defaultFirstAnswerTime: 30,
         defaultSecondAnswerTime: 15,
         modalTitle: "إعدادات اللعبة",
-        pageDescription: "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!"
+        pageDescription: "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!",
+        minQuestionsPerCategory: 6,
       });
     }
   };
 
-  // Handle category selection
   const handleCategoryClick = (category: CategoryChild) => {
     if (!isAuthenticated) {
-      // Redirect to login if not authenticated
       toast({
         title: "تسجيل الدخول مطلوب",
-        description: "يرجى تسجيل الدخول لاختيار الفئات وبدء اللعبة",
-        variant: "default",
+        description: "يرجى تسجيل الدخول لاختيار الفئات",
       });
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
-    // Check if category is already selected
-    const alreadySelected = selectedCategories.some(cat => cat.id === category.id);
-    let newSelectedCategories: CategoryChild[];
-    
+    const alreadySelected = selectedCategories.some(
+      (cat) => cat.id === category.id,
+    );
     if (alreadySelected) {
-      // Remove if already selected
-      newSelectedCategories = selectedCategories.filter(cat => cat.id !== category.id);
+      setSelectedCategories((prev) =>
+        prev.filter((cat) => cat.id !== category.id),
+      );
     } else {
-      // Check if max categories limit reached
       if (selectedCategories.length >= (gameSettings?.maxCategories || 8)) {
-        toast({
-          title: "الحد الأقصى للفئات",
-          description: `لا يمكنك اختيار أكثر من ${gameSettings?.maxCategories || 8} فئات`,
-          variant: "destructive",
-        });
+        toast({ title: "الحد الأقصى للفئات" });
         return;
       }
-      
-      // Add new category
-      newSelectedCategories = [...selectedCategories, category];
+      setSelectedCategories((prev) => [...prev, category]);
     }
-    
-    // Update selected categories
-    setSelectedCategories(newSelectedCategories);
-    
-    // Show sidebar after selection/deselection
-    setShowCategorySidebar(true);
   };
 
-  // Start the game setup process
   const handleStartGame = async () => {
-    // If user is authenticated, check if they have enough cards
-    if (isAuthenticated) {
-      try {
-        // Get user cards
-        const response = await axios.get('/api/user-cards');
-        const userCards = response.data;
-        const totalAvailableCards = userCards.freeCards + userCards.paidCards;
-        
-        // Check if user has enough cards
-        if (totalAvailableCards < selectedCategories.length) {
-          toast({
-            title: "كروت غير كافية",
-            description: `لديك ${totalAvailableCards} كروت فقط، بينما اخترت ${selectedCategories.length} فئات. الرجاء اختيار عدد أقل من الفئات أو الحصول على المزيد من الكروت.`,
-            variant: "destructive",
-          });
-          setShowCategorySidebar(false);
-          return;
-        }
-      } catch (error) {
-        console.error('Error fetching user cards:', error);
+    try {
+      const res = await axios.get("/api/user-cards");
+      const { freeCards, paidCards } = res.data;
+      const total = freeCards + paidCards;
+      if (total < selectedCategories.length) {
+        toast({ title: "كروت غير كافية" });
+        return;
       }
+      setShowGameSettingsModal(true);
+    } catch (err) {
+      console.error(err);
     }
-    
-    // If all good, proceed to game settings
-    setShowCategorySidebar(false);
-    setShowGameSettingsModal(true);
   };
 
-  // Render page description dynamically
-  const pageDescription = gameSettings?.pageDescription || "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!";
-
-  // Content inside Layout
   return (
     <Layout>
       <div className="p-6 relative">
-        {/* الشعار والنص */}
         <div className="text-center pt-6 md:pt-8 pb-8">
-          <h1 className="text-6xl md:text-7xl font-extrabold text-blue-700 mb-3 mt-4">جاوب</h1>
-          <p className="text-gray-600 text-lg md:text-xl mb-8 max-w-2xl mx-auto">{pageDescription}</p>
+          <h1 className="text-6xl md:text-7xl font-extrabold text-blue-700 mb-3 mt-4">
+            جاوب
+          </h1>
+          <p className="text-gray-600 text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+            {gameSettings?.pageDescription}
+          </p>
         </div>
 
-        {/* عرض الفئات */}
+        <div className="max-w-md mx-auto mb-10">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ابحث عن فئة..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          />
+        </div>
+
+        {selectedCategories.length > 0 && (
+          <div className="sticky top-4 z-20 w-full md:w-1/5 md:ml-auto md:mr-0 bg-white/80 backdrop-blur-lg rounded-xl shadow-xl p-4 mb-8 transition-all duration-300 animate-fade-in">
+            <div className="flex items-center justify-between mb-3 border-b pb-2">
+              <h3 className="text-md font-bold text-blue-700">
+                الفئات المختارة
+              </h3>
+              <button
+                onClick={() => setSelectedCategories([])}
+                className="text-red-500 hover:text-red-700 text-sm"
+              >
+                ✖
+              </button>
+            </div>
+            <ul className="space-y-2 max-h-48 overflow-y-auto">
+              {selectedCategories.map((cat) => (
+                <li
+                  key={cat.id}
+                  className="flex justify-between items-center bg-gray-50 border border-gray-200 rounded px-2 py-1"
+                >
+                  <span className="text-sm flex items-center gap-1 truncate max-w-[80%]">
+                    {cat.icon} {cat.name}
+                  </span>
+                  <button
+                    onClick={() => handleCategoryClick(cat)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <X size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <Button
+              onClick={handleStartGame}
+              disabled={
+                selectedCategories.length < (gameSettings?.minCategories || 4)
+              }
+              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-full transition-all transform hover:scale-105 hover:shadow-lg"
+            >
+              ابدأ اللعب 🚀
+            </Button>
+          </div>
+        )}
+
         <div className="flex-grow">
           {loading ? (
-            <div className="space-y-10 max-w-6xl mx-auto">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="mb-8">
-                  <div className="flex items-center justify-center gap-2 mb-5">
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <Skeleton className="h-8 w-40" />
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                    {[1, 2, 3, 4].map((j) => (
-                      <Skeleton key={j} className="h-28 w-full rounded-xl" />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Skeleton className="h-28" />
           ) : error ? (
-            <div className="text-center py-10">
-              <Alert variant="destructive" className="max-w-md mx-auto">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>خطأ</AlertTitle>
-                <AlertDescription>
-                  {error}
-                  <div className="mt-4">
-                    <Button variant="outline" onClick={fetchCategories}>
-                      إعادة المحاولة
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            </div>
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertTitle>{error}</AlertTitle>
+            </Alert>
           ) : (
             <div className="space-y-12 max-w-6xl mx-auto">
-              {categories.map((parent) => (
-                <div key={parent.id} className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center justify-center gap-2">
-                    <span className="text-3xl">{parent.icon}</span>
-                    <span>{parent.name}</span>
-                  </h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                    {parent.children.map((child) => {
-                      const isSelected = selectedCategories.some(cat => cat.id === child.id);
-                      return (
-                        <div 
-                          key={child.id} 
-                          className={`p-5 rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all duration-200 flex flex-col items-center category-item ${
-                            isSelected 
-                              ? 'bg-blue-100 border-2 border-blue-500' 
-                              : 'bg-white hover:bg-blue-50'
-                          }`}
-                          onClick={() => handleCategoryClick(child)}
-                        >
-                          <div className="text-3xl mb-3 category-icon">{child.icon}</div>
-                          <div className="text-gray-800 font-medium text-center">{child.name}</div>
-                          {isSelected && (
-                            <div className="mt-2 text-blue-600 text-sm font-bold">✓ تم الاختيار</div>
-                          )}
-                        </div>
-                      );
-                    })}
+              {categories.map((parent) => {
+                const filteredChildren = parent.children.filter((child) =>
+                  child.name.toLowerCase().includes(searchTerm.toLowerCase()),
+                );
+
+                if (filteredChildren.length === 0) return null;
+
+                return (
+                  <div key={parent.id} className="mb-8">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center justify-center gap-2">
+                      <span className="text-3xl">{parent.icon}</span>
+                      <span>{parent.name}</span>
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                      {filteredChildren.map((child) => {
+                        const isSelected = selectedCategories.some(
+                          (cat) => cat.id === child.id,
+                        );
+                        const isDisabled =
+                          child.availableQuestions <
+                          (gameSettings?.minQuestionsPerCategory || 6);
+
+                        return (
+                          <div
+                            key={child.id}
+                            className={`p-5 rounded-xl shadow-md flex flex-col items-center transition-all duration-200 ${
+                              isDisabled
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                : isSelected
+                                  ? "bg-blue-100 border-2 border-blue-500"
+                                  : "bg-white hover:bg-blue-50 cursor-pointer"
+                            }`}
+                            onClick={() =>
+                              !isDisabled && handleCategoryClick(child)
+                            }
+                          >
+                            <div className="text-3xl mb-3">{child.icon}</div>
+                            <div className="text-center font-medium">
+                              {child.name}
+                            </div>
+                            {isDisabled && (
+                              <div className="mt-1 text-xs text-gray-500">
+                                غير متوفرة حاليًا
+                              </div>
+                            )}
+                            {isSelected && !isDisabled && (
+                              <div className="mt-1 text-sm text-blue-600 font-bold">
+                                ✓ تم الاختيار
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* زر بدء اللعبة */}
+        {/* زر بدء اللعبة الرئيسي */}
         <div className="text-center py-10 pb-14">
           <Button
             onClick={() => {
@@ -260,37 +277,33 @@ export default function Home() {
                 toast({
                   title: "تسجيل الدخول مطلوب",
                   description: "يرجى تسجيل الدخول لاختيار الفئات وبدء اللعبة",
-                  variant: "default",
                 });
                 navigate('/login');
+              } else if (selectedCategories.length >= (gameSettings?.minCategories || 4)) {
+                handleStartGame();
               } else if (selectedCategories.length > 0) {
-                setShowCategorySidebar(true);
+                toast({
+                  title: "عدد الفئات غير كافٍ",
+                  description: `يجب اختيار ${gameSettings?.minCategories || 4} فئات على الأقل`,
+                });
               } else {
                 toast({
                   title: "اختيار الفئات",
                   description: "يرجى اختيار الفئات التي ترغب باللعب بها أولاً",
-                  variant: "default",
                 });
               }
             }}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-6 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-6 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
             size="lg"
           >
-            {selectedCategories.length > 0 ? 'متابعة اللعب' : 'ابدأ اللعب'}
+            {selectedCategories.length >= (gameSettings?.minCategories || 4) 
+              ? 'ابدأ اللعب الآن 🚀' 
+              : selectedCategories.length > 0 
+                ? `اختر ${(gameSettings?.minCategories || 4) - selectedCategories.length} فئات أخرى`
+                : 'ابدأ اللعب'}
           </Button>
         </div>
 
-        {/* Category Sidebar */}
-        <CategorySidebar
-          selectedCategories={selectedCategories}
-          onRemoveCategory={(category) => handleCategoryClick(category)}
-          onStartGame={handleStartGame}
-          minCategories={gameSettings?.minCategories || 4}
-          maxCategories={gameSettings?.maxCategories || 8}
-          visible={showCategorySidebar}
-        />
-
-        {/* Game Settings Modal */}
         <GameSettingsModal
           open={showGameSettingsModal}
           onOpenChange={setShowGameSettingsModal}
