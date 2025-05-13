@@ -1,0 +1,103 @@
+التعديلات التي يجب تطبيقها:
+
+إنشاء مكون جديد:
+
+أنشئ الملف التالي:
+
+swift
+Copy
+Edit
+client/src/components/profile/EditModal.tsx
+يحتوي على منطق عرض وتعديل الحقول (الاسم، البريد) باستخدام useRef بدل useState لتقليل إعادة الرسم.
+
+تحديث الصفحة الحالية:
+
+افتح الملف:
+
+bash
+Copy
+Edit
+client/src/pages/ProfilePage.tsx
+احذف المكون الداخلي للمودال تمامًا.
+
+استبدله باستدعاء EditModal كمكون خارجي كما هو موضح في الكود أدناه.
+
+الكود النهائي لملف ProfilePage.tsx:
+
+tsx
+Copy
+Edit
+// ✅ تم نقل منطق التعديل إلى مكون خارجي مستقل
+
+import { useEffect, useState } from "react";
+import Layout from "@/components/layout/Layout";
+import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Pencil, UserIcon } from "lucide-react";
+import EditModal from "@/components/profile/EditModal";
+
+interface UserProfile {
+  id: number;
+  username: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  avatarUrl?: string;
+}
+
+export default function ProfilePage() {
+  const { toast } = useToast();
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editType, setEditType] = useState<'name' | 'email'>('name');
+
+  const { data: userProfile } = useQuery<UserProfile, Error>({
+    queryKey: ['/api/user-profile'],
+    queryFn: getQueryFn({ on401: 'throw' })
+  });
+
+  useEffect(() => {
+    if (userProfile) setUser(userProfile);
+  }, [userProfile]);
+
+  return (
+    <Layout>
+      <div className="container mx-auto py-10" dir="rtl">
+        <div className="max-w-md mx-auto text-center">
+          <Avatar className="h-24 w-24 mx-auto">
+            <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+            <AvatarFallback><UserIcon className="w-6 h-6" /></AvatarFallback>
+          </Avatar>
+          <h2 className="text-2xl font-bold mt-4">{user?.name}</h2>
+          <p className="text-muted-foreground text-sm">{user?.email}</p>
+          <div className="mt-4 space-y-2">
+            <Button onClick={() => {
+              setEditType('name');
+              setEditModalOpen(true);
+            }}>تعديل الاسم</Button>
+            <Button onClick={() => {
+              setEditType('email');
+              setEditModalOpen(true);
+            }}>تعديل البريد</Button>
+          </div>
+        </div>
+      </div>
+
+      <EditModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        editType={editType}
+        user={user}
+        onSave={(updatedValue) => {
+          if (!user) return;
+          setUser({ ...user, [editType]: updatedValue });
+          toast({ title: "تم التحديث بنجاح" });
+        }}
+      />
+    </Layout>
+  );
+}

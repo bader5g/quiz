@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/UserContext";
-import { EditModal } from "@/components/profile/EditModal";
+import EditModal from "@/components/profile/EditModal";
 import { 
   UserIcon, 
   Medal, 
