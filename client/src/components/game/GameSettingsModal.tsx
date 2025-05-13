@@ -186,6 +186,7 @@ export function GameSettingsModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="hidden" aria-describedby="game-settings-description" />
       <ModalDialogContent className="w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center mb-4">

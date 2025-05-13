@@ -37,7 +37,7 @@ export function CategorySelectionModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="hidden" />
+      <DialogContent className="hidden" aria-describedby="category-selection-description" />
       <ModalDialogContent className="sm:max-w-md" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center mb-2">
