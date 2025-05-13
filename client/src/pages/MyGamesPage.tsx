@@ -298,71 +298,92 @@ export default function MyGamesPage() {
       <div className="container mx-auto py-8" dir="rtl">
         <h1 className="text-3xl font-bold mb-8 text-right">ألعابي</h1>
         
-        <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
-          {/* فلتر نصي */}
-          <Input
-            placeholder="ابحث باسم اللعبة..."
-            className="w-60"
-            value={searchText}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setSearchText(e.target.value);
-              if (!e.target.value) {
-                setGames(selectedDate ? originalGames.filter(game => 
-                  new Date(game.createdAt).toISOString().split('T')[0] === selectedDate
-                ) : originalGames);
-              } else {
-                applyFilters();
-              }
-            }}
-          />
+        <div className="mb-8 bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <h2 className="text-lg font-medium mb-4 text-gray-800 flex items-center">
+            <CalendarIcon className="h-5 w-5 ml-2 text-indigo-500" />
+            تصفية الألعاب
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* فلتر نصي */}
+            <div className="relative">
+              <label className="block text-xs text-gray-600 mb-1">البحث باسم اللعبة</label>
+              <div className="relative">
+                <Input
+                  placeholder="أدخل اسم اللعبة..."
+                  className="pl-8 pr-3 py-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-indigo-300"
+                  value={searchText}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setSearchText(e.target.value);
+                    if (!e.target.value) {
+                      setGames(selectedDate ? originalGames.filter(game => 
+                        new Date(game.createdAt).toISOString().split('T')[0] === selectedDate
+                      ) : originalGames);
+                    } else {
+                      applyFilters();
+                    }
+                  }}
+                />
+                <span className="absolute left-2.5 top-2.5 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+              </div>
+            </div>
 
-          {/* فلتر تاريخ */}
-          <Input
-            type="date"
-            className="w-52"
-            value={selectedDate}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setSelectedDate(e.target.value);
-              if (!e.target.value) {
-                setGames(searchText ? originalGames.filter(game => 
-                  game.name.toLowerCase().includes(searchText.toLowerCase())
-                ) : originalGames);
-              } else {
-                applyFilters();
-              }
-            }}
-          />
+            {/* فلتر تاريخ */}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">تاريخ الإنشاء</label>
+              <Input
+                type="date"
+                className="bg-gray-50 border-gray-200 focus:bg-white focus:border-indigo-300"
+                value={selectedDate}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setSelectedDate(e.target.value);
+                  if (!e.target.value) {
+                    setGames(searchText ? originalGames.filter(game => 
+                      game.name.toLowerCase().includes(searchText.toLowerCase())
+                    ) : originalGames);
+                  } else {
+                    applyFilters();
+                  }
+                }}
+              />
+            </div>
 
-          {/* تحديد عدد العناصر في الصفحة */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">عدد الألعاب:</span>
-            <select
-              className="border border-gray-300 rounded px-2 py-1"
-              value={maxGamesPerPage}
-              onChange={(e) => {
-                setMaxGamesPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              {[10, 15, 25, 50].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
+            {/* تحديد عدد العناصر في الصفحة */}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">عدد الألعاب في الصفحة</label>
+              <select
+                className="w-full h-10 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
+                value={maxGamesPerPage}
+                onChange={(e) => {
+                  setMaxGamesPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                {[10, 15, 25, 50].map((n) => (
+                  <option key={n} value={n}>
+                    {n} لعبة
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* زر إعادة التعيين */}
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                className={`w-full transition-opacity ${searchText || selectedDate ? 'opacity-100' : 'opacity-50 cursor-not-allowed'} bg-gray-50 border-gray-200 hover:bg-gray-100 hover:text-gray-900`}
+                onClick={resetFilters}
+                disabled={!(searchText || selectedDate)}
+              >
+                <RefreshCwIcon className="h-4 w-4 ml-1.5" />
+                إعادة تعيين الفلاتر
+              </Button>
+            </div>
           </div>
-
-          {/* زر إعادة التعيين */}
-          {(searchText || selectedDate) && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={resetFilters}
-              className="text-xs"
-            >
-              إعادة تعيين الفلاتر
-            </Button>
-          )}
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -411,20 +432,20 @@ export default function MyGamesPage() {
               
               <CardFooter className="flex justify-between p-4 pt-0">
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
-                  className="text-gray-600 hover:bg-gray-100 rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
+                  className="text-indigo-700 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
                   onClick={() => handleViewGameLog(game.id)}
                 >
-                  <span className="text-[0.7rem] md:text-xs mr-0.5">🗂️</span> سجل اللعبة
+                  <ClipboardIcon className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> سجل اللعبة
                 </Button>
                 
                 <Button
                   size="sm"
-                  className="bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
                   onClick={() => handleReplayGame(game)}
                 >
-                  <span className="text-[0.7rem] md:text-xs mr-0.5">♻️</span> إعادة اللعب
+                  <RefreshCwIcon className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> إعادة اللعب
                 </Button>
               </CardFooter>
             </Card>
