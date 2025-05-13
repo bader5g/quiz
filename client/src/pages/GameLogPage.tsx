@@ -72,6 +72,25 @@ interface GameLog {
   games: GameSession[];
 }
 
+// الواجهة الخلفية الحالية تستخدم هذا النموذج
+interface LegacyGameLog {
+  id: string;
+  name: string;
+  categories: GameCategory[];
+  createdAt: string;
+  teams: GameTeam[];
+  playCount: number;
+  rounds: {
+    id: string;
+    roundNumber: number;
+    category: GameCategory;
+    question: string;
+    correctAnswer: string;
+    winningTeam: string | null;
+    timestamp: string;
+  }[];
+}
+
 export default function GameLogPage() {
   const [, params] = useRoute('/game-log/:id');
   const gameId = params?.id;
@@ -88,32 +107,46 @@ export default function GameLogPage() {
       
       try {
         setLoading(true);
-        const response = await axios.get<any>(`/api/game-log/${gameId}`);
+        const response = await axios.get<LegacyGameLog>(`/api/game-log/${gameId}`);
+        const legacyData = response.data;
         
         // تحويل البيانات القادمة من الواجهة الخلفية إلى النموذج الجديد
-        // هذا مؤقت حتى يتم تحديث الواجهة الخلفية
         const adaptedData: GameLog = {
-          id: response.data.id,
-          name: response.data.name,
-          categories: response.data.categories,
-          playCount: response.data.playCount,
-          games: response.data.playCount > 0 ? [
-            {
-              sessionId: "session-1",
-              createdAt: response.data.createdAt || new Date().toISOString(),
-              teams: response.data.teams || [],
-              winningTeam: response.data.teams && response.data.teams.length > 0 
-                ? response.data.teams.sort((a: any, b: any) => b.score - a.score)[0].name 
-                : null,
-              rounds: response.data.rounds?.map((round: any) => ({
-                ...round,
-                teamAnswered: round.winningTeam,
-                isCorrect: !!round.winningTeam,
-                points: 3 // قيمة افتراضية للنقاط
-              })) || []
-            }
-          ] : []
+          id: legacyData.id,
+          name: legacyData.name,
+          categories: legacyData.categories || [],
+          playCount: legacyData.playCount || 1,
+          games: []
         };
+
+        // إنشاء جلسة لعبة وحيدة استنادًا إلى البيانات الحالية
+        if (legacyData.teams && legacyData.teams.length > 0) {
+          // ترتيب الفرق حسب النقاط
+          const sortedTeams = [...legacyData.teams].sort((a, b) => b.score - a.score);
+          const winningTeam = sortedTeams[0].name;
+          
+          // تحويل بيانات الجولات
+          const adaptedRounds: GameRound[] = (legacyData.rounds || []).map(round => ({
+            id: round.id,
+            roundNumber: round.roundNumber,
+            category: round.category,
+            question: round.question,
+            correctAnswer: round.correctAnswer,
+            teamAnswered: round.winningTeam,
+            isCorrect: !!round.winningTeam,
+            points: round.winningTeam ? 3 : 0, // افتراضي: 3 نقاط للإجابة الصحيحة
+            timestamp: round.timestamp
+          }));
+          
+          // إضافة الجلسة إلى القائمة
+          adaptedData.games.push({
+            sessionId: legacyData.id + "-session1",
+            createdAt: legacyData.createdAt,
+            teams: legacyData.teams,
+            winningTeam: winningTeam,
+            rounds: adaptedRounds
+          });
+        }
         
         setGameLog(adaptedData);
       } catch (err) {
@@ -152,6 +185,7 @@ export default function GameLogPage() {
     setModalOpen(true);
   };
   
+  // مكون مودال تفاصيل جلسة اللعب
   const GameSessionDetailsModal = () => {
     if (!selectedSession) return null;
     
@@ -242,6 +276,7 @@ export default function GameLogPage() {
     );
   };
 
+  // حالة التحميل
   if (loading) {
     return (
       <Layout>
@@ -294,6 +329,7 @@ export default function GameLogPage() {
     );
   }
 
+  // حالة الخطأ
   if (error || !gameLog) {
     return (
       <Layout>
@@ -321,7 +357,7 @@ export default function GameLogPage() {
     );
   }
 
-  // إضافة مكون المودال للعرض
+  // عرض سجل اللعبة
   return (
     <Layout>
       <div className="container mx-auto py-8" dir="rtl">
@@ -347,12 +383,16 @@ export default function GameLogPage() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="flex flex-wrap gap-2 mb-3">
-                {gameLog.categories.map((category) => (
-                  <Badge key={category.id} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-0">
-                    <span className="mr-1">{category.icon}</span>
-                    {category.name}
-                  </Badge>
-                ))}
+                {gameLog.categories.length > 0 ? (
+                  gameLog.categories.map((category) => (
+                    <Badge key={category.id} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-0">
+                      <span className="mr-1">{category.icon}</span>
+                      {category.name}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">لا توجد فئات</span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -363,7 +403,7 @@ export default function GameLogPage() {
               <CardTitle className="flex items-center justify-between">
                 <span>سجل مرات اللعب</span>
               </CardTitle>
-              <CardDescription>اضغط على "عرض التفاصيل" لرؤية معلومات تفصيلية عن جولات وأسئلة كل لعبة</CardDescription>
+              <CardDescription>اضغط على "عرض التفاصيل" لرؤية معلومات تفصيلية عن الأسئلة والإجابات</CardDescription>
             </CardHeader>
             <CardContent>
               {gameLog.games.length > 0 ? (
@@ -381,9 +421,8 @@ export default function GameLogPage() {
                     </TableHeader>
                     <TableBody>
                       {gameLog.games.map((game, index) => {
-                        // ترتيب الفرق حسب النقاط الأعلى
+                        // ترتيب الفرق حسب النقاط
                         const sortedTeams = [...game.teams].sort((a, b) => b.score - a.score);
-                        const winningTeam = sortedTeams[0] || null;
                         
                         return (
                           <TableRow key={game.sessionId}>
