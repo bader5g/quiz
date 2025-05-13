@@ -357,39 +357,55 @@ export default function ProfilePage() {
           // تعيين حالة الإرسال
           setIsSubmitting(true);
           
-          // محاكاة إرسال البيانات للخادم (في الواقع ستستخدم mutation)
-          setTimeout(() => {
-            // تحديث حالة المستخدم في الواجهة
-            if (user && editType !== 'password') {
-              setUser({
-                ...user,
-                ...updateData
+          // ننشئ دالة لإرسال البيانات (ستستخدم mutation في التطبيق الحقيقي)
+          const updateUserProfile = async () => {
+            try {
+              // محاكاة إرسال البيانات للخادم
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              // تحديث حالة المستخدم في الواجهة مباشرة
+              if (user && editType !== 'password') {
+                const updatedUser = {
+                  ...user,
+                  ...updateData
+                };
+                setUser(updatedUser);
+              }
+              
+              // إظهار رسالة نجاح
+              toast({
+                title: "تم التحديث بنجاح",
+                description: "تم حفظ بياناتك الجديدة",
+                variant: "default",
               });
+              
+              // إغلاق المودال بعد التحديث
+              setEditModalOpen(false);
+              
+              // إعادة ضبط قيم النموذج
+              setFormValue('');
+              setConfirmValue('');
+              setFormError('');
+            } catch (error) {
+              console.error('Error updating profile:', error);
+              toast({
+                title: "حدث خطأ",
+                description: "لم يتم حفظ التغييرات، يرجى المحاولة مرة أخرى",
+                variant: "destructive",
+              });
+            } finally {
+              // إعادة تعيين حالة الإرسال
+              setIsSubmitting(false);
             }
-            
-            // إظهار رسالة نجاح
-            toast({
-              title: "تم التحديث بنجاح",
-              description: "تم حفظ بياناتك الجديدة",
-              variant: "default",
-            });
-            
-            // إعادة تعيين حالة الإرسال
-            setIsSubmitting(false);
-          }, 500);
+          };
+          
+          // تنفيذ الدالة
+          updateUserProfile();
         }
         
-        // إغلاق المودال بعد التحديث
-        setEditModalOpen(false);
+        // المودال سيغلق في دالة التحديث
         
-        // إعادة ضبط قيم النموذج
-        setFormValue('');
-        setConfirmValue('');
-        setSelectedAvatar('');
-        setUploadedAvatar(null);
-        
-        // إعادة تحميل بيانات المستخدم
-        refetchProfile();
+        // إعادة ضبط القيم تمت بالفعل داخل الدالة
         
       } catch (error) {
         console.error('Error updating profile:', error);
