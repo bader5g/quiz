@@ -638,7 +638,7 @@ export default function ProfilePage() {
     return (
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
         <DialogPortal>
-          <DialogContent className="sm:max-w-md z-50" dir="rtl">
+          <DialogContent className="sm:max-w-md z-[100]" dir="rtl">
             <DialogHeader>
               <DialogTitle>{getModalTitle()}</DialogTitle>
             </DialogHeader>
