@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useLocation } from 'wouter';
 import { formatDistance } from 'date-fns';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { CalendarIcon, ClipboardIcon, RefreshCwIcon, Users, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 // @ts-ignore - تجاهل مشكلة استيراد المكون
@@ -69,6 +70,7 @@ function getPaginationRange(totalItems: number, itemsPerPage: number, currentPag
 }
 
 export default function MyGamesPage() {
+  const [originalGames, setOriginalGames] = useState<GameSummary[]>([]);
   const [games, setGames] = useState<GameSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +78,8 @@ export default function MyGamesPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedGame, setSelectedGame] = useState<GameSummary | null>(null);
   const [replayModalOpen, setReplayModalOpen] = useState<boolean>(false);
+  const [searchText, setSearchText] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useUser();
@@ -131,7 +135,8 @@ export default function MyGamesPage() {
           answerTimeSecond: session.answerTimeSecond
         }));
         
-        // تحميل الألعاب
+        // تحميل الألعاب الأصلية ونسخة للعرض
+        setOriginalGames(formattedGames);
         setGames(formattedGames);
         
         // تحديث الحد الأقصى للألعاب في الصفحة إذا كان متاحًا
@@ -172,6 +177,36 @@ export default function MyGamesPage() {
     } catch (error) {
       return 'تاريخ غير صالح';
     }
+  };
+
+  // دالة لتطبيق الفلترة على الألعاب
+  const applyFilters = () => {
+    let filteredGames = [...originalGames];
+    
+    // تطبيق فلتر البحث النصي
+    if (searchText) {
+      filteredGames = filteredGames.filter(game => 
+        game.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+    
+    // تطبيق فلتر التاريخ
+    if (selectedDate) {
+      filteredGames = filteredGames.filter(game => 
+        new Date(game.createdAt).toISOString().split('T')[0] === selectedDate
+      );
+    }
+    
+    setGames(filteredGames);
+    setCurrentPage(1);
+  };
+  
+  // دالة لإعادة تعيين الفلاتر
+  const resetFilters = () => {
+    setSearchText("");
+    setSelectedDate("");
+    setGames(originalGames);
+    setCurrentPage(1);
   };
   
   // التنقل بين الصفحات
@@ -262,6 +297,73 @@ export default function MyGamesPage() {
     <Layout>
       <div className="container mx-auto py-8" dir="rtl">
         <h1 className="text-3xl font-bold mb-8 text-right">ألعابي</h1>
+        
+        <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
+          {/* فلتر نصي */}
+          <Input
+            placeholder="ابحث باسم اللعبة..."
+            className="w-60"
+            value={searchText}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              setSearchText(e.target.value);
+              if (!e.target.value) {
+                setGames(selectedDate ? originalGames.filter(game => 
+                  new Date(game.createdAt).toISOString().split('T')[0] === selectedDate
+                ) : originalGames);
+              } else {
+                applyFilters();
+              }
+            }}
+          />
+
+          {/* فلتر تاريخ */}
+          <Input
+            type="date"
+            className="w-52"
+            value={selectedDate}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              setSelectedDate(e.target.value);
+              if (!e.target.value) {
+                setGames(searchText ? originalGames.filter(game => 
+                  game.name.toLowerCase().includes(searchText.toLowerCase())
+                ) : originalGames);
+              } else {
+                applyFilters();
+              }
+            }}
+          />
+
+          {/* تحديد عدد العناصر في الصفحة */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">عدد الألعاب:</span>
+            <select
+              className="border border-gray-300 rounded px-2 py-1"
+              value={maxGamesPerPage}
+              onChange={(e) => {
+                setMaxGamesPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              {[10, 15, 25, 50].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* زر إعادة التعيين */}
+          {(searchText || selectedDate) && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={resetFilters}
+              className="text-xs"
+            >
+              إعادة تعيين الفلاتر
+            </Button>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {paginatedGames.map((game) => (
