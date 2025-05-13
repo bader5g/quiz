@@ -28,6 +28,15 @@ interface GameCategory {
   icon: string;
 }
 
+interface GameSettings {
+  allowedFirstAnswerTimes: number[];
+  allowedSecondAnswerTimes: number[];
+  maxGameNameLength: number;
+  maxTeamNameLength: number;
+  minTeams: number;
+  maxTeams: number;
+}
+
 interface ReplayGameProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -45,16 +54,27 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  
+  // الحصول على إعدادات اللعبة من API
+  const { data: gameSettings } = useQuery<GameSettings>({
+    queryKey: ['/api/game-settings'],
+    enabled: open, // تنفيذ الاستعلام فقط عندما يكون المودال مفتوحاً
+  });
 
   // إنشاء سكيما للتحقق من صحة النموذج
   const formSchema = z.object({
     gameName: z.string()
       .min(1, { message: "يرجى إدخال اسم للعبة" })
-      .max(45, { message: "يجب أن لا يتجاوز اسم اللعبة 45 حرفاً" }),
+      .max(gameSettings?.maxGameNameLength || 45, { 
+        message: `يجب أن لا يتجاوز اسم اللعبة ${gameSettings?.maxGameNameLength || 45} حرفاً` 
+      }),
     teamNames: z.array(
       z.string()
         .min(1, { message: "يرجى إدخال اسم للفريق" })
-        .max(45, { message: "يجب أن لا يتجاوز اسم الفريق 45 حرفاً" })
+        .max(gameSettings?.maxTeamNameLength || 45, { 
+          message: `يجب أن لا يتجاوز اسم الفريق ${gameSettings?.maxTeamNameLength || 45} حرفاً` 
+        })
     ).min(game.teamsCount, { message: `يجب إدخال ${game.teamsCount} أسماء للفرق على الأقل` }),
     answerTimeFirst: z.string(),
     answerTimeSecond: z.string(),
@@ -74,6 +94,8 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
   // تقديم النموذج
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
+    setFormError(null);
+    
     try {
       // إنشاء بيانات اللعبة الجديدة
       const replayData = {
@@ -97,11 +119,18 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
 
       // الانتقال إلى صفحة اللعب
       navigate('/play');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error replaying game:', error);
+      
+      // عرض رسالة الخطأ من الخادم إذا كانت متوفرة
+      const errorMessage = error.response?.data?.message || 
+        "حدث خطأ أثناء إعادة اللعبة، يرجى المحاولة مرة أخرى";
+      
+      setFormError(errorMessage);
+      
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء إعادة اللعبة، يرجى المحاولة مرة أخرى",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -133,6 +162,13 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
           ))}
         </div>
 
+        {formError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4 ml-2" />
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* اسم اللعبة */}
@@ -143,7 +179,11 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                 <FormItem>
                   <FormLabel>اسم اللعبة</FormLabel>
                   <FormControl>
-                    <Input placeholder="أدخل اسماً للعبة" maxLength={45} {...field} />
+                    <Input 
+                      placeholder="أدخل اسماً للعبة" 
+                      maxLength={gameSettings?.maxGameNameLength || 45} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -173,7 +213,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                         <FormControl>
                           <Input
                             placeholder={`اسم الفريق ${index + 1}`}
-                            maxLength={45}
+                            maxLength={gameSettings?.maxTeamNameLength || 45}
                             {...field}
                           />
                         </FormControl>
@@ -214,7 +254,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {[15, 30, 45, 60].map((time) => (
+                        {(gameSettings?.allowedFirstAnswerTimes || [15, 30, 45, 60]).map((time) => (
                           <SelectItem key={time} value={time.toString()}>
                             {time} ثانية
                           </SelectItem>
@@ -243,7 +283,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {[10, 15, 20, 30].map((time) => (
+                        {(gameSettings?.allowedSecondAnswerTimes || [10, 15, 20, 30]).map((time) => (
                           <SelectItem key={time} value={time.toString()}>
                             {time} ثانية
                           </SelectItem>
