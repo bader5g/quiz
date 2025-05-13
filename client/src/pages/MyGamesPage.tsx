@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { CalendarIcon, ClipboardIcon, RefreshCwIcon, Users, Clock } from 'lucide-react';
+import { CalendarIcon, ClipboardIcon, RefreshCwIcon, Users, Clock, SearchXIcon, ArrowRightIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 // @ts-ignore - تجاهل مشكلة استيراد المكون
 import ReplayGameModal from '@/components/game/ReplayGameModal';
@@ -274,8 +274,8 @@ export default function MyGamesPage() {
     );
   }
 
-  // إذا لم تكن هناك ألعاب، نعرض رسالة فارغة
-  if (games.length === 0) {
+  // إذا لم تكن هناك ألعاب أصلاً، نعرض رسالة فارغة
+  if (originalGames.length === 0) {
     return (
       <Layout>
         <div className="container mx-auto py-8 text-center" dir="rtl">
@@ -383,8 +383,23 @@ export default function MyGamesPage() {
           تم العثور على {games.length} لعبة
         </p>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {paginatedGames.map((game) => (
+        {games.length === 0 && (
+          <div className="text-center py-10">
+            <div className="mb-4 text-gray-500">
+              <ClipboardIcon className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-lg font-medium">لم يتم العثور على ألعاب مطابقة للفلاتر</p>
+              <p className="text-sm mt-1">حاول تغيير معايير البحث أو إعادة تعيين الفلاتر</p>
+            </div>
+            <Button variant="outline" size="sm" className="mt-2" onClick={resetFilters}>
+              <RefreshCwIcon className="h-4 w-4 ml-2" />
+              العودة إلى كل الألعاب
+            </Button>
+          </div>
+        )}
+        
+        {games.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {paginatedGames.map((game) => (
             <Card key={game.id} className="shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-lg">{game.name}</CardTitle>
@@ -448,6 +463,7 @@ export default function MyGamesPage() {
             </Card>
           ))}
         </div>
+        )}
         
         {/* التصفح عبر الصفحات */}
         {pagination.totalPages > 1 && (
