@@ -3,6 +3,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 interface User {
   id: number;
   username: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  avatarUrl?: string;
 }
 
 interface UserContextType {
@@ -10,6 +14,7 @@ interface UserContextType {
   isAuthenticated: boolean;
   login: (user: User) => void;
   logout: () => void;
+  updateUser: (updatedData: Partial<User>) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -45,8 +50,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
   };
   
+  // تحديث بيانات المستخدم دون إعادة تسجيل الدخول
+  const updateUser = (updatedData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...updatedData };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <UserContext.Provider value={{ user, isAuthenticated, login, logout, updateUser }}>
       {children}
     </UserContext.Provider>
   );
