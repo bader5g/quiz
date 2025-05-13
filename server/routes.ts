@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { gameSessionSchema, updateGameSettingsSchema } from "@shared/schema";
+import { gameSessionSchema, updateGameSettingsSchema, updateSiteSettingsSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Helper function to validate request with Zod schema
@@ -201,6 +201,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
     
     res.json(userCards);
+  });
+
+  // Site settings API endpoints
+  app.get('/api/site-settings', async (_req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching site settings:', error);
+      res.status(500).json({ error: 'Failed to fetch site settings' });
+    }
+  });
+
+  app.patch('/api/site-settings', validateRequest(updateSiteSettingsSchema), async (req, res) => {
+    try {
+      const updatedSettings = await storage.updateSiteSettings(req.body);
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error('Error updating site settings:', error);
+      res.status(500).json({ error: 'Failed to update site settings' });
+    }
   });
 
   // use storage to perform CRUD operations on the storage interface

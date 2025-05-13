@@ -5,7 +5,9 @@ import {
   type GameSettings, 
   type UpdateGameSettings, 
   type GameSession, 
-  type InsertGameSession 
+  type InsertGameSession,
+  type SiteSettings,
+  type UpdateSiteSettings
 } from "@shared/schema";
 
 // modify the interface with any CRUD methods
@@ -21,6 +23,10 @@ export interface IStorage {
   getGameSettings(): Promise<GameSettings | undefined>;
   updateGameSettings(settings: UpdateGameSettings): Promise<GameSettings>;
   
+  // Site settings related methods
+  getSiteSettings(): Promise<SiteSettings | undefined>;
+  updateSiteSettings(settings: UpdateSiteSettings): Promise<SiteSettings>;
+  
   // Game sessions related methods
   createGameSession(userId: number, session: InsertGameSession): Promise<GameSession>;
   getUserGameSessions(userId: number): Promise<GameSession[]>;
@@ -29,7 +35,8 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
-  private settings: GameSettings;
+  private gameSettings: GameSettings;
+  private siteSettings: SiteSettings;
   private gameSessions: Map<number, GameSession>;
   currentUserId: number;
   currentSessionId: number;
@@ -41,7 +48,7 @@ export class MemStorage implements IStorage {
     this.currentSessionId = 1;
     
     // Initialize default game settings
-    this.settings = {
+    this.gameSettings = {
       id: 1,
       minCategories: 4,
       maxCategories: 8,
@@ -53,6 +60,16 @@ export class MemStorage implements IStorage {
       defaultSecondAnswerTime: 15,
       modalTitle: "إعدادات اللعبة",
       pageDescription: "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Initialize default site settings
+    this.siteSettings = {
+      id: 1,
+      logoUrl: "/assets/jaweb-logo.png",
+      appName: "جاوب",
+      faviconUrl: "/favicon.ico",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -78,16 +95,30 @@ export class MemStorage implements IStorage {
   
   // Game settings related methods
   async getGameSettings(): Promise<GameSettings | undefined> {
-    return this.settings;
+    return this.gameSettings;
   }
   
   async updateGameSettings(settings: UpdateGameSettings): Promise<GameSettings> {
-    this.settings = {
-      ...this.settings,
+    this.gameSettings = {
+      ...this.gameSettings,
       ...settings,
       updatedAt: new Date().toISOString()
     };
-    return this.settings;
+    return this.gameSettings;
+  }
+  
+  // Site settings related methods
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    return this.siteSettings;
+  }
+  
+  async updateSiteSettings(settings: UpdateSiteSettings): Promise<SiteSettings> {
+    this.siteSettings = {
+      ...this.siteSettings,
+      ...settings,
+      updatedAt: new Date().toISOString()
+    };
+    return this.siteSettings;
   }
   
   // Game sessions related methods

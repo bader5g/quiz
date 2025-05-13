@@ -48,6 +48,24 @@ export type GameSettings = typeof gameSettings.$inferSelect;
 export type InsertGameSettings = z.infer<typeof insertGameSettingsSchema>;
 export type UpdateGameSettings = z.infer<typeof updateGameSettingsSchema>;
 
+// Site branding settings schema
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  logoUrl: text("logo_url").default("/assets/jaweb-logo.png"),
+  appName: text("app_name").notNull().default("جاوب"),
+  faviconUrl: text("favicon_url").default("/favicon.ico"),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
+});
+
+export const updateSiteSettingsSchema = createInsertSchema(siteSettings).omit({
+  id: true,
+  createdAt: true,
+}).partial();
+
+export type SiteSettings = typeof siteSettings.$inferSelect;
+export type UpdateSiteSettings = z.infer<typeof updateSiteSettingsSchema>;
+
 // Game session schema
 export const gameSessions = pgTable("game_sessions", {
   id: serial("id").primaryKey(),
