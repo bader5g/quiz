@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
@@ -82,6 +82,7 @@ export default function ProfilePage() {
   const [phonePrefix, setPhonePrefix] = useState<string>('');
   const [isPhoneReady, setIsPhoneReady] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [originalValue, setOriginalValue] = useState<string>('');
   
   // تحديد ما إذا كان المستخدم مالك الملف الشخصي
   const isOwner = true; // في تطبيق حقيقي، ستقارن بين معرف المستخدم الحالي والملف الشخصي المعروض
@@ -226,11 +227,21 @@ export default function ProfilePage() {
   
   // مكون مودال تحرير البيانات الشخصية
   const EditProfileModal = () => {
-    // متغيرات النموذج
-    const [formValue, setFormValue] = useState('');
-    const [confirmValue, setConfirmValue] = useState('');
-    const [formError, setFormError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // التحقق مما إذا كانت قيمة النموذج غير متغيرة
+    const isUnchanged = useMemo(() => {
+      if (!user) return true;
+      
+      switch (editType) {
+        case 'name':
+          return formValue === user.name;
+        case 'email':
+          return formValue === user.email;
+        case 'phone':
+          return formValue === (user.phone?.replace(/^\+\d+/, '') || '');
+        default:
+          return false;
+      }
+    }, [user, editType, formValue]);
     
     // تعبئة قيم النموذج تلقائيًا عند فتح المودال
     useEffect(() => {
