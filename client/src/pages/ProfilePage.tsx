@@ -229,58 +229,92 @@ export default function ProfilePage() {
       ? Math.min(100, Math.round((userLevel.currentStars / userLevel.requiredStars) * 100)) 
       : 0);
 
-  // مكون مودال تحرير البيانات الشخصية
+  // مكون مودال تحرير البيانات الشخصية - إصدار جديد يستخدم useRef بدلاً من useState
   const EditProfileModal = () => {
+    // استخدام المراجع بدلاً من الحالة لمنع إعادة رسم المكون
+    const nameInputRef = useRef<HTMLInputElement>(null);
+    const emailInputRef = useRef<HTMLInputElement>(null);
+    const phoneInputRef = useRef<HTMLInputElement>(null);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
+    const confirmPasswordInputRef = useRef<HTMLInputElement>(null);
+    
+    // حالة الإرسال فقط - لن تؤثر على إعادة رسم الحقول
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState("");
     // التحقق مما إذا كانت قيمة النموذج غير متغيرة
     const isUnchanged = useMemo(() => {
       if (!user) return true;
 
+      // التحقق مما إذا كانت القيمة الحالية هي نفس القيمة الأصلية
       switch (editType) {
         case 'name':
-          return formValue === user.name;
+          return nameInputRef.current?.value === user.name;
         case 'email':
-          return formValue === user.email;
+          return emailInputRef.current?.value === user.email;
         case 'phone':
-          return formValue === (user.phone?.replace(/^\+\d+/, '') || '');
+          return phoneInputRef.current?.value === (user.phone?.replace(/^\+\d+\s/, '') || '');
+        case 'password':
+          // أي تغيير في كلمة المرور يعتبر تغييرًا
+          return !passwordInputRef.current?.value;
         default:
           return false;
       }
-    }, [user, editType, formValue]);
+    }, [user, editType]);
 
-    // تعبئة قيم النموذج تلقائيًا عند فتح المودال
-    useEffect(() => {
-      if (editModalOpen && user) {
-        switch (editType) {
-          case 'name':
-            setFormValue(user.name || '');
-            break;
-          case 'email':
-            setFormValue(user.email || '');
-            break;
-          case 'phone':
-            setFormValue(user.phone || '');
-            break;
-          case 'password':
-            setFormValue('');
-            setConfirmValue('');
-            break;
-          case 'avatar':
-            setSelectedAvatar(user.avatarUrl || defaultAvatars[0]);
-            break;
-        }
-      }
-    }, [editModalOpen, editType, user]);
+    // تم تعطيل هذا الكود لأننا أصبحنا نستخدم مراجع بدلاً من حالات
+    // استبدلنا هذا الكود بـ useEffect داخل renderModalContent
 
     // إرسال التحديثات إلى الخادم
     const handleSubmit = async () => {
-      setFormError('');
-      setIsSubmitting(true);
+      setError('');
+      setSubmitting(true);
 
       try {
-        if (editType === 'password' && formValue !== confirmValue) {
-          setFormError('كلمة المرور وتأكيدها غير متطابقين');
-          setIsSubmitting(false);
-          return;
+        // الحصول على القيم من المراجع
+        let updatedValue = '';
+        
+        switch (editType) {
+          case 'name':
+            updatedValue = nameInputRef.current?.value || '';
+            break;
+          case 'email':
+            updatedValue = emailInputRef.current?.value || '';
+            // التحقق من صحة البريد الإلكتروني
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(updatedValue)) {
+              setError('يرجى إدخال بريد إلكتروني صحيح');
+              setSubmitting(false);
+              return;
+            }
+            break;
+          case 'phone':
+            updatedValue = phoneInputRef.current?.value || '';
+            // التحقق من طول رقم الهاتف
+            if (updatedValue.length < 8 || updatedValue.length > 12) {
+              setError('رقم الهاتف يجب أن يكون بين 8 و 12 رقم');
+              setSubmitting(false);
+              return;
+            }
+            updatedValue = `${phonePrefix} ${updatedValue}`;
+            break;
+          case 'password':
+            const password = passwordInputRef.current?.value || '';
+            const confirmPassword = confirmPasswordInputRef.current?.value || '';
+            
+            if (password.length < 8) {
+              setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+              setSubmitting(false);
+              return;
+            }
+            
+            if (password !== confirmPassword) {
+              setError('كلمة المرور وتأكيدها غير متطابقين');
+              setSubmitting(false);
+              return;
+            }
+            
+            updatedValue = password;
+            break;
         }
 
         // رفع الصورة الشخصية
