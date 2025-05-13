@@ -1,11 +1,8 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -13,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/UserContext";
+import { EditModal } from "@/components/profile/EditModal";
 import { 
   UserIcon, 
   Medal, 
@@ -893,7 +891,14 @@ export default function ProfilePage() {
         </div>
 
         {/* مودال تعديل الملف الشخصي */}
-        <EditProfileModal />
+        <EditModal 
+          open={editModalOpen} 
+          onOpenChange={setEditModalOpen} 
+          editType={editType} 
+          user={user} 
+          onSave={handleSaveProfileChanges}
+          phonePrefix={phonePrefix || "+966"}
+        />
       </div>
     </Layout>
   );
