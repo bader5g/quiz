@@ -410,7 +410,6 @@ export default function GameLogPage() {
               <CardTitle className="flex items-center justify-between">
                 <span>سجل مرات اللعب</span>
               </CardTitle>
-              <CardDescription>اضغط على "عرض التفاصيل" لرؤية معلومات تفصيلية عن الأسئلة والإجابات</CardDescription>
             </CardHeader>
             <CardContent>
               {gameLog.games.length > 0 ? (
