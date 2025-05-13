@@ -311,18 +311,18 @@ export default function MyGamesPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="text-gray-600 hover:bg-gray-100 rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
                   onClick={() => handleViewGameLog(game.id)}
                 >
-                  🗂️ سجل اللعبة
+                  <span className="text-[0.7rem] md:text-xs mr-0.5">🗂️</span> سجل اللعبة
                 </Button>
                 
                 <Button
                   size="sm"
-                  className="bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                  className="bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
                   onClick={() => handleReplayGame(game)}
                 >
-                  ♻️ إعادة اللعب
+                  <span className="text-[0.7rem] md:text-xs mr-0.5">♻️</span> إعادة اللعب
                 </Button>
               </CardFooter>
             </Card>
