@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import MyGamesPage from "@/pages/MyGamesPage";
+import GameLogPage from "@/pages/GameLogPage";
 import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
 import LoginButton from "@/components/auth/LoginButton";
@@ -31,6 +33,9 @@ function Router() {
       )} />
       <Route path="/play" component={() => <div dir="rtl" className="p-10 text-center">صفحة اللعب (قيد التطوير)</div>} />
       <Route path="/categories" component={() => <div dir="rtl" className="p-10 text-center">صفحة الفئات (قيد التطوير)</div>} />
+      {/* صفحات الألعاب والتاريخ */}
+      <Route path="/my-games" component={MyGamesPage} />
+      <Route path="/game-log/:id" component={GameLogPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

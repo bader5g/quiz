@@ -4,7 +4,8 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogContent
 } from '@/components/ui/dialog';
 import { ModalDialogContent } from '@/components/ui/modal-dialog';
 import { Button } from '@/components/ui/button';
