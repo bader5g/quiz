@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import MyGamesPage from "@/pages/MyGamesPage";
 import GameLogPage from "@/pages/GameLogPage";
 import ProfilePage from "@/pages/ProfilePage";
+import TestDialogPage from "@/pages/TestDialogPage";
 import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
 import LoginButton from "@/components/auth/LoginButton";
@@ -37,6 +38,7 @@ function Router() {
       {/* صفحات الألعاب والتاريخ */}
       <Route path="/my-games" component={MyGamesPage} />
       <Route path="/game-log/:id" component={GameLogPage} />
+      <Route path="/test-dialog" component={TestDialogPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
