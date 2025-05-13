@@ -156,7 +156,7 @@ export default function Footer() {
 
           <div className="flex justify-center gap-4 mb-4 text-gray-500">
             {footerSettings.socialLinks && Object.entries(footerSettings.socialLinks).map(([platform, url]) => 
-              url && renderSocialIcon(platform as keyof SocialLinks, url)
+              url ? <div key={platform}>{renderSocialIcon(platform as keyof SocialLinks, url)}</div> : null
             )}
           </div>
 
