@@ -194,9 +194,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                   />
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                <span className="text-amber-600">ملاحظة:</span> لا يمكن تغيير عدد الفرق عند إعادة اللعب. يمكنك فقط تحديث أسماء الفرق وأوقات الإجابة.
-              </p>
+
             </div>
 
             <div className="space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
