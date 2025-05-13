@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
@@ -76,9 +76,11 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
+  const [shouldRedraw, setShouldRedraw] = useState(0);
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [uploadedAvatar, setUploadedAvatar] = useState<File | null>(null);
   const [formValue, setFormValue] = useState<string>('');
+  const formValueRef = useRef<HTMLInputElement>(null);
   const [confirmValue, setConfirmValue] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
   const [phonePrefix, setPhonePrefix] = useState<string>('');
