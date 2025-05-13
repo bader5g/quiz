@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
-import { BarLoader } from '@/components/ui/bar-loader';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
 
-// Types for API responses
 interface UserLevel {
   level: string;
   badge: string;
@@ -28,13 +33,13 @@ export default function UserStatus() {
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
   const [userCards, setUserCards] = useState<UserCards | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [openLevelModal, setOpenLevelModal] = useState(false);
+  const [openCardsModal, setOpenCardsModal] = useState(false);
 
   useEffect(() => {
-    const fetchUserStatus = async () => {
+    const fetchUserData = async () => {
       setIsLoading(true);
       try {
-        // Fetch user level and cards in parallel
         const [levelResponse, cardsResponse] = await Promise.all([
           axios.get<UserLevel>('/api/user-level'),
           axios.get<UserCards>('/api/user-cards')
@@ -42,107 +47,131 @@ export default function UserStatus() {
         
         setUserLevel(levelResponse.data);
         setUserCards(cardsResponse.data);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching user status:', err);
-        setError('فشل في تحميل بيانات المستخدم');
+      } catch (error) {
+        console.error('Error fetching user data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUserStatus();
+    fetchUserData();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center gap-4 w-full max-w-3xl mx-auto">
-        <Skeleton className="h-20 w-full max-w-xs rounded-lg" />
-        <Skeleton className="h-20 w-full max-w-xs rounded-lg" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-sm text-red-500 text-center py-2">
-        {error}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-wrap justify-center gap-4 w-full max-w-3xl mx-auto mb-4">
-      {/* User Level Card */}
-      {userLevel && (
-        <Card className="border-2 relative overflow-hidden" style={{ borderColor: userLevel.color }}>
-          <CardContent className="p-4 flex flex-col items-center">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-2xl">{userLevel.badge}</span>
-              <h3 className="font-bold">مستواك: {userLevel.level}</h3>
-            </div>
-            
-            <div className="w-full max-w-xs mt-1">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{userLevel.currentStars} نجمة</span>
-                <span>المستوى التالي: {userLevel.nextLevel} ({userLevel.requiredStars} نجمة)</span>
+    <div className="flex items-center gap-8 flex-wrap justify-center">
+      {/* User Level */}
+      {isLoading ? (
+        <Skeleton className="h-9 w-24" />
+      ) : userLevel && (
+        <Dialog open={openLevelModal} onOpenChange={setOpenLevelModal}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" className="gap-1.5">
+              <span className="text-xl">{userLevel.badge}</span>
+              <span className="font-medium" style={{ color: userLevel.color }}>
+                {userLevel.level}
+              </span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center mb-4">مستواك الحالي</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{userLevel.badge}</span>
+                  <span className="text-xl font-semibold" style={{ color: userLevel.color }}>
+                    {userLevel.level}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500">
+                  المستوى التالي: {userLevel.nextLevel}
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="h-2.5 rounded-full" 
-                  style={{ 
-                    width: `${userLevel.progress}%`,
-                    backgroundColor: userLevel.color 
-                  }}
-                ></div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{userLevel.currentStars} ⭐</span>
+                  <span>{userLevel.requiredStars} ⭐</span>
+                </div>
+                <Progress value={userLevel.progress} className="h-2" />
+              </div>
+
+              <p className="text-sm text-gray-600 mt-3">
+                لقد جمعت {userLevel.currentStars} نجوم من أصل {userLevel.requiredStars} مطلوبة للترقية للمستوى التالي
+              </p>
+              
+              <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+                <p className="font-medium mb-1">كيف تجمع المزيد من النجوم؟</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>فوز في المسابقات (+3 نجوم)</li>
+                  <li>إجابة صحيحة (+1 نجمة)</li>
+                  <li>حل بطاقات يومية (+2 نجوم)</li>
+                </ul>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       )}
 
-      {/* User Cards Card */}
-      {userCards && (
-        <Card className="border-2 border-blue-400">
-          <CardContent className="p-4 flex items-center justify-center gap-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xl">{userCards.freeIcon}</span>
-                    <span className="font-bold">{userCards.freeCards}</span>
+      {/* User Cards */}
+      {isLoading ? (
+        <Skeleton className="h-9 w-28" />
+      ) : userCards && (
+        <Dialog open={openCardsModal} onOpenChange={setOpenCardsModal}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" className="gap-1.5">
+              <span className="text-xl">{userCards.freeIcon}</span>
+              <span className="font-medium">{userCards.freeCards}</span>
+              <span className="text-gray-400">/</span>
+              <span className="text-lg">{userCards.paidIcon}</span>
+              <span className="font-medium">{userCards.paidCards}</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center mb-4">كروت اللعب</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-green-50 p-4 rounded-lg text-center">
+                  <div className="text-3xl mb-2">{userCards.freeIcon}</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {userCards.freeCards}
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>كروت مجانية</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <span className="text-gray-400">|</span>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xl">{userCards.paidIcon}</span>
-                    <span className="font-bold">{userCards.paidCards}</span>
+                  <div className="text-sm text-green-700 mt-1">كروت مجانية</div>
+                </div>
+                
+                <div className="bg-purple-50 p-4 rounded-lg text-center">
+                  <div className="text-3xl mb-2">{userCards.paidIcon}</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {userCards.paidCards}
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>كروت مدفوعة</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <span className="text-gray-400">|</span>
-
-            <div className="flex items-center gap-1">
-              <span className="text-gray-600">الإجمالي:</span>
-              <span className="font-bold">{userCards.totalCards}</span>
+                  <div className="text-sm text-purple-700 mt-1">كروت مدفوعة</div>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-4">
+                  إجمالي الكروت المتاحة: <span className="font-semibold">{userCards.totalCards}</span>
+                </p>
+                
+                <Button className="w-full">احصل على المزيد من الكروت</Button>
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+                <p className="font-medium mb-1">معلومات عن الكروت:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>تحصل على كرت مجاني يومياً</li>
+                  <li>كل كرت يتيح لك اللعب بفئة واحدة</li>
+                  <li>الكروت المجانية تنتهي خلال 7 أيام</li>
+                </ul>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
