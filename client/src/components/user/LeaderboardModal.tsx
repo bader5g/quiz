@@ -46,10 +46,15 @@ export default function LeaderboardModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-1.5">
-          <Trophy className="h-5 w-5 text-amber-500" />
-          <span className="font-medium">المتصدرون</span>
-        </Button>
+        <div className="flex flex-col items-center bg-purple-50 px-3 py-1.5 rounded-xl text-center shadow-sm border border-purple-100 hover:bg-purple-100 transition-colors cursor-pointer">
+          <div className="text-purple-700 font-bold text-sm">
+            المتصدرون
+          </div>
+          <div className="text-gray-800 text-xs mt-1 flex items-center">
+            <Trophy className="h-3.5 w-3.5 text-amber-500 mr-1" />
+            <span>قائمة الأفضل</span>
+          </div>
+        </div>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

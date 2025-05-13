@@ -17,6 +17,10 @@ interface UserLevel {
   level: string;
   badge: string;
   color: string;
+  progress?: number;
+  nextLevel?: string;
+  requiredStars?: number;
+  currentStars?: number;
 }
 
 interface UserCards {
@@ -76,16 +80,20 @@ export default function Header() {
             <div className="flex items-center gap-6 flex-wrap justify-center">
               {/* User Level */}
               {isLoading ? (
-                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-12 w-24" />
               ) : userLevel && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl">{userLevel.badge}</span>
-                        <span className="font-medium" style={{ color: userLevel.color }}>
-                          {userLevel.level}
-                        </span>
+                      <div className="flex flex-col items-center bg-yellow-50 px-3 py-1.5 rounded-xl text-center shadow-sm border border-yellow-100 hover:bg-yellow-100 transition-colors cursor-pointer">
+                        <div className="text-yellow-700 font-bold text-sm flex items-center gap-1">
+                          <span>{userLevel.badge}</span>
+                          <span>المستوى: </span>
+                          <span style={{ color: userLevel.color }}>{userLevel.level}</span>
+                        </div>
+                        <div className="text-gray-800 text-xs mt-1">
+                          ⭐ {userLevel?.currentStars ? userLevel.currentStars : 0} نجمة
+                        </div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -100,17 +108,22 @@ export default function Header() {
 
               {/* User Cards */}
               {isLoading ? (
-                <Skeleton className="h-8 w-28" />
+                <Skeleton className="h-12 w-28" />
               ) : userCards && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl">{userCards.freeIcon}</span>
-                        <span className="font-medium">{userCards.freeCards}</span>
-                        <span className="text-gray-400">/</span>
-                        <span className="text-lg">{userCards.paidIcon}</span>
-                        <span className="font-medium">{userCards.paidCards}</span>
+                      <div className="flex flex-col items-center bg-blue-50 px-3 py-1.5 rounded-xl text-center shadow-sm border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer">
+                        <div className="text-blue-700 font-bold text-sm">
+                          كروت اللعب
+                        </div>
+                        <div className="text-gray-800 text-xs mt-1 flex items-center">
+                          <span className="text-sm mr-1">{userCards.freeIcon}</span>
+                          <span>{userCards.freeCards}</span>
+                          <span className="mx-1 text-gray-400">/</span>
+                          <span className="text-sm mr-1">{userCards.paidIcon}</span>
+                          <span>{userCards.paidCards}</span>
+                        </div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
