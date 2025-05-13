@@ -15,10 +15,16 @@ import {
   Calendar, 
   Award, 
   Gift, 
-  MessageSquare, 
   Clock,
   Trophy,
-  BarChart 
+  BarChart,
+  Mail,
+  Phone,
+  Lock,
+  Image,
+  Upload,
+  Check,
+  X
 } from "lucide-react";
 
 interface UserLevel {
@@ -37,22 +43,42 @@ interface UserCards {
   totalCards: number;
   freeIcon: string;
   paidIcon: string;
+  usedFreeCards: number;
+  usedPaidCards: number;
 }
 
 interface UserStats {
   gamesPlayed: number;
-  gamesWon: number;
-  totalScore: number;
   lastPlayed: string;
-  averageScore: number;
-  streak: number;
+}
+
+interface UserProfile {
+  id: number;
+  username: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  avatarUrl?: string;
 }
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<{ id: number; username: string; name?: string; } | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
+  const [selectedAvatar, setSelectedAvatar] = useState<string>('');
+  const [uploadedAvatar, setUploadedAvatar] = useState<File | null>(null);
   
   // تحديد ما إذا كان المستخدم مالك الملف الشخصي
   const isOwner = true; // في تطبيق حقيقي، ستقارن بين معرف المستخدم الحالي والملف الشخصي المعروض
+  
+  // مجموعة الصور الشخصية الافتراضية
+  const defaultAvatars = [
+    '/assets/avatars/avatar1.png',
+    '/assets/avatars/avatar2.png',
+    '/assets/avatars/avatar3.png',
+    '/assets/avatars/avatar4.png',
+    '/assets/avatars/avatar5.png',
+  ];
   
   // جلب معلومات مستوى اللاعب
   const { 
@@ -83,18 +109,25 @@ export default function ProfilePage() {
     // ويمكنك استبداله ببيانات افتراضية للتطوير
   });
   
-  // محاكاة جلب معلومات المستخدم
+  // جلب معلومات المستخدم
+  const { 
+    data: userProfile, 
+    isLoading: profileLoading,
+    refetch: refetchProfile
+  } = useQuery<UserProfile, Error>({
+    queryKey: ['/api/user-profile'],
+    queryFn: getQueryFn({ on401: "throw" }),
+  });
+  
+  // تحديث حالة المستخدم عند جلب البيانات
   useEffect(() => {
-    // في التطبيق الحقيقي، ستستخدم useQuery لجلب معلومات المستخدم من الخادم
-    setUser({
-      id: 1,
-      username: "user",
-      name: "أحمد محمد"
-    });
-  }, []);
+    if (userProfile) {
+      setUser(userProfile);
+    }
+  }, [userProfile]);
   
   // حالة التحميل
-  if (!user || levelLoading || cardsLoading) {
+  if (!user || levelLoading || cardsLoading || profileLoading) {
     return (
       <Layout>
         <div className="container mx-auto py-8" dir="rtl">
@@ -207,15 +240,73 @@ export default function ProfilePage() {
                   {/* أزرار الإجراءات */}
                   <div className="w-full space-y-2 mt-6">
                     {isOwner && (
-                      <Button variant="outline" className="w-full justify-start">
-                        <CreditCard className="ml-2 h-4 w-4" />
-                        شراء بطاقات إضافية
-                      </Button>
+                      <>
+                        <Button variant="outline" className="w-full justify-start">
+                          <CreditCard className="ml-2 h-4 w-4" />
+                          شراء بطاقات إضافية
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setEditType('name');
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          <UserIcon className="ml-2 h-4 w-4" />
+                          تعديل الاسم
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setEditType('email');
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          <Mail className="ml-2 h-4 w-4" />
+                          تعديل البريد الإلكتروني
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setEditType('phone');
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          <Phone className="ml-2 h-4 w-4" />
+                          تعديل رقم الهاتف
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setEditType('password');
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          <Lock className="ml-2 h-4 w-4" />
+                          تعديل كلمة المرور
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setEditType('avatar');
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          <Image className="ml-2 h-4 w-4" />
+                          تغيير الصورة الشخصية
+                        </Button>
+                      </>
                     )}
-                    <Button variant="outline" className="w-full justify-start">
-                      <MessageSquare className="ml-2 h-4 w-4" />
-                      مراسلة
-                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -234,7 +325,7 @@ export default function ProfilePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* عدد الألعاب */}
                     <div className="bg-blue-50 p-4 rounded-lg text-center">
                       <Calendar className="h-8 w-8 mx-auto mb-2 text-blue-600" />
@@ -244,47 +335,13 @@ export default function ProfilePage() {
                       <div className="text-sm text-blue-600">ألعاب ملعوبة</div>
                     </div>
                     
-                    {/* الألعاب المربوحة */}
-                    <div className="bg-green-50 p-4 rounded-lg text-center">
-                      <Trophy className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                      <div className="text-2xl font-bold text-green-800">
-                        {userStats ? userStats.gamesWon : 0}
-                      </div>
-                      <div className="text-sm text-green-600">ألعاب مربوحة</div>
-                    </div>
-                    
-                    {/* مجموع النقاط */}
-                    <div className="bg-purple-50 p-4 rounded-lg text-center">
-                      <Award className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-                      <div className="text-2xl font-bold text-purple-800">
-                        {userStats ? userStats.totalScore : 0}
-                      </div>
-                      <div className="text-sm text-purple-600">مجموع النقاط</div>
-                    </div>
-                    
-                    {/* متوسط النقاط */}
-                    <div className="bg-yellow-50 p-4 rounded-lg text-center">
-                      <Star className="h-8 w-8 mx-auto mb-2 text-yellow-600" />
-                      <div className="text-2xl font-bold text-yellow-800">
-                        {userStats ? userStats.averageScore : 0}
-                      </div>
-                      <div className="text-sm text-yellow-600">متوسط النقاط</div>
-                    </div>
-                    
-                    {/* سلسلة الانتصارات */}
-                    <div className="bg-red-50 p-4 rounded-lg text-center">
-                      <Gift className="h-8 w-8 mx-auto mb-2 text-red-600" />
-                      <div className="text-2xl font-bold text-red-800">
-                        {userStats ? userStats.streak : 0}
-                      </div>
-                      <div className="text-sm text-red-600">سلسلة انتصارات</div>
-                    </div>
-                    
                     {/* آخر لعبة */}
                     <div className="bg-gray-50 p-4 rounded-lg text-center">
                       <Clock className="h-8 w-8 mx-auto mb-2 text-gray-600" />
-                      <div className="text-sm font-bold text-gray-800 h-12 flex items-center justify-center">
-                        {userStats ? new Date(userStats.lastPlayed).toLocaleDateString('ar-EG') : 'لا يوجد'}
+                      <div className="text-lg font-bold text-gray-800 h-12 flex items-center justify-center">
+                        {userStats?.lastPlayed 
+                          ? new Date(userStats.lastPlayed).toLocaleDateString('ar-EG') 
+                          : 'لا يوجد'}
                       </div>
                       <div className="text-sm text-gray-600">آخر لعبة</div>
                     </div>
@@ -292,35 +349,53 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
               
-              {/* بطاقات اللعب */}
+              {/* الكروت */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <CreditCard className="h-5 w-5 ml-2" />
-                    بطاقات اللعب
+                    الكروت
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-center bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+                  <h3 className="text-sm font-semibold mb-3 text-gray-600">الكروت المتاحة:</h3>
+                  <div className="flex items-center justify-center bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-5 mb-6">
                     <div className="text-center mx-4">
                       <div className="text-4xl font-bold text-blue-600 mb-2">
                         {userCards?.freeCards || 0}
                       </div>
-                      <div className="text-sm text-blue-700">بطاقات مجانية</div>
+                      <div className="text-sm text-blue-700">كروت مجانية</div>
                     </div>
                     
                     <div className="text-center border-r border-l border-gray-300 px-8 mx-4">
                       <div className="text-5xl font-bold text-purple-600 mb-2">
                         {userCards?.totalCards || 0}
                       </div>
-                      <div className="text-sm text-purple-700">إجمالي البطاقات</div>
+                      <div className="text-sm text-purple-700">إجمالي الكروت</div>
                     </div>
                     
                     <div className="text-center mx-4">
                       <div className="text-4xl font-bold text-indigo-600 mb-2">
                         {userCards?.paidCards || 0}
                       </div>
-                      <div className="text-sm text-indigo-700">بطاقات مدفوعة</div>
+                      <div className="text-sm text-indigo-700">كروت مدفوعة</div>
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-sm font-semibold mb-3 text-gray-600">الكروت المستخدمة:</h3>
+                  <div className="flex items-center justify-center bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-5">
+                    <div className="text-center mx-8">
+                      <div className="text-3xl font-bold text-blue-500 mb-2">
+                        {userCards?.usedFreeCards || 0}
+                      </div>
+                      <div className="text-sm text-blue-600">كروت مجانية</div>
+                    </div>
+                    
+                    <div className="text-center mx-8">
+                      <div className="text-3xl font-bold text-indigo-500 mb-2">
+                        {userCards?.usedPaidCards || 0}
+                      </div>
+                      <div className="text-sm text-indigo-600">كروت مدفوعة</div>
                     </div>
                   </div>
                   
