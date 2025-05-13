@@ -9,8 +9,7 @@ import { useUser } from '@/context/UserContext';
 import { CategorySelectionModal } from '@/components/game/CategorySelectionModal';
 import { GameSettingsModal } from '@/components/game/GameSettingsModal';
 import { useToast } from '@/hooks/use-toast';
-import UserStatus from '@/components/user/UserStatus';
-import LeaderboardModal from '@/components/user/LeaderboardModal';
+import UserTrophyStats from '@/components/user/UserTrophyStats';
 
 interface CategoryChild {
   id: number;
@@ -142,7 +141,31 @@ export default function Home() {
   };
 
   // Start the game setup process
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
+    // If user is authenticated, check if they have enough cards
+    if (isAuthenticated) {
+      try {
+        // Get user cards
+        const response = await axios.get('/api/user-cards');
+        const userCards = response.data;
+        const totalAvailableCards = userCards.freeCards + userCards.paidCards;
+        
+        // Check if user has enough cards
+        if (totalAvailableCards < selectedCategories.length) {
+          toast({
+            title: "كروت غير كافية",
+            description: `لديك ${totalAvailableCards} كروت فقط، بينما اخترت ${selectedCategories.length} فئات. الرجاء اختيار عدد أقل من الفئات أو الحصول على المزيد من الكروت.`,
+            variant: "destructive",
+          });
+          setShowCategoryModal(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching user cards:', error);
+      }
+    }
+    
+    // If all good, proceed to game settings
     setShowCategoryModal(false);
     setShowGameSettingsModal(true);
   };
@@ -199,10 +222,7 @@ export default function Home() {
       {/* User status section - only visible for authenticated users */}
       {isAuthenticated && (
         <div className="pt-8 md:pt-12 pb-2">
-          <div className="flex justify-center items-center gap-4 mb-4">
-            <LeaderboardModal />
-          </div>
-          <UserStatus />
+          <UserTrophyStats />
         </div>
       )}
 
