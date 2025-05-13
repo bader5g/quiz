@@ -21,7 +21,11 @@ import {
   Award, 
   CheckCircle2, 
   XCircle,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -91,6 +95,9 @@ interface LegacyGameLog {
   }[];
 }
 
+// قيمة افتراضية لعدد العناصر في الصفحة
+const ITEMS_PER_PAGE = 10;
+
 export default function GameLogPage() {
   const [, params] = useRoute('/game-log/:id');
   const gameId = params?.id;
@@ -99,6 +106,7 @@ export default function GameLogPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<GameSession | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -183,6 +191,28 @@ export default function GameLogPage() {
   const openSessionDetails = (session: GameSession) => {
     setSelectedSession(session);
     setModalOpen(true);
+  };
+  
+  // حساب صفحات البيانات
+  const getPaginatedData = () => {
+    if (!gameLog || !gameLog.games || gameLog.games.length === 0) {
+      return [];
+    }
+    
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return gameLog.games.slice(startIndex, endIndex);
+  };
+  
+  // حساب إجمالي عدد الصفحات
+  const totalPages = gameLog?.games?.length 
+    ? Math.ceil(gameLog.games.length / ITEMS_PER_PAGE) 
+    : 1;
+  
+  // التنقل بين الصفحات
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
   };
   
   // مكون مودال تفاصيل جلسة اللعب
@@ -426,13 +456,15 @@ export default function GameLogPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {gameLog.games.map((game, index) => {
+                      {getPaginatedData().map((game, index) => {
+                        // حساب الرقم الفعلي في قائمة الألعاب الكاملة
+                        const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + index;
                         // ترتيب الفرق حسب النقاط
                         const sortedTeams = [...game.teams].sort((a, b) => b.score - a.score);
                         
                         return (
                           <TableRow key={game.sessionId}>
-                            <TableCell className="font-medium">{index + 1}</TableCell>
+                            <TableCell className="font-medium">{actualIndex + 1}</TableCell>
                             <TableCell>
                               {game.winningTeam ? (
                                 <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
@@ -491,6 +523,77 @@ export default function GameLogPage() {
               ) : (
                 <div className="text-center py-10 text-gray-500">
                   لا توجد جلسات لعب مسجلة
+                </div>
+              )}
+              
+              {/* مكون ترقيم الصفحات */}
+              {gameLog.games && gameLog.games.length > ITEMS_PER_PAGE && (
+                <div className="flex items-center justify-center space-x-2 mt-6" dir="ltr">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex items-center gap-1 mx-2">
+                    {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                      // عرض الصفحات المحيطة بالصفحة الحالية
+                      let pageToShow: number;
+                      if (totalPages <= 5) {
+                        // إذا كان عدد الصفحات 5 أو أقل، عرض كل الصفحات
+                        pageToShow = i + 1;
+                      } else if (currentPage <= 3) {
+                        // إذا كنا في البداية، عرض الصفحات 1-5
+                        pageToShow = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        // إذا كنا في النهاية، عرض آخر 5 صفحات
+                        pageToShow = totalPages - 4 + i;
+                      } else {
+                        // في المنتصف، عرض الصفحة الحالية مع صفحتين قبلها وصفحتين بعدها
+                        pageToShow = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageToShow}
+                          variant={currentPage === pageToShow ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(pageToShow)}
+                          className="w-9 h-9 p-0"
+                        >
+                          {pageToShow}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
             </CardContent>
