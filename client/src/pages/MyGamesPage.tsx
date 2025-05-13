@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useLocation } from 'wouter';
 import { formatDistance } from 'date-fns';
@@ -201,6 +201,13 @@ export default function MyGamesPage() {
     setCurrentPage(1);
   };
   
+  // تطبيق الفلترة عند تغيير قيم البحث أو التاريخ
+  useEffect(() => {
+    if (originalGames.length > 0) {
+      applyFilters();
+    }
+  }, [searchText, selectedDate]);
+  
   // دالة لإعادة تعيين الفلاتر
   const resetFilters = () => {
     setSearchText("");
@@ -315,13 +322,6 @@ export default function MyGamesPage() {
                   value={searchText}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     setSearchText(e.target.value);
-                    if (!e.target.value) {
-                      setGames(selectedDate ? originalGames.filter(game => 
-                        new Date(game.createdAt).toISOString().split('T')[0] === selectedDate
-                      ) : originalGames);
-                    } else {
-                      applyFilters();
-                    }
                   }}
                 />
                 <span className="absolute left-2.5 top-2.5 text-gray-400">
@@ -341,13 +341,6 @@ export default function MyGamesPage() {
                 value={selectedDate}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setSelectedDate(e.target.value);
-                  if (!e.target.value) {
-                    setGames(searchText ? originalGames.filter(game => 
-                      game.name.toLowerCase().includes(searchText.toLowerCase())
-                    ) : originalGames);
-                  } else {
-                    applyFilters();
-                  }
                 }}
               />
             </div>
@@ -386,6 +379,10 @@ export default function MyGamesPage() {
           </div>
         </div>
         
+        <p className="text-sm text-gray-500 mb-4 text-right">
+          تم العثور على {games.length} لعبة
+        </p>
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {paginatedGames.map((game) => (
             <Card key={game.id} className="shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -396,7 +393,7 @@ export default function MyGamesPage() {
                     <RefreshCwIcon className="h-3.5 w-3.5 mr-1" />
                     {game.playCount} مرة لعب
                   </span>
-                  <TooltipProvider>
+                  <TooltipProvider delayDuration={200}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="flex items-center text-gray-500 text-xs">
@@ -404,7 +401,7 @@ export default function MyGamesPage() {
                           {formatCreatedAt(game.createdAt)}
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent dir="rtl">
+                      <TooltipContent dir="rtl" side="top">
                         <p>تاريخ الإنشاء: {new Date(game.createdAt).toLocaleDateString('ar-SA')}</p>
                       </TooltipContent>
                     </Tooltip>
