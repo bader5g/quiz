@@ -78,6 +78,12 @@ export default function ProfilePage() {
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [uploadedAvatar, setUploadedAvatar] = useState<File | null>(null);
+  const [phonePrefix, setPhonePrefix] = useState<string>('+966'); // القيمة الافتراضية لرمز الدولة
+  const [formValue, setFormValue] = useState<string>('');
+  const [confirmValue, setConfirmValue] = useState<string>('');
+  const [formError, setFormError] = useState<string>('');
+  const [isPhoneReady, setIsPhoneReady] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   
   // Form state stored in a separate object to prevent re-renders
   const [formData, setFormData] = useState({
