@@ -653,9 +653,16 @@ export default function ProfilePage() {
                   <div className="w-full space-y-2 mt-6">
                     {isOwner && (
                       <>
-                        <Button variant="outline" className="w-full justify-start">
-                          <CreditCard className="ml-2 h-4 w-4" />
-                          شراء بطاقات إضافية
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setEditType('avatar');
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          <Image className="ml-2 h-4 w-4" />
+                          تغيير الصورة الشخصية
                         </Button>
                         
                         <Button 
@@ -744,7 +751,7 @@ export default function ProfilePage() {
                       <div className="text-2xl font-bold text-blue-800">
                         {userStats ? userStats.gamesPlayed : 0}
                       </div>
-                      <div className="text-sm text-blue-600">ألعاب ملعوبة</div>
+                      <div className="text-sm text-blue-600">الألعاب الملعوبة</div>
                     </div>
                     
                     {/* آخر لعبة */}
