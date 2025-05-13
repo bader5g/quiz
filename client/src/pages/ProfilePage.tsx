@@ -213,6 +213,7 @@ export default function ProfilePage() {
     const [formValue, setFormValue] = useState('');
     const [confirmValue, setConfirmValue] = useState('');
     const [formError, setFormError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
     // تعبئة قيم النموذج تلقائيًا عند فتح المودال
     useEffect(() => {
@@ -241,10 +242,12 @@ export default function ProfilePage() {
     // إرسال التحديثات إلى الخادم
     const handleSubmit = async () => {
       setFormError('');
+      setIsSubmitting(true);
       
       try {
         if (editType === 'password' && formValue !== confirmValue) {
           setFormError('كلمة المرور وتأكيدها غير متطابقين');
+          setIsSubmitting(false);
           return;
         }
         
@@ -365,6 +368,8 @@ export default function ProfilePage() {
       } catch (error) {
         console.error('Error updating profile:', error);
         setFormError('حدث خطأ أثناء تحديث البيانات. الرجاء المحاولة مرة أخرى');
+      } finally {
+        setIsSubmitting(false);
       }
     };
     
@@ -505,13 +510,18 @@ export default function ProfilePage() {
                     {defaultAvatars.map((avatar, index) => (
                       <div 
                         key={index} 
-                        className={`p-2 cursor-pointer rounded-md border-2 ${selectedAvatar === avatar ? 'border-blue-500' : 'border-gray-200'}`}
+                        className={`p-2 cursor-pointer rounded-md border-2 ${selectedAvatar === avatar ? 'border-blue-500' : 'border-gray-200'} relative`}
                         onClick={() => handleAvatarSelect(avatar)}
                       >
                         <Avatar className="h-16 w-16 mx-auto">
                           <AvatarImage src={avatar} alt={`Avatar ${index + 1}`} />
                           <AvatarFallback>{index + 1}</AvatarFallback>
                         </Avatar>
+                        {selectedAvatar === avatar && (
+                          <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center">
+                            <Check className="h-4 w-4" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -566,8 +576,18 @@ export default function ProfilePage() {
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>
               إلغاء
             </Button>
-            <Button onClick={handleSubmit}>
-              حفظ التغييرات
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
+                  جارٍ التحديث...
+                </>
+              ) : (
+                'حفظ التغييرات'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -768,79 +788,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
               
-              {/* الكروت */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <CreditCard className="h-5 w-5 ml-2" />
-                    الكروت
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <h3 className="text-sm font-semibold mb-3 text-gray-600">الكروت المتاحة:</h3>
-                  <div className="flex items-center justify-center bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-5 mb-6">
-                    <div className="text-center mx-4">
-                      <div className="text-4xl font-bold text-blue-600 mb-2">
-                        {userCards?.freeCards || 0}
-                      </div>
-                      <div className="text-sm text-blue-700">كروت مجانية</div>
-                    </div>
-                    
-                    <div className="text-center border-r border-l border-gray-300 px-8 mx-4">
-                      <div className="text-5xl font-bold text-purple-600 mb-2">
-                        {userCards?.totalCards || 0}
-                      </div>
-                      <div className="text-sm text-purple-700">إجمالي الكروت</div>
-                    </div>
-                    
-                    <div className="text-center mx-4">
-                      <div className="text-4xl font-bold text-indigo-600 mb-2">
-                        {userCards?.paidCards || 0}
-                      </div>
-                      <div className="text-sm text-indigo-700">كروت مدفوعة</div>
-                    </div>
-                  </div>
-                  
-                  <h3 className="text-sm font-semibold mb-3 text-gray-600">الكروت المستخدمة:</h3>
-                  <div className="flex items-center justify-center bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-5">
-                    <div className="text-center mx-8">
-                      <div className="flex items-center justify-center mb-2">
-                        <span className="text-3xl font-bold text-blue-400" style={{ fontStyle: 'italic' }}>
-                          {userCards?.usedFreeCards || 0}
-                        </span>
-                        <CheckCircle2 className="h-5 w-5 text-blue-400 ml-1" />
-                      </div>
-                      <div className="text-sm text-blue-500 flex items-center justify-center">
-                        <Gift className="h-4 w-4 ml-1" />
-                        كروت مجانية
-                      </div>
-                    </div>
-                    
-                    <div className="text-center mx-8">
-                      <div className="flex items-center justify-center mb-2">
-                        <span className="text-3xl font-bold text-indigo-400" style={{ fontStyle: 'italic' }}>
-                          {userCards?.usedPaidCards || 0}
-                        </span>
-                        <CheckCircle2 className="h-5 w-5 text-indigo-400 ml-1" />
-                      </div>
-                      <div className="text-sm text-indigo-500 flex items-center justify-center">
-                        <CreditCardIcon className="h-4 w-4 ml-1" />
-                        كروت مدفوعة
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {isOwner && userCards?.freeCards !== undefined && userCards.freeCards < 5 && (
-                    <div className="mt-4 text-center">
-                      <p className="text-sm text-gray-500 mb-2">يمكنك الحصول على كروت مجانية إضافية عبر دعوة أصدقائك أو المشاركة في التحديات اليومية</p>
-                      <Button variant="outline" size="sm">
-                        <Gift className="h-4 w-4 ml-2" />
-                        الحصول على كروت مجانية
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              {/* قسم إضافي يمكن إضافته في المستقبل */}
             </div>
           </div>
         </div>
