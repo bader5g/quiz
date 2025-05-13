@@ -117,6 +117,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to create game session' });
     }
   });
+  
+  // Create new game endpoint (alias for compatibility)
+  app.post('/api/create-game', async (req, res) => {
+    try {
+      // In a real app, you would extract user ID from authenticated session
+      // For now, we'll use a mock user ID
+      const userId = 1; // Mock user ID
+      console.log('Creating game with data:', req.body);
+      
+      // Format data from new API format to storage format
+      const gameData = {
+        gameName: req.body.gameName,
+        teams: req.body.teamNames.slice(0, req.body.teamsCount).map(name => ({ name })),
+        answerTimeFirst: parseInt(req.body.firstAnswerTime, 10),
+        answerTimeSecond: parseInt(req.body.secondAnswerTime, 10),
+        selectedCategories: req.body.categories
+      };
+      
+      const newSession = await storage.createGameSession(userId, gameData);
+      res.status(201).json(newSession);
+    } catch (error) {
+      console.error('Error creating game:', error);
+      res.status(500).json({ error: 'Failed to create game' });
+    }
+  });
 
   // Get user's game sessions
   app.get('/api/users/:userId/game-sessions', async (req, res) => {
