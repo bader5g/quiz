@@ -37,7 +37,7 @@ interface GameSettings {
 }
 
 export default function Home() {
-  const { isAuthenticated } = useUser();
+  const { user, isAuthenticated, logout } = useUser();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   
@@ -153,8 +153,20 @@ export default function Home() {
       {/* أزرار التسجيل */}
       <div className="absolute top-4 left-6 flex gap-4">
         {isAuthenticated ? (
-          <div className="text-blue-600 font-medium">
-            مرحباً بك
+          <div className="text-blue-600 font-medium flex items-center gap-2">
+            <span>مرحباً بك</span>
+            <button
+              onClick={() => navigate('/profile')}
+              className="text-blue-700 font-bold hover:underline"
+            >
+              {user?.username || "مستخدم"}
+            </button>
+            <button 
+              onClick={() => logout()}
+              className="text-red-600 hover:text-red-800 transition-colors hover:underline font-medium mr-4"
+            >
+              تسجيل الخروج
+            </button>
           </div>
         ) : (
           <>
