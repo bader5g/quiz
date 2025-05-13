@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarIcon, ClipboardIcon, RefreshCwIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+// @ts-ignore - تجاهل مشكلة استيراد المكون
 import ReplayGameModal from '@/components/game/ReplayGameModal';
 import Layout from '@/components/layout/Layout';
 

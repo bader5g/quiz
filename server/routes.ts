@@ -158,6 +158,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to fetch game sessions' });
     }
   });
+  
+  // Get game log by ID
+  app.get('/api/game-log/:id', async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.id, 10);
+      if (isNaN(gameId)) {
+        return res.status(400).json({ error: 'Invalid game ID' });
+      }
+      
+      const gameSession = await storage.getGameSession(gameId);
+      if (!gameSession) {
+        return res.status(404).json({ error: 'Game session not found' });
+      }
+      
+      // تحويل نوع البيانات للتوافق مع عمليات الوصول اللاحقة
+      const typedGameSession = gameSession as {
+        id: string;
+        name: string;
+        categories: { id: number; name: string; icon: string }[];
+        teams: { name: string; score: number }[];
+        createdAt: string;
+        playCount: number;
+      };
+      
+      // إضافة بيانات افتراضية للجولات للعرض التجريبي
+      // في التطبيق الحقيقي، ستكون هذه البيانات محفوظة في قاعدة البيانات
+      const gameRounds = [
+        {
+          id: "r1",
+          roundNumber: 1,
+          category: { id: 12, name: "فيزياء", icon: "🔬" },
+          question: "ما هي قوانين نيوتن للحركة؟",
+          correctAnswer: "قانون القصور الذاتي، قانون القوة، وقانون الفعل ورد الفعل",
+          winningTeam: typedGameSession.teams[0]?.name || null,
+          timestamp: new Date(new Date(typedGameSession.createdAt).getTime() + 1000*60).toISOString()
+        },
+        {
+          id: "r2",
+          roundNumber: 2,
+          category: { id: 31, name: "تاريخ", icon: "🏛️" },
+          question: "متى تأسست المملكة العربية السعودية الحديثة؟",
+          correctAnswer: "23 سبتمبر 1932",
+          winningTeam: typedGameSession.teams[1]?.name || null,
+          timestamp: new Date(new Date(typedGameSession.createdAt).getTime() + 2000*60).toISOString()
+        },
+        {
+          id: "r3",
+          roundNumber: 3,
+          category: { id: 42, name: "شبكات", icon: "🌐" },
+          question: "ما هو بروتوكول HTTP؟",
+          correctAnswer: "بروتوكول نقل النص التشعبي لتبادل المعلومات عبر الويب",
+          winningTeam: null,
+          timestamp: new Date(new Date(typedGameSession.createdAt).getTime() + 3000*60).toISOString()
+        }
+      ];
+      
+      // يضاف إلى كائن اللعبة بيانات الجولات
+      const gameLog = {
+        ...typedGameSession,
+        rounds: gameRounds
+      };
+      
+      res.json(gameLog);
+    } catch (error) {
+      console.error('Error fetching game log:', error);
+      res.status(500).json({ error: 'Failed to fetch game log' });
+    }
+  });
+  
+  // Replay a game
+  app.post('/api/replay-game', async (req, res) => {
+    try {
+      const userId = 1; // في التطبيق الحقيقي، سيتم استخراجه من جلسة المستخدم
+      
+      const gameSchema = z.object({
+        originalGameId: z.string(),
+        gameName: z.string().min(1).max(45),
+        teamNames: z.array(z.string().min(1).max(45)),
+        answerTimeFirst: z.number().int().positive(),
+        answerTimeSecond: z.number().int().positive(),
+      });
+      
+      const validatedData = gameSchema.parse(req.body);
+      
+      // الحصول على اللعبة الأصلية للحصول على الفئات
+      const originalGameId = parseInt(validatedData.originalGameId, 10);
+      const originalGame = await storage.getGameSession(originalGameId);
+      
+      if (!originalGame) {
+        return res.status(404).json({ error: 'Original game not found' });
+      }
+      
+      // إنشاء بيانات اللعبة الجديدة
+      const gameData = {
+        gameName: validatedData.gameName,
+        teams: validatedData.teamNames.map(name => ({ name, score: 0 })),
+        answerTimeFirst: validatedData.answerTimeFirst,
+        answerTimeSecond: validatedData.answerTimeSecond,
+        selectedCategories: originalGame.categories,
+        // تعيين قيمة أولية لعدد مرات اللعب
+        playCount: 1
+      };
+      
+      const newSession = await storage.createGameSession(userId, gameData);
+      res.status(201).json(newSession);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Invalid game data",
+          details: error.errors,
+        });
+      }
+      console.error('Error replaying game:', error);
+      res.status(500).json({ error: 'Failed to replay game' });
+    }
+  });
+  
+  // Get admin settings (including max_games_per_page)
+  app.get('/api/admin-settings', (req, res) => {
+    // في النسخة النهائية، هذه البيانات ستأتي من قاعدة البيانات
+    res.json({
+      max_games_per_page: 15,
+      show_game_logs: true,
+      show_teams_scores: true,
+      default_answer_time_first: 30,
+      default_answer_time_second: 15
+    });
+  });
 
   // Get specific game session
   app.get('/api/game-sessions/:id', async (req, res) => {
