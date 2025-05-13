@@ -4,7 +4,12 @@ import { useUser } from '@/context/UserContext';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Zap, GamepadIcon } from 'lucide-react';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
+import { Zap, GamepadIcon, Ticket } from 'lucide-react';
 import LeaderboardModal from '@/components/user/LeaderboardModal';
 import UserStatus from '@/components/user/UserStatus'; 
 
@@ -111,14 +116,37 @@ export default function Header() {
             {isLoading ? (
               <Skeleton className="h-10 w-28" />
             ) : userCards && (
-              <div 
-                className="bg-blue-100 px-3 py-1 rounded-full flex items-center cursor-pointer hover:bg-blue-200 transition-colors"
-                onClick={() => navigate('/cards')}
-              >
-                <span className="text-blue-700 font-bold whitespace-nowrap">
-                  {userCards.freeIcon} كروت اللعب: {userCards.paidCards} / {userCards.freeCards}
-                </span>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div 
+                    className="bg-blue-100 px-3 py-1 rounded-full flex items-center cursor-pointer hover:bg-blue-200 transition-colors"
+                  >
+                    <span className="text-blue-700 font-bold whitespace-nowrap flex items-center gap-1.5">
+                      <Ticket className="h-4 w-4" /> الكروت: {userCards.freeCards + userCards.paidCards}
+                    </span>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-60 p-3" dir="rtl">
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-center mb-3 text-gray-700">تفاصيل الكروت</h4>
+                    <div className="flex justify-between items-center py-1 px-2 bg-blue-50 rounded">
+                      <span className="text-blue-700">🔹 الكروت المجانية:</span>
+                      <span className="font-bold">{userCards.freeCards}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 px-2 bg-amber-50 rounded">
+                      <span className="text-amber-700">🔸 الكروت المدفوعة:</span>
+                      <span className="font-bold">{userCards.paidCards}</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => navigate('/cards')}
+                      className="w-full mt-2 text-center text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      عرض جميع الكروت
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
 
             {/* Leaderboard */}
