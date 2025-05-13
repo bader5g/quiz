@@ -224,6 +224,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Footer settings API endpoints
+  app.get('/api/footer-settings', (_req, res) => {
+    // Sample footer settings data
+    const footerSettings = {
+      links: [
+        { label: "من نحن", url: "/about" },
+        { label: "اتصل بنا", url: "/contact" },
+        { label: "سياسة الخصوصية", url: "/privacy" },
+        { label: "الشروط والأحكام", url: "/terms" },
+        { label: "الأسئلة الشائعة", url: "/faq" },
+        { label: "English", url: "/en" }
+      ],
+      socialLinks: {
+        twitter: "https://twitter.com/jaweb",
+        whatsapp: "https://wa.me/966500000000",
+        telegram: "https://t.me/jaweb",
+        instagram: "https://instagram.com/jaweb"
+      },
+      copyright: "© 2025 جاوب - جميع الحقوق محفوظة"
+    };
+    
+    res.json(footerSettings);
+  });
+
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
