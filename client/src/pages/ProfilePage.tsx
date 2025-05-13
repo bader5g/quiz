@@ -146,8 +146,8 @@ export default function ProfilePage() {
   // حالة التحميل
   console.log("💡 حالة التحميل:", { user, levelLoading, cardsLoading, profileLoading });
   
-  // استخدم هذا الشرط المؤقت للتحقق فقط من تحميل البيانات الرئيسية
-  if (profileLoading) {
+  // الانتظار حتى تصل البيانات (المستخدم موجود)
+  if (!user || profileLoading) {
     return (
       <Layout>
         <div className="container mx-auto py-8" dir="rtl">
@@ -531,7 +531,7 @@ export default function ProfilePage() {
                       <div className="mt-4 text-center">
                         <p className="text-sm text-gray-600 mb-2">معاينة الصورة</p>
                         <Avatar className="h-24 w-24 mx-auto">
-                          <AvatarImage src={URL.createObjectURL(uploadedAvatar)} alt="صورة مختارة" />
+                          <AvatarImage src={uploadedAvatar ? URL.createObjectURL(uploadedAvatar) : ''} alt="صورة مختارة" />
                           <AvatarFallback>
                             <UserIcon className="h-12 w-12" />
                           </AvatarFallback>
@@ -590,8 +590,8 @@ export default function ProfilePage() {
                   <div className="relative group mb-4">
                     <Avatar className="h-24 w-24">
                       <AvatarImage 
-                        src={user.avatarUrl || defaultAvatars[0]} 
-                        alt={user.name || user.username} 
+                        src={user?.avatarUrl || defaultAvatars[0]} 
+                        alt={user?.name || user?.username || 'المستخدم'} 
                       />
                       <AvatarFallback>
                         <UserIcon className="h-12 w-12 text-gray-400" />
@@ -618,7 +618,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   
-                  <h2 className="text-xl font-bold">{user.name || user.username}</h2>
+                  <h2 className="text-xl font-bold">{user?.name || user?.username}</h2>
                   
                   <div className="flex items-center mt-2 mb-4">
                     <Badge style={{ backgroundColor: userLevel?.color || '#FFD700' }} className="text-white">
