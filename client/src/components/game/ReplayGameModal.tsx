@@ -18,8 +18,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Users, Clock, AlertCircle } from 'lucide-react';
+import { Users, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface GameCategory {
   id: number;
@@ -54,8 +55,12 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   
+  // تعريف أنماط CSS المشتركة
+  const inputClasses = "h-8 text-xs";
+  const smallButtonClasses = "text-xs h-8";
+  
   // الحصول على إعدادات اللعبة من API
-  const { data: gameSettings } = useQuery<GameSettings>({
+  const { data: gameSettings, isLoading: isLoadingSettings } = useQuery<GameSettings>({
     queryKey: ['/api/game-settings'],
     enabled: open, // تنفيذ الاستعلام فقط عندما يكون المودال مفتوحاً
   });
@@ -139,6 +144,13 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
         <DialogHeader className="pb-1.5">
           <DialogTitle className="text-lg font-bold text-center">اللعب مجدداً</DialogTitle>
         </DialogHeader>
+        
+        {isLoadingSettings && (
+          <div className="py-2 flex items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-primary mr-2" />
+            <p className="text-sm">جاري تحميل إعدادات اللعبة...</p>
+          </div>
+        )}
 
         <div className="flex flex-wrap justify-center gap-1.5 mb-3">
           {game.categories.map((category) => (
@@ -169,7 +181,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                 </Badge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {[...Array(game.teamsCount).keys()].map((index) => (
+                {Array.from({ length: game.teamsCount }).map((_, index) => (
                   <FormField
                     key={index}
                     control={form.control}
@@ -184,7 +196,7 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                             placeholder={`اسم الفريق ${index + 1}`}
                             maxLength={gameSettings?.maxTeamNameLength || 45}
                             {...field}
-                            className="h-8 text-xs py-1 px-2"
+                            className={`${inputClasses} py-1 px-2`}
                           />
                         </FormControl>
                         <FormMessage className="text-xs" />
@@ -270,14 +282,14 @@ export default function ReplayGameModal({ open, onOpenChange, game }: ReplayGame
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 size="sm"
-                className="text-xs h-8"
+                className={smallButtonClasses}
               >
                 إلغاء
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white text-xs h-8"
+                disabled={loading || isLoadingSettings}
+                className={`bg-green-600 hover:bg-green-700 text-white ${smallButtonClasses}`}
                 size="sm"
               >
                 {loading ? 'جاري الإنشاء...' : 'بدء اللعبة'}
