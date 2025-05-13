@@ -1,0 +1,78 @@
+✅ كود الهيدر بعد التعديل (React + Tailwind):
+أضف هذا داخل ملف Layout.tsx أو مباشرة في Home.tsx (في الأعلى فوق العنوان "جاوب"):
+
+tsx
+Copy
+Edit
+<div className="w-full flex justify-between items-center px-6 pt-4">
+  {/* يسار: الشعار */}
+  <div>
+    <img
+      src={siteLogoUrl || '/assets/logo-jaweb.png'}
+      alt="Jaweb Logo"
+      className="h-10 md:h-12 object-contain"
+    />
+  </div>
+
+  {/* وسط: المستوى + الكروت + المتصدرين */}
+  {isAuthenticated && (
+    <div className="flex items-center gap-3 text-sm text-gray-700">
+      <div className="bg-yellow-100 px-3 py-1 rounded-full flex flex-col items-center">
+        <span className="text-yellow-700 font-bold">🥇 المستوى: ذهبي</span>
+        <span className="text-gray-800 text-xs">⭐ 15 نجمة</span>
+      </div>
+      <div className="bg-blue-100 px-3 py-1 rounded-full">
+        🎫 كروت اللعب: 10 / 5
+      </div>
+      <Button
+        variant="outline"
+        className="bg-purple-100 text-purple-800 font-bold px-3 py-1 rounded-full"
+        onClick={() => setShowLeaderboard(true)}
+      >
+        🏆 المتصدرون
+      </Button>
+    </div>
+  )}
+
+  {/* يمين: أزرار المستخدم */}
+  <div className="flex items-center gap-3">
+    {isAuthenticated ? (
+      <>
+        <Button
+          onClick={() => navigate('/profile')}
+          className="bg-blue-500 text-white px-4 py-1 rounded-full hover:bg-blue-600"
+        >
+          الملف الشخصي
+        </Button>
+        <Button
+          onClick={logout}
+          className="bg-red-500 text-white px-4 py-1 rounded-full hover:bg-red-600"
+        >
+          تسجيل الخروج
+        </Button>
+      </>
+    ) : (
+      <>
+        <Button
+          onClick={() => navigate('/login')}
+          className="text-blue-600 hover:underline"
+        >
+          تسجيل الدخول
+        </Button>
+        <Button
+          onClick={() => navigate('/register')}
+          className="bg-blue-500 text-white px-4 py-1 rounded-full hover:bg-blue-600"
+        >
+          إنشاء حساب
+        </Button>
+      </>
+    )}
+  </div>
+</div>
+✅ ملاحظات:
+تأكد أن siteLogoUrl يتم تحميله مسبقًا من API الإعدادات.
+
+إذا كان لديك مكون Header داخل Layout.tsx، يُفضّل نقل هذا الكود إليه.
+
+يمكن تحسين ترتيب العناصر في الموبايل باستخدام flex-wrap أو hidden sm:flex.
+

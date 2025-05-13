@@ -69,147 +69,105 @@ export default function Header() {
   }, [isAuthenticated]);
 
   return (
-    <header className="bg-white shadow-sm py-3 px-5">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        {/* Right side - placeholder for RTL alignment */}
-        <div className="order-3"></div>
-
-        {/* Center content - User stats */}
-        <div className="order-2 flex-grow flex justify-center">
-          {isAuthenticated ? (
-            <div className="flex items-center gap-6 flex-wrap justify-center">
-              {/* User Level */}
-              {isLoading ? (
-                <Skeleton className="h-12 w-24" />
-              ) : userLevel && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex flex-col items-center bg-yellow-50 px-3 py-1.5 rounded-xl text-center shadow-sm border border-yellow-100 hover:bg-yellow-100 transition-colors cursor-pointer">
-                        <div className="text-yellow-700 font-bold text-sm flex items-center gap-1">
-                          <span>{userLevel.badge}</span>
-                          <span>المستوى: </span>
-                          <span style={{ color: userLevel.color }}>{userLevel.level}</span>
-                        </div>
-                        <div className="text-gray-800 text-xs mt-1">
-                          ⭐ {userLevel?.currentStars ? userLevel.currentStars : 0} نجمة
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>مستواك الحالي</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-              {/* Divider */}
-              <span className="text-gray-300">|</span>
-
-              {/* User Cards */}
-              {isLoading ? (
-                <Skeleton className="h-12 w-28" />
-              ) : userCards && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex flex-col items-center bg-blue-50 px-3 py-1.5 rounded-xl text-center shadow-sm border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer">
-                        <div className="text-blue-700 font-bold text-sm">
-                          كروت اللعب
-                        </div>
-                        <div className="text-gray-800 text-xs mt-1 flex items-center">
-                          <span className="text-sm mr-1">{userCards.freeIcon}</span>
-                          <span>{userCards.freeCards}</span>
-                          <span className="mx-1 text-gray-400">/</span>
-                          <span className="text-sm mr-1">{userCards.paidIcon}</span>
-                          <span>{userCards.paidCards}</span>
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>كروت مجانية / مدفوعة</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-              {/* Divider */}
-              <span className="text-gray-300">|</span>
-
-              {/* Leaderboard */}
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <LeaderboardModal />
-              )}
-            </div>
+    <header className="bg-white shadow-sm py-3">
+      <div className="max-w-7xl mx-auto w-full flex justify-between items-center px-6 pt-1">
+        {/* يمين (RTL): الشعار */}
+        <div>
+          {isLoading ? (
+            <Skeleton className="h-12 w-24" />
           ) : (
-            <div className="text-center text-lg font-bold text-blue-700">
-              {siteSettings?.appName || "جاوب"}
-            </div>
+            <a href="/" className="block">
+              <img
+                src={siteLogoUrl || "/assets/jaweb-logo.png"}
+                alt="Jaweb Logo"
+                className="h-10 md:h-12 object-contain"
+              />
+            </a>
           )}
         </div>
 
-        {/* Left side in RTL (far left) - Auth buttons and Logo (moved to far left) */}
-        <div className="order-1 flex gap-3 items-center">
-          {/* Logo at the far left */}
-          <div className="flex items-center mr-4">
+        {/* وسط: المستوى + الكروت + المتصدرين */}
+        {isAuthenticated ? (
+          <div className="flex items-center gap-3 flex-wrap justify-center text-sm text-gray-700">
+            {/* User Level */}
             {isLoading ? (
-              <Skeleton className="h-10 w-20" />
-            ) : (
-              <a href="/" className="block">
-                <img
-                  src={siteLogoUrl || "/assets/logo-jaweb.png"}
-                  alt="Jaweb Logo"
-                  className="h-10 object-contain"
-                />
-              </a>
+              <Skeleton className="h-10 w-24" />
+            ) : userLevel && (
+              <div 
+                className="bg-yellow-100 px-3 py-1 rounded-full flex flex-col items-center cursor-pointer hover:bg-yellow-200 transition-colors"
+                onClick={() => navigate('/profile')}
+              >
+                <span className="text-yellow-700 font-bold flex items-center gap-1">
+                  {userLevel.badge} المستوى: {userLevel.level}
+                </span>
+                <span className="text-gray-800 text-xs">
+                  ⭐ {userLevel?.currentStars ? userLevel.currentStars : 0} نجمة
+                </span>
+              </div>
             )}
-          </div>
 
-          {/* Auth buttons */}
-          <div className="flex gap-3">
-            {isAuthenticated ? (
-              <>
-                <button
-                  onClick={() => navigate('/profile')}
-                  className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-md font-medium flex items-center gap-1.5"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span>الملف الشخصي</span>
-                </button>
-                <button 
-                  onClick={() => logout()}
-                  className="border border-red-300 text-red-600 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                  <span>تسجيل الخروج</span>
-                </button>
-              </>
+            {/* User Cards */}
+            {isLoading ? (
+              <Skeleton className="h-10 w-28" />
+            ) : userCards && (
+              <div 
+                className="bg-blue-100 px-3 py-1 rounded-full flex items-center cursor-pointer hover:bg-blue-200 transition-colors"
+                onClick={() => navigate('/cards')}
+              >
+                <span className="text-blue-700 font-bold whitespace-nowrap">
+                  {userCards.freeIcon} كروت اللعب: {userCards.paidCards} / {userCards.freeCards}
+                </span>
+              </div>
+            )}
+
+            {/* Leaderboard */}
+            {isLoading ? (
+              <Skeleton className="h-10 w-24" />
             ) : (
-              <>
-                <button 
-                  onClick={() => navigate('/login')} 
-                  className="text-blue-600 hover:bg-blue-50 border border-blue-300 transition-colors px-3 py-1.5 rounded-md font-medium"
-                >
-                  تسجيل الدخول
-                </button>
-                <button 
-                  onClick={() => navigate('/register')} 
-                  className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-md font-medium"
-                >
-                  إنشاء حساب
-                </button>
-              </>
+              <div className="block">
+                <LeaderboardModal />
+              </div>
             )}
           </div>
+        ) : (
+          <div className="text-center text-lg font-bold text-blue-700 hidden md:block">
+            {siteSettings?.appName || "جاوب"}
+          </div>
+        )}
+
+        {/* يسار (RTL): أزرار المستخدم */}
+        <div className="flex items-center gap-3">
+          {isAuthenticated ? (
+            <>
+              <button
+                onClick={() => navigate('/profile')}
+                className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-full font-medium"
+              >
+                الملف الشخصي
+              </button>
+              <button 
+                onClick={() => logout()}
+                className="bg-red-500 hover:bg-red-600 transition-colors text-white px-4 py-1.5 rounded-full font-medium"
+              >
+                تسجيل الخروج
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => navigate('/login')} 
+                className="text-blue-600 hover:underline transition-colors px-3 py-1.5 font-medium"
+              >
+                تسجيل الدخول
+              </button>
+              <button 
+                onClick={() => navigate('/register')} 
+                className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-full font-medium"
+              >
+                إنشاء حساب
+              </button>
+            </>
+          )}
         </div>
       </div>
     </header>
