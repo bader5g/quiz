@@ -85,15 +85,7 @@ export default function ProfilePage() {
   const [isPhoneReady, setIsPhoneReady] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   
-  // Form state stored in a separate object to prevent re-renders
-  const [formData, setFormData] = useState({
-    value: '',
-    confirmValue: '',
-    error: '',
-    phonePrefix: '',
-    isPhoneReady: false,
-    isSubmitting: false
-  });
+  // نحذف هذه المتغيرات لأننا نستخدم المتغيرات المباشرة بدلاً من كائن formData
   const [originalValue, setOriginalValue] = useState<string>('');
 
   // تحديد ما إذا كان المستخدم مالك الملف الشخصي
@@ -645,10 +637,10 @@ export default function ProfilePage() {
 
     return (
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl" aria-describedby="dialog-description">
+        <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>{getModalTitle()}</DialogTitle>
-            <DialogDescription id="dialog-description" className="sr-only">
+            <DialogDescription>
               {`نافذة تحرير ${editType === 'name' ? 'الاسم' : 
                 editType === 'email' ? 'البريد الإلكتروني' : 
                 editType === 'phone' ? 'رقم الهاتف' : 
