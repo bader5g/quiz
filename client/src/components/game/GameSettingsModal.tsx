@@ -26,6 +26,8 @@ interface GameSettings {
   maxTeamNameLength: number;
   defaultFirstAnswerTime: number;
   defaultSecondAnswerTime: number;
+  allowedFirstAnswerTimes: number[];
+  allowedSecondAnswerTimes: number[];
   modalTitle: string;
   minCategories: number;
   maxCategories: number;
@@ -47,23 +49,15 @@ interface GameSettingsModalProps {
 const formSchema = z.object({
   gameName: z.string()
     .min(1, { message: "يرجى إدخال اسم للعبة" })
-    .max(30, { message: "يجب أن لا يتجاوز اسم اللعبة 30 حرفاً" }),
+    .max(45, { message: "يجب أن لا يتجاوز اسم اللعبة 45 حرفاً" }),
   teamCount: z.string(),
   teamNames: z.array(
     z.string()
       .min(1, { message: "يرجى إدخال اسم للفريق" })
-      .max(20, { message: "يجب أن لا يتجاوز اسم الفريق 20 حرفاً" })
+      .max(45, { message: "يجب أن لا يتجاوز اسم الفريق 45 حرفاً" })
   ),
-  answerTimeFirst: z.string()
-    .refine(val => {
-      const num = parseInt(val, 10);
-      return !isNaN(num) && num >= 10 && num <= 300;
-    }, { message: "يجب أن يكون وقت الإجابة الأولى بين 10 و 300 ثانية" }),
-  answerTimeSecond: z.string()
-    .refine(val => {
-      const num = parseInt(val, 10);
-      return !isNaN(num) && num >= 5 && num <= 60;
-    }, { message: "يجب أن يكون وقت الإجابة الثانية بين 5 و 60 ثانية" }),
+  answerTimeFirst: z.string(),
+  answerTimeSecond: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -290,17 +284,23 @@ export function GameSettingsModal({
               render={({ field }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الأولى (ثانية)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={10}
-                      max={300}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    من 10 إلى 300 ثانية
-                  </FormDescription>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر وقت الإجابة الأولى" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {settings?.allowedFirstAnswerTimes?.map((time) => (
+                        <SelectItem key={time} value={time.toString()}>
+                          {time} ثانية
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -313,17 +313,23 @@ export function GameSettingsModal({
               render={({ field }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الثانية (ثانية)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={5}
-                      max={60}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    من 5 إلى 60 ثانية
-                  </FormDescription>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر وقت الإجابة الثانية" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {settings?.allowedSecondAnswerTimes?.map((time) => (
+                        <SelectItem key={time} value={time.toString()}>
+                          {time} ثانية
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
