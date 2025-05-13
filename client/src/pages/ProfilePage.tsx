@@ -688,18 +688,6 @@ export default function ProfilePage() {
                           <Lock className="ml-1.5 h-3 w-3" />
                           تعديل كلمة المرور
                         </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start"
-                          onClick={() => {
-                            setEditType('avatar');
-                            setEditModalOpen(true);
-                          }}
-                        >
-                          <CreditCardIcon className="ml-1.5 h-3 w-3" />
-                          شراء كروت
-                        </Button>
                       </>
                     )}
                   </div>
