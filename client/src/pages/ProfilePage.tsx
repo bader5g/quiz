@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
@@ -26,12 +26,7 @@ import {
   Phone,
   Lock,
   Image,
-  Upload,
-  Check,
-  X,
-  Pencil,
-  CheckCircle2,
-  CreditCard as CreditCardIcon
+  Pencil
 } from "lucide-react";
 
 interface UserLevel {
@@ -74,20 +69,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
-  const [selectedAvatar, setSelectedAvatar] = useState<string>('');
-  const [uploadedAvatar, setUploadedAvatar] = useState<File | null>(null);
   const [phonePrefix, setPhonePrefix] = useState<string>('+966'); // القيمة الافتراضية لرمز الدولة
-  const [formValue, setFormValue] = useState<string>('');
-  const [confirmValue, setConfirmValue] = useState<string>('');
-  const [formError, setFormError] = useState<string>('');
-  const [isPhoneReady, setIsPhoneReady] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  
-  // نحذف هذه المتغيرات لأننا نستخدم المتغيرات المباشرة بدلاً من كائن formData
-  const [originalValue, setOriginalValue] = useState<string>('');
-
-  // تحديد ما إذا كان المستخدم مالك الملف الشخصي
-  const isOwner = true; // في تطبيق حقيقي، ستقارن بين معرف المستخدم الحالي والملف الشخصي المعروض
 
   // جلب رمز الدولة تلقائيًا من IP المستخدم
   useEffect(() => {
@@ -102,23 +84,12 @@ export default function ProfilePage() {
           setPhonePrefix('+966'); // استخدام +966 (السعودية) كقيمة افتراضية
         }
         console.log("Country calling code:", countryCode);
-        setIsPhoneReady(true);
       })
       .catch(err => {
         console.error("فشل جلب معلومات الدولة:", err);
         setPhonePrefix('+966'); // استخدام +966 (السعودية) كقيمة افتراضية في حالة الخطأ
-        setIsPhoneReady(true);
       });
   }, []);
-
-  // مجموعة الصور الشخصية الافتراضية
-  const defaultAvatars = [
-    '/assets/avatars/avatar1.png',
-    '/assets/avatars/avatar2.png',
-    '/assets/avatars/avatar3.png',
-    '/assets/avatars/avatar4.png',
-    '/assets/avatars/avatar5.png',
-  ];
 
   // جلب معلومات مستوى اللاعب
   const { 
@@ -145,8 +116,6 @@ export default function ProfilePage() {
   } = useQuery<UserStats, Error>({
     queryKey: ['/api/user-stats'],
     queryFn: getQueryFn({ on401: "throw" }),
-    // إذا لم يتوفر هذا الـ API، سيتم اعتبار الحالة لا تزال في وضع التحميل
-    // ويمكنك استبداله ببيانات افتراضية للتطوير
   });
 
   // جلب معلومات المستخدم
@@ -165,6 +134,56 @@ export default function ProfilePage() {
       setUser(userProfile);
     }
   }, [userProfile]);
+
+  // دالة فتح نافذة التعديل
+  const openEditModal = (type: 'name' | 'email' | 'phone' | 'password' | 'avatar') => {
+    setEditType(type);
+    setEditModalOpen(true);
+  };
+
+  // دالة معالجة حفظ التغييرات
+  const handleSaveProfileChanges = (type: string, value: string) => {
+    if (!user) return;
+    
+    // تحديث بيانات المستخدم
+    const updatedUser = { ...user };
+    
+    switch(type) {
+      case 'name':
+        updatedUser.name = value;
+        break;
+      case 'email':
+        updatedUser.email = value;
+        break;
+      case 'phone':
+        updatedUser.phone = value;
+        break;
+      case 'avatar':
+        updatedUser.avatarUrl = value;
+        break;
+      case 'password':
+        // عادة ما يتم إرسال كلمة المرور إلى الخادم للتحديث
+        console.log("تم تغيير كلمة المرور");
+        break;
+    }
+    
+    // تحديث بيانات المستخدم في السياق
+    if (contextUser) {
+      updateUser(updatedUser);
+    }
+    
+    // تحديث حالة المستخدم المحلية
+    setUser(updatedUser);
+    
+    // إعادة تحميل البيانات
+    refetchProfile();
+    
+    // عرض رسالة نجاح
+    toast({
+      title: "تم التحديث بنجاح",
+      description: "تم تحديث بياناتك الشخصية"
+    });
+  };
 
   // الانتظار حتى تصل البيانات (المستخدم موجود)
   if (!user || profileLoading) {
@@ -227,488 +246,6 @@ export default function ProfilePage() {
       ? Math.min(100, Math.round((userLevel.currentStars / userLevel.requiredStars) * 100)) 
       : 0);
 
-  // مكون مودال تحرير البيانات الشخصية - إصدار جديد يستخدم useRef بدلاً من useState
-  const EditProfileModal = () => {
-    // استخدام المراجع بدلاً من الحالة لمنع إعادة رسم المكون
-    const nameInputRef = useRef<HTMLInputElement>(null);
-    const emailInputRef = useRef<HTMLInputElement>(null);
-    const phoneInputRef = useRef<HTMLInputElement>(null);
-    const passwordInputRef = useRef<HTMLInputElement>(null);
-    const confirmPasswordInputRef = useRef<HTMLInputElement>(null);
-    
-    // حالة الإرسال فقط - لن تؤثر على إعادة رسم الحقول
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState("");
-    // التحقق مما إذا كانت قيمة النموذج غير متغيرة
-    const isUnchanged = useMemo(() => {
-      if (!user) return true;
-
-      // التحقق مما إذا كانت القيمة الحالية هي نفس القيمة الأصلية
-      switch (editType) {
-        case 'name':
-          return nameInputRef.current?.value === user.name;
-        case 'email':
-          return emailInputRef.current?.value === user.email;
-        case 'phone':
-          return phoneInputRef.current?.value === (user.phone?.replace(/^\+\d+\s/, '') || '');
-        case 'password':
-          // أي تغيير في كلمة المرور يعتبر تغييرًا
-          return !passwordInputRef.current?.value;
-        default:
-          return false;
-      }
-    }, [user, editType]);
-
-    // تم تعطيل هذا الكود لأننا أصبحنا نستخدم مراجع بدلاً من حالات
-    // استبدلنا هذا الكود بـ useEffect داخل renderModalContent
-
-    // إرسال التحديثات إلى الخادم
-    const handleSubmit = async () => {
-      setError('');
-      setSubmitting(true);
-
-      try {
-        // الحصول على القيم من المراجع
-        let updatedValue = '';
-        
-        switch (editType) {
-          case 'name':
-            updatedValue = nameInputRef.current?.value || '';
-            break;
-          case 'email':
-            updatedValue = emailInputRef.current?.value || '';
-            // التحقق من صحة البريد الإلكتروني
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(updatedValue)) {
-              setError('يرجى إدخال بريد إلكتروني صحيح');
-              setSubmitting(false);
-              return;
-            }
-            break;
-          case 'phone':
-            updatedValue = phoneInputRef.current?.value || '';
-            // التحقق من طول رقم الهاتف
-            if (updatedValue.length < 8 || updatedValue.length > 12) {
-              setError('رقم الهاتف يجب أن يكون بين 8 و 12 رقم');
-              setSubmitting(false);
-              return;
-            }
-            updatedValue = `${phonePrefix} ${updatedValue}`;
-            break;
-          case 'password':
-            const password = passwordInputRef.current?.value || '';
-            const confirmPassword = confirmPasswordInputRef.current?.value || '';
-            
-            if (password.length < 8) {
-              setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
-              setSubmitting(false);
-              return;
-            }
-            
-            if (password !== confirmPassword) {
-              setError('كلمة المرور وتأكيدها غير متطابقين');
-              setSubmitting(false);
-              return;
-            }
-            
-            updatedValue = password;
-            break;
-        }
-
-        // رفع الصورة الشخصية
-        if (editType === 'avatar') {
-          // إذا اختار المستخدم صورة من المكتبة
-          if (selectedAvatar) {
-            // تحديث الصورة المختارة
-            console.log(`Updating avatar with library image: ${selectedAvatar}`);
-
-            // تحديث الواجهة والسياق
-            if (user) {
-              const updatedData = { avatarUrl: selectedAvatar };
-              // تحديث بيانات المستخدم في الصفحة
-              setUser({
-                ...user,
-                ...updatedData
-              });
-              // تحديث بيانات المستخدم في السياق العام
-              updateUser(updatedData);
-            }
-          } 
-          // إذا رفع المستخدم صورة من جهازه
-          else if (uploadedAvatar) {
-            // إنشاء نموذج بيانات لرفع الملف
-            const formData = new FormData();
-            formData.append('avatar', uploadedAvatar);
-
-            // رفع الصورة
-            console.log(`Uploading custom avatar: ${uploadedAvatar.name}`);
-
-            // محاكاة رفع الصورة للتطوير
-            if (user) {
-              const mockAvatarUrl = `/uploads/avatars/${user.id}.png`;
-              const updatedData = { avatarUrl: mockAvatarUrl };
-              // تحديث بيانات المستخدم في الصفحة
-              setUser({
-                ...user,
-                ...updatedData
-              });
-              // تحديث بيانات المستخدم في السياق العام
-              updateUser(updatedData);
-            }
-          }
-        } 
-        // معالجة بقية أنواع النماذج (الاسم، البريد، رقم الهاتف، كلمة المرور)
-        else {
-          if (!formValue.trim()) {
-            setFormError('الرجاء إدخال قيمة صحيحة');
-            return;
-          }
-
-          // تجهيز البيانات للإرسال
-          const updateData: Record<string, string> = {};
-
-          switch (editType) {
-            case 'name':
-              updateData.name = formValue;
-              break;
-            case 'email':
-              // التحقق من صحة البريد الإلكتروني باستخدام الـ regex المطلوب
-              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-              if (!emailRegex.test(formValue.trim())) {
-                setFormError('الرجاء إدخال بريد إلكتروني صحيح');
-                return;
-              }
-              updateData.email = formValue.trim();
-              break;
-            case 'phone':
-              // التحقق من صحة رقم الهاتف
-              const phoneRaw = formValue.replace(/\D/g, '');
-              if (!/^\d{8,12}$/.test(phoneRaw)) {
-                setFormError('الرجاء إدخال رقم هاتف صحيح');
-                return;
-              }
-              // إضافة رمز الدولة إلى رقم الهاتف
-              updateData.phone = phonePrefix + phoneRaw;
-              break;
-            case 'password':
-              updateData.password = formValue;
-              break;
-          }
-
-          // تسجيل البيانات المحدثة
-          console.log(`Updating ${editType} with value: ${formValue}`);
-
-          // تعيين حالة الإرسال
-          setIsSubmitting(true);
-
-          // محاكاة إرسال البيانات للخادم (في الواقع ستستخدم mutation)
-          setTimeout(() => {
-            // تحديث حالة المستخدم في الواجهة وفي السياق العام
-            if (user && editType !== 'password') {
-              // تحديث في الواجهة
-              setUser({
-                ...user,
-                ...updateData
-              });
-              
-              // تحديث في السياق العام
-              updateUser(updateData);
-            }
-
-            // إظهار رسالة نجاح
-            toast({
-              title: "تم التحديث بنجاح",
-              description: "تم حفظ بياناتك الجديدة",
-              variant: "default",
-            });
-
-            // إعادة تعيين حالة الإرسال
-            setIsSubmitting(false);
-          }, 500);
-        }
-
-        // إغلاق المودال بعد التحديث
-        setEditModalOpen(false);
-
-        // إعادة ضبط قيم النموذج
-        setFormValue('');
-        setConfirmValue('');
-        setSelectedAvatar('');
-        setUploadedAvatar(null);
-
-        // إعادة تحميل بيانات المستخدم
-        refetchProfile();
-
-      } catch (error) {
-        console.error('Error updating profile:', error);
-        setFormError('حدث خطأ أثناء تحديث البيانات. الرجاء المحاولة مرة أخرى');
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-
-    // تحميل صورة محلية
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        // التحقق من نوع الملف
-        if (!file.type.startsWith('image/')) {
-          setFormError('الرجاء اختيار ملف صورة صالح');
-          return;
-        }
-
-        // التحقق من حجم الملف (5 ميجابايت كحد أقصى)
-        if (file.size > 5 * 1024 * 1024) {
-          setFormError('حجم الصورة يجب أن يكون أقل من 5 ميجابايت');
-          return;
-        }
-
-        setUploadedAvatar(file);
-        setSelectedAvatar('');
-        setFormError('');
-      }
-    };
-
-    // اختيار صورة من المكتبة
-    const handleAvatarSelect = (avatar: string) => {
-      setSelectedAvatar(avatar);
-      setUploadedAvatar(null);
-      setFormError('');
-    };
-
-    // عنوان المودال بناءً على نوع التعديل
-    const getModalTitle = () => {
-      switch (editType) {
-        case 'name': 
-          return 'تعديل الاسم';
-        case 'email': 
-          return 'البريد الإلكتروني';
-        case 'phone': 
-          return 'تعديل رقم الهاتف';
-        case 'password': 
-          return 'تعديل كلمة المرور';
-        case 'avatar': 
-          return 'الصورة الشخصية';
-        default: 
-          return 'تعديل الملف الشخصي';
-      }
-    };
-
-    // محتوى المودال بناءً على نوع التعديل
-    const renderModalContent = () => {
-      switch (editType) {
-        case 'name':
-          return (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">الاسم</Label>
-                <Input 
-                  id="name" 
-                  placeholder="أدخل اسمك" 
-                  autoComplete="off"
-                  value={formValue}
-                  onChange={(e) => setFormValue(e.target.value)}
-                />
-              </div>
-            </div>
-          );
-
-        case 'email':
-          return (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="أدخل بريدك الإلكتروني" 
-                  value={formValue}
-                  onChange={(e) => {
-                    setFormValue(e.target.value);
-                    // التحقق من البريد الإلكتروني أثناء الكتابة
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (e.target.value && !emailRegex.test(e.target.value.trim())) {
-                      setFormError('الرجاء إدخال بريد إلكتروني صحيح');
-                    } else {
-                      setFormError('');
-                    }
-                  }}
-                />
-                {formError && (
-                  <p className="text-sm text-red-500">{formError}</p>
-                )}
-              </div>
-            </div>
-          );
-
-        case 'phone':
-          return !isPhoneReady ? (
-            <div className="py-6 text-center">
-              <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-current border-e-transparent mx-auto mb-2"></span>
-              <p>جاري جلب رمز الدولة...</p>
-            </div>
-          ) : (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف</Label>
-                <div className="flex space-x-1 items-center">
-                  <div className="bg-muted text-muted-foreground text-sm px-3 py-2 rounded-l-md border border-r-0 border-input h-10 flex items-center">
-                    {phonePrefix}
-                  </div>
-                  <Input 
-                    id="phone" 
-                    className="rounded-l-none flex-1"
-                    placeholder="أدخل رقم هاتفك بدون الرمز الدولي" 
-                    autoComplete="off"
-                    value={formValue}
-                    onChange={(e) => {
-                      // حذف كل الأحرف غير الرقمية
-                      const raw = e.target.value.replace(/\D/g, '');
-                      setFormValue(raw);
-                    }}
-                  />
-                </div>
-                {formError && (
-                  <p className="text-sm text-red-500">{formError}</p>
-                )}
-              </div>
-            </div>
-          );
-
-        case 'password':
-          return (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور الجديدة</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="أدخل كلمة المرور الجديدة" 
-                  autoComplete="new-password"
-                  value={formValue}
-                  onChange={(e) => setFormValue(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
-                <Input 
-                  id="confirmPassword" 
-                  type="password" 
-                  placeholder="أعد إدخال كلمة المرور" 
-                  autoComplete="new-password"
-                  value={confirmValue}
-                  onChange={(e) => setConfirmValue(e.target.value)}
-                />
-              </div>
-            </div>
-          );
-
-        case 'avatar':
-          return (
-            <div className="space-y-4 py-2">
-              <Tabs defaultValue="gallery" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="gallery">من المكتبة</TabsTrigger>
-                  <TabsTrigger value="upload">رفع صورة</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="gallery" className="mt-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    {defaultAvatars.map((avatar, index) => (
-                      <div 
-                        key={index} 
-                        className={`p-1.5 cursor-pointer rounded-md border ${selectedAvatar === avatar ? 'border-blue-500' : 'border-gray-200'} relative`}
-                        onClick={() => handleAvatarSelect(avatar)}
-                      >
-                        <Avatar className="h-12 w-12 mx-auto">
-                          <AvatarImage src={avatar} alt={`Avatar ${index + 1}`} />
-                          <AvatarFallback>{index + 1}</AvatarFallback>
-                        </Avatar>
-                        {selectedAvatar === avatar && (
-                          <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center">
-                            <Check className="h-4 w-4" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="upload" className="mt-4">
-                  <div className="space-y-4">
-                    <Label htmlFor="avatarUpload">اختر صورة من جهازك</Label>
-                    <Input 
-                      id="avatarUpload" 
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-
-                    {uploadedAvatar && (
-                      <div className="mt-4 text-center">
-                        <p className="text-sm text-gray-600 mb-2">معاينة الصورة</p>
-                        <Avatar className="h-24 w-24 mx-auto">
-                          <AvatarImage src={uploadedAvatar ? URL.createObjectURL(uploadedAvatar) : ''} alt="صورة مختارة" />
-                          <AvatarFallback>
-                            <UserIcon className="h-12 w-12" />
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          );
-
-        default:
-          return null;
-      }
-    };
-
-    return (
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>{getModalTitle()}</DialogTitle>
-            <DialogDescription>
-              {`نافذة تحرير ${editType === 'name' ? 'الاسم' : 
-                editType === 'email' ? 'البريد الإلكتروني' : 
-                editType === 'phone' ? 'رقم الهاتف' : 
-                editType === 'password' ? 'كلمة المرور' : 'الصورة الشخصية'}`}
-            </DialogDescription>
-          </DialogHeader>
-
-          {renderModalContent()}
-
-          {formError && (
-            <div className="text-sm text-red-500 mt-2">{formError}</div>
-          )}
-
-          <DialogFooter className="flex flex-row justify-between sm:justify-between">
-            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
-              إلغاء
-            </Button>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isSubmitting || formValue === originalValue}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent"></span>
-                  جارٍ التحديث...
-                </>
-              ) : (
-                'حفظ التغييرات'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4 md:px-8" dir="rtl">
@@ -717,175 +254,259 @@ export default function ProfilePage() {
           <div className="md:col-span-1">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle>الملف الشخصي</CardTitle>
+                <CardTitle className="text-xl font-bold">الملف الشخصي</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center">
-                  <div className="relative group mb-4">
-                    <Avatar className="h-24 w-24">
-                      <AvatarImage 
-                        src={user?.avatarUrl || defaultAvatars[0]} 
-                        alt={user?.name || user?.username || 'المستخدم'} 
-                      />
-                      <AvatarFallback>
-                        <UserIcon className="h-12 w-12 text-gray-400" />
-                      </AvatarFallback>
+                  <div className="relative group">
+                    <Avatar className="h-24 w-24 border-2 border-primary">
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarFallback>{user.name?.charAt(0) || user.username?.charAt(0) || <UserIcon />}</AvatarFallback>
                     </Avatar>
-                    {isOwner && (
-                      <div 
-                        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        onClick={() => {
-                          setEditType('avatar');
-                          setSelectedAvatar('');
-                          setUploadedAvatar(null);
-                          setFormError('');
-                          setEditModalOpen(true);
-                        }}
-                      >
-                        <div className="text-white flex flex-col items-center">
-                          <Pencil className="h-4 w-4" />
-                          <span className="text-xs mt-1">تغيير</span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="absolute bottom-0 right-0">
-                      <Badge className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center p-0" variant="secondary">
-                        <Check className="h-3 w-3 text-white" />
-                      </Badge>
-                    </div>
+                    <button 
+                      className="absolute bottom-0 right-0 bg-primary text-white p-1 rounded-full hover:bg-primary/80 transition-colors"
+                      onClick={() => openEditModal('avatar')}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
                   </div>
-
-                  <div className="flex items-center">
-                    <h2 className="text-xl font-bold">{user?.name || user?.username}</h2>
-                    {isOwner && (
-                      <Button 
-                        variant="ghost" 
-                        className="ml-2 h-7 w-7 p-0"
-                        onClick={() => {
-                          setEditType('name');
-                          setFormValue(user?.name || '');
-                          setFormError('');
-                          setEditModalOpen(true);
-                        }}
+                  
+                  <h3 className="text-xl font-bold mt-3 flex items-center gap-2">
+                    {user.name || user.username}
+                    <button 
+                      className="text-muted-foreground hover:text-primary"
+                      onClick={() => openEditModal('name')}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </h3>
+                  
+                  <div className="text-sm text-muted-foreground mb-4 flex flex-col items-center">
+                    <div className="flex items-center gap-1 mt-1">
+                      <Mail className="h-3.5 w-3.5" />
+                      <span>{user.email}</span>
+                      <button 
+                        className="text-muted-foreground hover:text-primary"
+                        onClick={() => openEditModal('email')}
                       >
                         <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center mt-2 mb-4">
-                    <Badge style={{ backgroundColor: userLevel?.color || '#FFD700' }} className="text-white">
-                      <span className="ml-1">{userLevel?.badge}</span>
-                      {userLevel?.level}
-                    </Badge>
-                  </div>
-
-                  {/* شريط التقدم نحو المستوى التالي */}
-                  {userLevel?.nextLevel && (
-                    <div className="w-full mt-2">
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>المستوى الحالي: {userLevel?.level}</span>
-                        <span>المستوى التالي: {userLevel?.nextLevel}</span>
-                      </div>
-                      <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-yellow-500" 
-                          style={{ width: `${progressPercentage}%` }}
-                        ></div>
-                      </div>
-                      {userLevel?.currentStars !== undefined && userLevel?.requiredStars !== undefined && (
-                        <div className="text-xs text-gray-500 mt-1 text-center">
-                          <Star className="h-3 w-3 inline ml-1 text-yellow-500" />
-                          {userLevel?.currentStars} / {userLevel?.requiredStars}
-                        </div>
-                      )}
+                      </button>
                     </div>
-                  )}
-
-                  {/* أزرار الإجراءات */}
-                  <div className="w-full space-y-1.5 mt-4">
-                    {isOwner && (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start"
-                          onClick={() => {
-                            setEditType('email');
-                            setEditModalOpen(true);
-                          }}
-                        >
-                          <Mail className="ml-1.5 h-3 w-3" />
-                          البريد الإلكتروني
-                        </Button>
-
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start"
-                          onClick={() => {
-                            setEditType('phone');
-                            setEditModalOpen(true);
-                          }}
-                        >
-                          <Phone className="ml-1.5 h-3 w-3" />
-                          تعديل رقم الهاتف
-                        </Button>
-
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start"
-                          onClick={() => {
-                            setEditType('password');
-                            setEditModalOpen(true);
-                          }}
-                        >
-                          <Lock className="ml-1.5 h-3 w-3" />
-                          تعديل كلمة المرور
-                        </Button>
-                      </>
-                    )}
+                    
+                    <div className="flex items-center gap-1 mt-1">
+                      <Phone className="h-3.5 w-3.5" />
+                      <span>{user.phone}</span>
+                      <button 
+                        className="text-muted-foreground hover:text-primary"
+                        onClick={() => openEditModal('phone')}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="w-full space-y-2 mt-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={() => openEditModal('password')}
+                    >
+                      <Lock className="h-4 w-4" />
+                      <span>تغيير كلمة المرور</span>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          {/* محتوى رئيسي */}
+          
+          {/* معلومات اللاعب */}
           <div className="md:col-span-2">
             <div className="grid gap-6">
-              {/* إحصائيات المستخدم */}
+              {/* بطاقة المستوى والبطاقات */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart className="h-5 w-5 ml-2" />
-                    إحصائيات اللاعب
-                  </CardTitle>
+                  <CardTitle className="text-xl font-bold">معلومات اللاعب</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* عدد الألعاب */}
-                    <div className="bg-blue-50 p-4 rounded-lg text-center">
-                      <Calendar className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                      <div className="text-2xl font-bold text-blue-800">
-                        {userStats ? userStats.gamesPlayed : 0}
-                      </div>
-                      <div className="text-sm text-blue-600">عدد الألعاب</div>
-                    </div>
-
-                    {/* آخر نشاط */}
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
-                      <Clock className="h-8 w-8 mx-auto mb-2 text-gray-600" />
-                      <div className="text-lg font-bold text-gray-800 h-12 flex items-center justify-center">
-                        {userStats?.lastPlayed 
-                          ? new Date(userStats.lastPlayed).toLocaleDateString('ar-EG') 
-                          : 'لا يوجد'}
-                      </div>
-                      <div className="text-sm text-gray-600">آخر نشاط</div>
-                    </div>
-                  </div>
+                  <Tabs defaultValue="level">
+                    <TabsList className="grid grid-cols-2 mb-4">
+                      <TabsTrigger value="level">المستوى</TabsTrigger>
+                      <TabsTrigger value="cards">البطاقات</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="level" className="space-y-4">
+                      {levelLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-8 w-3/4" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-6 w-1/2" />
+                        </div>
+                      ) : userLevel ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Medal className="h-5 w-5" style={{ color: userLevel.color }} />
+                            <h3 className="text-lg font-bold" style={{ color: userLevel.color }}>
+                              المستوى: {userLevel.level} {userLevel.badge}
+                            </h3>
+                          </div>
+                          
+                          {/* شريط التقدم */}
+                          {userLevel.nextLevel && (
+                            <div className="space-y-2">
+                              <div className="w-full h-2 bg-muted-foreground/20 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary rounded-full"
+                                  style={{ 
+                                    width: `${progressPercentage}%`,
+                                    backgroundColor: userLevel.color 
+                                  }}
+                                />
+                              </div>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>{userLevel.level}</span>
+                                <span>
+                                  {userLevel.currentStars}/{userLevel.requiredStars} نجمة
+                                </span>
+                                <span>{userLevel.nextLevel}</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <Card>
+                              <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-primary/10">
+                                  <Trophy className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">المستوى التالي</p>
+                                  <p className="font-bold">{userLevel.nextLevel || "أعلى مستوى"}</p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                            
+                            <Card>
+                              <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-yellow-100">
+                                  <Star className="h-5 w-5 text-yellow-500" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">النجوم المطلوبة</p>
+                                  <p className="font-bold">
+                                    {userLevel.requiredStars || "--"} نجمة
+                                  </p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </div>
+                      ) : (
+                        <p>لا توجد معلومات متاحة حول المستوى</p>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="cards">
+                      {cardsLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-8 w-3/4" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-6 w-1/2" />
+                        </div>
+                      ) : userCards ? (
+                        <div className="space-y-4">
+                          <div className="flex justify-between">
+                            <h3 className="text-lg font-bold">بطاقاتي</h3>
+                            <Badge variant="outline" className="px-4">
+                              المجموع: {userCards.totalCards}
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <Card>
+                              <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-green-100">
+                                  <Gift className="h-5 w-5 text-green-500" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">بطاقات مجانية</p>
+                                  <div className="font-bold flex items-center justify-between">
+                                    {userCards.freeCards} بطاقة
+                                    <span className="text-xs text-muted-foreground mr-2">
+                                      ({userCards.usedFreeCards} مستخدمة)
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                            
+                            <Card>
+                              <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-blue-100">
+                                  <CreditCard className="h-5 w-5 text-blue-500" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">بطاقات مدفوعة</p>
+                                  <div className="font-bold flex items-center justify-between">
+                                    {userCards.paidCards} بطاقة
+                                    <span className="text-xs text-muted-foreground mr-2">
+                                      ({userCards.usedPaidCards} مستخدمة)
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </div>
+                      ) : (
+                        <p>لا توجد معلومات متاحة عن البطاقات</p>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
-
-              {/* قسم إضافي يمكن إضافته في المستقبل */}
+              
+              {/* إحصائيات اللعب */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold">إحصائيات اللعب</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {statsLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : userStats ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <Card>
+                        <CardContent className="p-4 flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-purple-100">
+                            <BarChart className="h-5 w-5 text-purple-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">الألعاب الكلية</p>
+                            <p className="font-bold">{userStats.gamesPlayed} لعبة</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-4 flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-orange-100">
+                            <Clock className="h-5 w-5 text-orange-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">آخر لعبة</p>
+                            <p className="font-bold" dir="ltr">
+                              {new Date(userStats.lastPlayed).toLocaleDateString('ar-SA')}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : (
+                    <p>لا توجد إحصائيات متاحة</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
@@ -897,7 +518,7 @@ export default function ProfilePage() {
           editType={editType} 
           user={user} 
           onSave={handleSaveProfileChanges}
-          phonePrefix={phonePrefix || "+966"}
+          phonePrefix={phonePrefix}
         />
       </div>
     </Layout>
