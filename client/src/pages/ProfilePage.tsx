@@ -10,6 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/UserContext";
 import EditModal from "@/components/profile/EditModal";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   UserIcon, 
   Calendar, 
@@ -21,7 +24,10 @@ import {
   Image,
   Pencil,
   Trophy,
-  Users
+  Users,
+  UserPlus,
+  XCircle,
+  Star
 } from "lucide-react";
 
 interface LinkedUser {
@@ -29,8 +35,17 @@ interface LinkedUser {
   username: string;
   name?: string;
   avatarUrl?: string;
-  relationshipType: string; // 'friend', 'family', 'teammate', etc.
+  relationshipType: string; // 'sub-user' = مستخدم فرعي
   lastGameDate?: string;
+  email?: string;
+  phone?: string;
+  gamesPlayed: number;
+  activityPercentage: number;
+  contributionStars: number;
+  freeCards: number;
+  paidCards: number;
+  status: 'active' | 'disabled';
+  isOnline?: boolean;
 }
 
 interface UserStats {
@@ -53,6 +68,12 @@ export default function ProfilePage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
   const [phonePrefix, setPhonePrefix] = useState<string>('+966');
+  
+  // حالات نوافذ المستخدمين الفرعيين
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false);
+  const [selectedSubUser, setSelectedSubUser] = useState<LinkedUser | null>(null);
+  const [addCardModalOpen, setAddCardModalOpen] = useState(false);
 
   // تحديد رمز الدولة عند تحميل الصفحة
   useEffect(() => {
@@ -287,8 +308,19 @@ export default function ProfilePage() {
             <div className="grid gap-6">
               {/* بطاقة المستخدمين المرتبطين */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold">المستخدمون المرتبطون</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div>
+                    <CardTitle className="text-xl font-bold">المستخدمون المرتبطون</CardTitle>
+                    <p className="text-muted-foreground text-sm mt-1">يمكنك إضافة حتى 5 مستخدمين فرعيين</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="gap-1"
+                    onClick={() => setAddUserModalOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span>إضافة مستخدم</span>
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {linkedUsersLoading ? (
@@ -298,54 +330,158 @@ export default function ProfilePage() {
                       <Skeleton className="h-16 w-full" />
                     </div>
                   ) : linkedUsers && linkedUsers.length > 0 ? (
-                    <div className="space-y-4">
-                      {linkedUsers.map((linkedUser) => (
-                        <div key={linkedUser.id} className="flex items-center justify-between bg-muted/30 p-3 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 border border-muted">
-                              <AvatarImage src={linkedUser.avatarUrl} alt={linkedUser.name} />
-                              <AvatarFallback>
-                                {linkedUser.name?.charAt(0) || linkedUser.username?.charAt(0) || <UserIcon />}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-medium">{linkedUser.name || linkedUser.username}</h4>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="bg-primary/5 px-2">
-                                  {linkedUser.relationshipType === 'friend' ? 'صديق' : 
-                                   linkedUser.relationshipType === 'family' ? 'عائلة' : 
-                                   linkedUser.relationshipType === 'teammate' ? 'زميل' : 'مرتبط'}
-                                </Badge>
-                                {linkedUser.lastGameDate && (
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {new Date(linkedUser.lastGameDate).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: '2-digit',
-                                      day: '2-digit'
-                                    })}
-                                  </span>
+                    <div className="space-y-5">
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="grid grid-cols-2 gap-3 text-sm text-center">
+                          <div>
+                            <p className="text-muted-foreground">إجمالي المستخدمين الفرعيين</p>
+                            <p className="font-bold text-lg mt-1">{linkedUsers.length} / 5</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">المستخدمين النشطين</p>
+                            <p className="font-bold text-lg mt-1">{linkedUsers.filter(u => u.status === 'active').length}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid gap-4">
+                        {linkedUsers.map((linkedUser) => (
+                          <div 
+                            key={linkedUser.id} 
+                            className={`border rounded-lg overflow-hidden transition-all ${
+                              linkedUser.status === 'active' ? 'border-muted' : 'border-muted/50 opacity-60'
+                            }`}
+                          >
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-4 py-3 bg-muted/30">
+                              <div className="flex items-center gap-3">
+                                <div className="relative">
+                                  <Avatar className="h-11 w-11 border border-muted">
+                                    <AvatarImage src={linkedUser.avatarUrl} alt={linkedUser.name} />
+                                    <AvatarFallback>
+                                      {linkedUser.name?.charAt(0) || linkedUser.username?.charAt(0) || <UserIcon />}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  {linkedUser.isOnline && (
+                                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white" />
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-medium text-base">{linkedUser.name || linkedUser.username}</h4>
+                                    <Badge variant={linkedUser.status === 'active' ? 'outline' : 'secondary'} className="h-5 text-xs">
+                                      {linkedUser.status === 'active' ? 'نشط' : 'معطل'}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                    {linkedUser.email && (
+                                      <span className="flex items-center gap-1">
+                                        <Mail className="h-3 w-3" />
+                                        {linkedUser.email}
+                                      </span>
+                                    )}
+                                    {linkedUser.phone && (
+                                      <span className="flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {linkedUser.phone}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground"
+                                  onClick={() => {
+                                    setSelectedSubUser(linkedUser);
+                                    setEditUserModalOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                {linkedUser.status === 'active' ? (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                    <Lock className="h-4 w-4" />
+                                  </Button>
+                                ) : (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                      <line x1="12" y1="19" x2="12" y2="23"></line>
+                                      <line x1="8" y1="23" x2="16" y2="23"></line>
+                                    </svg>
+                                  </Button>
                                 )}
                               </div>
                             </div>
+                            
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 divide-x text-center py-3">
+                              <div className="px-2">
+                                <p className="text-xs text-muted-foreground">عدد الألعاب</p>
+                                <p className="font-bold mt-1">{linkedUser.gamesPlayed}</p>
+                              </div>
+                              <div className="px-2">
+                                <p className="text-xs text-muted-foreground">نسبة النشاط</p>
+                                <p className="font-bold mt-1">%{linkedUser.activityPercentage}</p>
+                              </div>
+                              <div className="px-2">
+                                <p className="text-xs text-muted-foreground">النجوم المكتسبة</p>
+                                <p className="font-bold mt-1 flex items-center justify-center">
+                                  <Star className="h-3.5 w-3.5 text-yellow-500 mr-0.5" /> {linkedUser.contributionStars}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Cards */}
+                            <div className="bg-muted/20 py-2 px-3 flex justify-between items-center">
+                              <div className="flex items-center gap-5">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                  <span className="text-sm">{linkedUser.freeCards + linkedUser.paidCards} كروت</span>
+                                </div>
+                                <div className="flex gap-3 text-xs text-muted-foreground">
+                                  <span>{linkedUser.freeCards} مجاني</span>
+                                  <span>{linkedUser.paidCards} مدفوع</span>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-7 px-2.5 text-xs gap-1"
+                                onClick={() => {
+                                  setSelectedSubUser(linkedUser);
+                                  setAddCardModalOpen(true);
+                                }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10"></circle>
+                                  <line x1="12" y1="8" x2="12" y2="16"></line>
+                                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                <span>إضافة كروت</span>
+                              </Button>
+                            </div>
                           </div>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                            <Trophy className="h-4 w-4 text-yellow-500" />
-                          </Button>
-                        </div>
-                      ))}
-                      
-                      <Button variant="outline" className="w-full mt-2">
-                        <Users className="h-4 w-4 mr-2" />
-                        إضافة مستخدم جديد
-                      </Button>
+                        ))}
+                      </div>
                     </div>
                   ) : (
-                    <div className="text-center py-6 space-y-3">
-                      <p className="text-muted-foreground">لا يوجد مستخدمين مرتبطين حالياً</p>
-                      <Button variant="outline">
+                    <div className="text-center py-10 space-y-3">
+                      <div className="bg-muted/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                        <Users className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-medium">لا يوجد مستخدمين مرتبطين</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto text-sm">
+                        يمكنك إضافة حتى 5 مستخدمين فرعيين للعب باستخدام حسابك. كل مستخدم يملك رصيد كروت مستقل ويساهم في رفع مستوى حسابك الرئيسي.
+                      </p>
+                      <Button className="mt-3">
                         <Users className="h-4 w-4 mr-2" />
-                        إضافة أصدقاء
+                        إضافة مستخدم فرعي
                       </Button>
                     </div>
                   )}
@@ -411,6 +547,191 @@ export default function ProfilePage() {
         onSave={handleSaveProfileChanges}
         phonePrefix={phonePrefix}
       />
+
+      {/* نافذة إضافة مستخدم فرعي جديد */}
+      <Dialog open={addUserModalOpen} onOpenChange={setAddUserModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">إضافة مستخدم فرعي جديد</DialogTitle>
+            <DialogDescription className="text-center">
+              يمكن للمستخدم الفرعي استخدام الحساب للعب مع رصيد كروت خاص به.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">الاسم</Label>
+              <Input id="name" placeholder="اسم المستخدم الفرعي" />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Input id="email" type="email" placeholder="example@example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">رقم الهاتف</Label>
+                <div className="flex">
+                  <div className="bg-muted flex items-center px-2 border border-r-0 rounded-s-md text-sm border-input">
+                    {phonePrefix}
+                  </div>
+                  <Input 
+                    id="phone" 
+                    type="tel" 
+                    className="rounded-s-none"
+                    placeholder="5xxxxxxxx" 
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">كلمة المرور</Label>
+              <Input id="password" type="password" placeholder="كلمة مرور آمنة" />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
+              <Input id="confirm-password" type="password" placeholder="تأكيد كلمة المرور" />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddUserModalOpen(false)}>
+              إلغاء
+            </Button>
+            <Button type="submit">إضافة المستخدم</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* نافذة تعديل مستخدم فرعي */}
+      <Dialog open={editUserModalOpen} onOpenChange={setEditUserModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">تعديل المستخدم الفرعي</DialogTitle>
+            <DialogDescription className="text-center">
+              {selectedSubUser?.name || selectedSubUser?.username}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">الاسم</Label>
+              <Input 
+                id="edit-name" 
+                placeholder="اسم المستخدم الفرعي" 
+                defaultValue={selectedSubUser?.name}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">البريد الإلكتروني</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email" 
+                  placeholder="example@example.com" 
+                  defaultValue={selectedSubUser?.email}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">رقم الهاتف</Label>
+                <div className="flex">
+                  <div className="bg-muted flex items-center px-2 border border-r-0 rounded-s-md text-sm border-input">
+                    {phonePrefix}
+                  </div>
+                  <Input 
+                    id="edit-phone" 
+                    type="tel" 
+                    className="rounded-s-none"
+                    placeholder="5xxxxxxxx" 
+                    defaultValue={selectedSubUser?.phone?.replace(/^(\+\d+)/, '')} 
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">كلمة المرور الجديدة (اختياري)</Label>
+              <Input 
+                id="edit-password" 
+                type="password" 
+                placeholder="اترك فارغًا للإبقاء على كلمة المرور الحالية" 
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEditUserModalOpen(false)}>
+              إلغاء
+            </Button>
+            <Button type="submit" className="gap-1">
+              <Pencil className="h-4 w-4" />
+              حفظ التغييرات
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* نافذة إضافة كروت */}
+      <Dialog open={addCardModalOpen} onOpenChange={setAddCardModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">إضافة كروت</DialogTitle>
+            <DialogDescription className="text-center">
+              {selectedSubUser?.name || selectedSubUser?.username}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center justify-between border-y py-4 my-2">
+            <div>
+              <p className="font-medium">الكروت الحالية</p>
+              <p className="text-sm text-muted-foreground">المجموع: {selectedSubUser ? selectedSubUser.freeCards + selectedSubUser.paidCards : 0}</p>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center justify-end gap-2">
+                <span className="text-sm text-muted-foreground">مجاني:</span>
+                <span className="font-medium">{selectedSubUser?.freeCards || 0}</span>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <span className="text-sm text-muted-foreground">مدفوع:</span>
+                <span className="font-medium">{selectedSubUser?.paidCards || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="free-cards">كروت مجانية</Label>
+                <Input 
+                  id="free-cards" 
+                  type="number" 
+                  min="0"
+                  placeholder="0" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paid-cards">كروت مدفوعة</Label>
+                <Input 
+                  id="paid-cards" 
+                  type="number" 
+                  min="0"
+                  placeholder="0" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddCardModalOpen(false)}>
+              إلغاء
+            </Button>
+            <Button type="submit">إضافة الكروت</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

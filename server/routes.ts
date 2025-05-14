@@ -401,25 +401,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: 1,
         username: "samar_92",
         name: "سمر محمد",
+        email: "samar@example.com",
         avatarUrl: "https://i.pravatar.cc/150?img=5",
-        relationshipType: "friend",
-        lastGameDate: "2025-05-01T14:30:00.000Z"
+        relationshipType: "sub-user",
+        lastGameDate: "2025-05-01T14:30:00.000Z",
+        gamesPlayed: 12,
+        activityPercentage: 35,
+        contributionStars: 8,
+        freeCards: 3,
+        paidCards: 7,
+        status: "active",
+        isOnline: false
       },
       {
         id: 2,
         username: "khalid_h",
         name: "خالد حسين",
+        phone: "0512345678",
         avatarUrl: "https://i.pravatar.cc/150?img=8",
-        relationshipType: "teammate",
-        lastGameDate: "2025-04-25T16:45:00.000Z"
+        relationshipType: "sub-user",
+        lastGameDate: "2025-04-25T16:45:00.000Z",
+        gamesPlayed: 8,
+        activityPercentage: 25,
+        contributionStars: 5,
+        freeCards: 2,
+        paidCards: 4,
+        status: "active",
+        isOnline: true
       },
       {
         id: 3,
         username: "fatima_22",
         name: "فاطمة أحمد",
+        email: "fatima@example.com",
         avatarUrl: "https://i.pravatar.cc/150?img=9",
-        relationshipType: "family",
-        lastGameDate: "2025-04-29T10:15:00.000Z"
+        relationshipType: "sub-user",
+        lastGameDate: "2025-04-29T10:15:00.000Z",
+        gamesPlayed: 15,
+        activityPercentage: 40,
+        contributionStars: 12,
+        freeCards: 5,
+        paidCards: 10,
+        status: "active",
+        isOnline: false
       }
     ]);
   });
