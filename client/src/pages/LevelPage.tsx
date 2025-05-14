@@ -75,6 +75,7 @@ interface UserLevel {
     conversionRate: number;
     starsToNextLevel: number;
     daysBeforeDemotion: number;
+    starsFromSubs?: number; // النجوم من المستخدمين الفرعيين
   };
 }
 
@@ -372,6 +373,11 @@ export default function LevelPage() {
                         <p className="text-sm text-muted-foreground">
                           المتبقي للترقية إلى {userLevel.nextLevel}
                         </p>
+                        {userLevel.stats.starsToNextLevel <= 0 && (
+                          <p className="text-emerald-600 text-sm mt-2 font-semibold flex items-center gap-1">
+                            <span>🎉</span> لقد تأهلت للمستوى التالي. اضغط لترقية حسابك
+                          </p>
+                        )}
                       </div>
                       
                       <div className="bg-muted/20 p-4 rounded-lg">
@@ -390,7 +396,7 @@ export default function LevelPage() {
                         </p>
                         {userLevel.stats.daysBeforeDemotion !== 0 && userLevel.stats.daysBeforeDemotion <= 5 && (
                           <p className="text-red-600 text-sm mt-2 font-semibold flex items-center gap-1">
-                            <span className="text-lg">⚠️</span> يجب عليك استهلاك كروت إضافية خلال {formatRemainingDays(userLevel.stats.daysBeforeDemotion)} لتفادي خسارة المستوى
+                            <span>⚠️</span> يجب عليك استهلاك كروت إضافية خلال {formatRemainingDays(userLevel.stats.daysBeforeDemotion)} لتفادي خسارة المستوى
                           </p>
                         )}
                       </div>
