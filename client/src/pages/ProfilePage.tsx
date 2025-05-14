@@ -116,7 +116,8 @@ export default function ProfilePage() {
   // استعلام للمستخدمين المرتبطين
   const { 
     data: linkedUsers, 
-    isLoading: linkedUsersLoading
+    isLoading: linkedUsersLoading,
+    refetch: refetchLinkedUsers
   } = useQuery<LinkedUser[], Error>({
     queryKey: ['/api/linked-users'],
     queryFn: getQueryFn({ on401: "throw" }),
@@ -148,6 +149,16 @@ export default function ProfilePage() {
       setUser(userProfile);
     }
   }, [userProfile, setUser]);
+  
+  // تعبئة بيانات المستخدم الفرعي المحدد عند فتح نافذة التعديل
+  useEffect(() => {
+    if (selectedSubUser && editUserModalOpen) {
+      setEditUserName(selectedSubUser.name || '');
+      setEditUserEmail(selectedSubUser.email || '');
+      setEditUserPhone(selectedSubUser.phone ? selectedSubUser.phone.replace(/^(\+\d+)/, '') : '');
+      setEditUserPassword('');
+    }
+  }, [selectedSubUser, editUserModalOpen]);
 
   // دالة فتح نافذة التعديل
   const openEditModal = (type: 'name' | 'email' | 'phone' | 'password' | 'avatar') => {
@@ -859,13 +870,24 @@ export default function ProfilePage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">الاسم</Label>
-              <Input id="name" placeholder="اسم المستخدم الفرعي" />
+              <Input 
+                id="name" 
+                placeholder="اسم المستخدم الفرعي" 
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+              />
             </div>
             
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input id="email" type="email" placeholder="example@example.com" />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="example@example.com" 
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">رقم الهاتف</Label>
@@ -878,6 +900,8 @@ export default function ProfilePage() {
                     type="tel" 
                     className="rounded-s-none"
                     placeholder="5xxxxxxxx" 
+                    value={newUserPhone}
+                    onChange={(e) => setNewUserPhone(e.target.value)}
                   />
                 </div>
               </div>
@@ -885,20 +909,55 @@ export default function ProfilePage() {
             
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
-              <Input id="password" type="password" placeholder="كلمة مرور آمنة" />
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="كلمة مرور آمنة" 
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+              />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
-              <Input id="confirm-password" type="password" placeholder="تأكيد كلمة المرور" />
+              <Input 
+                id="confirm-password" 
+                type="password" 
+                placeholder="تأكيد كلمة المرور" 
+                value={newUserConfirmPassword}
+                onChange={(e) => setNewUserConfirmPassword(e.target.value)}
+              />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddUserModalOpen(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                resetAddUserForm();
+                setAddUserModalOpen(false);
+              }}
+            >
               إلغاء
             </Button>
-            <Button type="submit">إضافة المستخدم</Button>
+            <Button 
+              type="button"
+              onClick={handleAddSubUser}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-1">
+                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  جاري الإضافة...
+                </span>
+              ) : (
+                <span>إضافة المستخدم</span>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -919,7 +978,8 @@ export default function ProfilePage() {
               <Input 
                 id="edit-name" 
                 placeholder="اسم المستخدم الفرعي" 
-                defaultValue={selectedSubUser?.name}
+                value={editUserName}
+                onChange={(e) => setEditUserName(e.target.value)}
               />
             </div>
             
@@ -930,7 +990,8 @@ export default function ProfilePage() {
                   id="edit-email" 
                   type="email" 
                   placeholder="example@example.com" 
-                  defaultValue={selectedSubUser?.email}
+                  value={editUserEmail}
+                  onChange={(e) => setEditUserEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -944,7 +1005,8 @@ export default function ProfilePage() {
                     type="tel" 
                     className="rounded-s-none"
                     placeholder="5xxxxxxxx" 
-                    defaultValue={selectedSubUser?.phone?.replace(/^(\+\d+)/, '')} 
+                    value={editUserPhone}
+                    onChange={(e) => setEditUserPhone(e.target.value)}
                   />
                 </div>
               </div>
@@ -956,17 +1018,40 @@ export default function ProfilePage() {
                 id="edit-password" 
                 type="password" 
                 placeholder="اترك فارغًا للإبقاء على كلمة المرور الحالية" 
+                value={editUserPassword}
+                onChange={(e) => setEditUserPassword(e.target.value)}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setEditUserModalOpen(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setEditUserModalOpen(false)}
+            >
               إلغاء
             </Button>
-            <Button type="submit" className="gap-1">
-              <Pencil className="h-4 w-4" />
-              حفظ التغييرات
+            <Button 
+              type="button" 
+              className="gap-1"
+              onClick={handleUpdateSubUser}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-1">
+                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  جاري الحفظ...
+                </span>
+              ) : (
+                <>
+                  <Pencil className="h-4 w-4" />
+                  حفظ التغييرات
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1008,6 +1093,8 @@ export default function ProfilePage() {
                   type="number" 
                   min="0"
                   placeholder="0" 
+                  value={freeCardsToAdd}
+                  onChange={(e) => setFreeCardsToAdd(Number(e.target.value))}
                 />
               </div>
               <div className="space-y-2">
@@ -1016,17 +1103,41 @@ export default function ProfilePage() {
                   id="paid-cards" 
                   type="number" 
                   min="0"
-                  placeholder="0" 
+                  placeholder="0"
+                  value={paidCardsToAdd}
+                  onChange={(e) => setPaidCardsToAdd(Number(e.target.value))}
                 />
               </div>
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddCardModalOpen(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setFreeCardsToAdd(0);
+                setPaidCardsToAdd(0);
+                setAddCardModalOpen(false);
+              }}
+            >
               إلغاء
             </Button>
-            <Button type="submit">إضافة الكروت</Button>
+            <Button 
+              type="button"
+              onClick={handleAddCards}
+              disabled={isSubmitting || (freeCardsToAdd === 0 && paidCardsToAdd === 0)}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-1">
+                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  جاري الإضافة...
+                </span>
+              ) : 'إضافة الكروت'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
