@@ -124,3 +124,53 @@ export const updateCardPackageSchema = createInsertSchema(cardPackages).omit({
 export type CardPackage = typeof cardPackages.$inferSelect;
 export type InsertCardPackage = z.infer<typeof insertCardPackageSchema>;
 export type UpdateCardPackage = z.infer<typeof updateCardPackageSchema>;
+
+// تعريف جدول مستويات المستخدمين
+export const userLevels = pgTable("user_levels", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(), // اسم المستوى: مبتدئ، هاوٍ، محترف، خبير، أسطورة، ذهبي، بلاتيني، ماسي
+  badge: varchar("badge", { length: 10 }).notNull(), // رمز المستوى: 🏅 🥉 🥈 🥇 💎
+  color: varchar("color", { length: 20 }).notNull(), // لون المستوى: #FFD700, #E5E4E2, etc
+  minStars: integer("min_stars").notNull(), // الحد الأدنى من النجوم لهذا المستوى
+  maxStars: integer("max_stars").notNull(), // الحد الأقصى من النجوم لهذا المستوى
+  rewards: jsonb("rewards").default({}), // المكافآت المحتملة لهذا المستوى
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertUserLevelSchema = createInsertSchema(userLevels).omit({ 
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const updateUserLevelSchema = createInsertSchema(userLevels).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).partial();
+
+export type UserLevel = typeof userLevels.$inferSelect;
+export type InsertUserLevel = z.infer<typeof insertUserLevelSchema>;
+export type UpdateUserLevel = z.infer<typeof updateUserLevelSchema>;
+
+// تعريف جدول نجوم المستخدمين
+export const userStars = pgTable("user_stars", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  stars: integer("stars").notNull().default(0), // عدد النجوم الإجمالي
+  lastCalculated: timestamp("last_calculated").defaultNow().notNull(), // آخر مرة تم فيها حساب النجوم
+});
+
+export const insertUserStarsSchema = createInsertSchema(userStars).omit({ 
+  id: true,
+  lastCalculated: true 
+});
+
+export const updateUserStarsSchema = createInsertSchema(userStars).omit({
+  id: true
+}).partial();
+
+export type UserStars = typeof userStars.$inferSelect;
+export type InsertUserStars = z.infer<typeof insertUserStarsSchema>;
+export type UpdateUserStars = z.infer<typeof updateUserStarsSchema>;

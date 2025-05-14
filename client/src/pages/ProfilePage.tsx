@@ -339,7 +339,8 @@ export default function ProfilePage() {
     setIsSubmitting(true);
     
     try {
-      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // ⚠️ هام: يجب ربط هذه العمليات بـ API حقيقية على الخادم
+      // والتأكد من تنفيذ التحقق الأمني من جهة الخادم أيضًا للتحقق من ملكية المستخدم الفرعي
       // await apiRequest("PATCH", `/api/linked-users/${selectedSubUser.id}`, {
       //   name: editUserName || undefined,
       //   email: editUserEmail || undefined,
@@ -396,7 +397,8 @@ export default function ProfilePage() {
     setIsSubmitting(true);
     
     try {
-      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // ⚠️ هام: يجب ربط هذه العمليات بـ API حقيقية على الخادم
+      // والتأكد من تنفيذ التحقق الأمني من جهة الخادم أيضًا للتحقق من الصلاحيات
       // await apiRequest("POST", `/api/linked-users/${selectedSubUser.id}/add-cards`, {
       //   freeCards: freeCardsToAdd,
       //   paidCards: paidCardsToAdd
@@ -673,7 +675,7 @@ export default function ProfilePage() {
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <div>
                     <CardTitle className="text-xl font-bold">المستخدمون المرتبطون</CardTitle>
-                    <p className="text-muted-foreground text-sm mt-1">يمكنك إضافة مستخدمين فرعيين (الحد يحدده المدير)</p>
+                    <p className="text-muted-foreground text-sm mt-1">يمكنك إضافة حتى {maxSubUsers} مستخدم فرعي (يحدد المدير هذا الحد)</p>
                   </div>
                   <Button 
                     variant="outline" 
@@ -858,9 +860,12 @@ export default function ProfilePage() {
                       </div>
                       <h3 className="text-lg font-medium">لا يوجد مستخدمين مرتبطين</h3>
                       <p className="text-muted-foreground max-w-md mx-auto text-sm">
-                        يمكنك إضافة حتى 5 مستخدمين فرعيين للعب باستخدام حسابك. كل مستخدم يملك رصيد كروت مستقل ويساهم في رفع مستوى حسابك الرئيسي.
+                        يمكنك إضافة حتى {maxSubUsers} مستخدمين فرعيين للعب باستخدام حسابك. كل مستخدم يملك رصيد كروت مستقل ويساهم في رفع مستوى حسابك الرئيسي.
                       </p>
-                      <Button className="mt-3">
+                      <Button 
+                        className="mt-3"
+                        onClick={() => setAddUserModalOpen(true)}
+                      >
                         <Users className="h-4 w-4 mr-2" />
                         إضافة مستخدم فرعي
                       </Button>
