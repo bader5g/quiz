@@ -159,8 +159,8 @@ export function GameSettingsModal({
         description: "جاري الانتقال إلى صفحة اللعب"
       });
       
-      // الانتقال إلى صفحة اللعب
-      navigate('/play');
+      // الانتقال إلى صفحة اللعب مع معرف اللعبة
+      navigate(`/play/${response.data.id}`);
     } catch (error) {
       console.error('Error creating game session:', error);
       toast({
