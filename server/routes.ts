@@ -497,10 +497,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
       progress: 75,
       nextLevel: "بلاتيني",
       requiredStars: 20,
-      currentStars: 15
+      currentStars: 15,
+      startDate: "2025-01-15T12:00:00.000Z",
+      monthlyRewards: {
+        freeCards: 15,
+        validity: 30, // أيام
+        nextRenewal: "2025-05-15T12:00:00.000Z",
+        accumulative: true
+      },
+      stats: {
+        starsThisMonth: 7,
+        cardsUsed: 28,
+        conversionRate: 2, // كل 2 كرت = 1 نجمة
+        starsToNextLevel: 5,
+        daysBeforeDemotion: 45 // الأيام المتبقية قبل فقدان المستوى
+      }
     };
     
     res.json(userLevel);
+  });
+  
+  // Star history API endpoint
+  app.get('/api/star-history', (_req, res) => {
+    // Sample star history data
+    const starHistory = [
+      {
+        id: 1,
+        date: "2025-04-25T14:30:00Z",
+        stars: 2,
+        cardsUsed: 4,
+        source: "main", // المستخدم الرئيسي
+        activity: "لعبة كاملة"
+      },
+      {
+        id: 2,
+        date: "2025-04-20T16:45:00Z",
+        stars: 1,
+        cardsUsed: 2,
+        source: "main", // المستخدم الرئيسي
+        activity: "إجابة صحيحة"
+      },
+      {
+        id: 3,
+        date: "2025-04-18T09:15:00Z",
+        stars: 3,
+        cardsUsed: 6,
+        source: "sub", // مستخدم فرعي
+        userId: 1,
+        username: "سمر",
+        activity: "مسابقة كبيرة"
+      },
+      {
+        id: 4,
+        date: "2025-04-12T19:30:00Z",
+        stars: 1,
+        cardsUsed: 2,
+        source: "sub", // مستخدم فرعي
+        userId: 2,
+        username: "علي",
+        activity: "بطاقة يومية"
+      },
+      {
+        id: 5,
+        date: "2025-04-05T10:00:00Z",
+        stars: 2,
+        cardsUsed: 4,
+        source: "main", // المستخدم الرئيسي
+        activity: "تحدي أسبوعي"
+      }
+    ];
+    
+    res.json(starHistory);
+  });
+
+  // User all levels API endpoint
+  app.get('/api/levels', (_req, res) => {
+    // Sample levels data
+    const levels = [
+      {
+        id: 1,
+        name: "مبتدئ",
+        badge: "🏅",
+        color: "#4caf50",
+        requiredStars: 0,
+        conversionRate: 4, // كل 4 كروت = 1 نجمة
+        monthlyCards: 5,
+        maxDuration: 0, // لا مدة قصوى
+        canDemote: false
+      },
+      {
+        id: 2,
+        name: "هاوٍ",
+        badge: "🥉",
+        color: "#2196f3",
+        requiredStars: 10,
+        conversionRate: 3, // كل 3 كروت = 1 نجمة
+        monthlyCards: 10,
+        maxDuration: 60, // يومًا
+        canDemote: true
+      },
+      {
+        id: 3,
+        name: "محترف",
+        badge: "🥈",
+        color: "#9c27b0",
+        requiredStars: 25,
+        conversionRate: 2.5, // كل 2.5 كرت = 1 نجمة
+        monthlyCards: 12,
+        maxDuration: 90, // يومًا
+        canDemote: true
+      },
+      {
+        id: 4,
+        name: "خبير",
+        badge: "🥇",
+        color: "#f44336",
+        requiredStars: 50,
+        conversionRate: 2, // كل 2 كرت = 1 نجمة
+        monthlyCards: 15,
+        maxDuration: 120, // يومًا
+        canDemote: true
+      },
+      {
+        id: 5,
+        name: "ذهبي",
+        badge: "🥇",
+        color: "#FFD700",
+        requiredStars: 100,
+        conversionRate: 1.5, // كل 1.5 كرت = 1 نجمة
+        monthlyCards: 20,
+        maxDuration: 180, // يومًا
+        canDemote: true
+      },
+      {
+        id: 6,
+        name: "بلاتيني",
+        badge: "💎",
+        color: "#E5E4E2",
+        requiredStars: 200,
+        conversionRate: 1, // كل 1 كرت = 1 نجمة
+        monthlyCards: 30,
+        maxDuration: 0, // لا مدة قصوى بمجرد الوصول لهذا المستوى
+        canDemote: false
+      }
+    ];
+    
+    res.json(levels);
   });
   
   // User profile API endpoint

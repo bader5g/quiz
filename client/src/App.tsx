@@ -9,6 +9,7 @@ import MyGamesPage from "@/pages/MyGamesPage";
 import GameLogPage from "@/pages/GameLogPage";
 import ProfilePage from "@/pages/ProfilePage";
 import BuyCardsPage from "@/pages/BuyCardsPage";
+import LevelPage from "@/pages/LevelPage";
 import TestDialogPage from "@/pages/TestDialogPage";
 import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/test-dialog" component={TestDialogPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/buy-cards" component={BuyCardsPage} />
+      <Route path="/level" component={LevelPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

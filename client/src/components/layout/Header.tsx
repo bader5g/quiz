@@ -109,7 +109,7 @@ export default function Header() {
             ) : userLevel && (
               <div 
                 className="bg-yellow-100 px-3 py-1.5 rounded-full flex items-center gap-2 cursor-pointer hover:bg-yellow-200 transition-colors"
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate('/level')}
               >
                 <span className="text-yellow-700 font-bold flex items-center gap-1">
                   {userLevel.badge} {userLevel.level}
