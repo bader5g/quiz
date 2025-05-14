@@ -148,7 +148,7 @@ export default function Header() {
                     </div>
                     
                     <button
-                      onClick={() => navigate('/cards')}
+                      onClick={() => navigate('/buy-cards')}
                       className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 rounded-full transition-colors"
                     >
                       شراء الكروت
