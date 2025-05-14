@@ -510,7 +510,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cardsUsed: 28,
         conversionRate: 2, // كل 2 كرت = 1 نجمة
         starsToNextLevel: 5,
-        daysBeforeDemotion: 45 // الأيام المتبقية قبل فقدان المستوى
+        daysBeforeDemotion: 45, // الأيام المتبقية قبل فقدان المستوى
+        starsFromSubs: 3 // النجوم من المستخدمين الفرعيين
       }
     };
     

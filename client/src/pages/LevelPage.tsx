@@ -355,6 +355,10 @@ export default function LevelPage() {
                         <p className="text-sm text-muted-foreground">
                           عدد الكروت المستخدمة حتى الآن
                         </p>
+                        <p className="text-sm text-emerald-600 mt-2">
+                          <Users className="h-3 w-3 inline-block mr-1" />
+                          النجوم من المستخدمين الفرعيين: ⭐ {userLevel.stats.starsFromSubs || 0}
+                        </p>
                       </div>
                       
                       <div className="bg-muted/20 p-4 rounded-lg">
@@ -484,7 +488,8 @@ export default function LevelPage() {
                             <TableHead className="text-center">النجوم المطلوبة</TableHead>
                             <TableHead className="text-center">معدل التحويل</TableHead>
                             <TableHead className="text-center">الكروت الشهرية</TableHead>
-                            <TableHead className="text-center">مدة الصلاحية</TableHead>
+                            <TableHead className="text-center">صلاحية الكروت</TableHead>
+                            <TableHead className="text-center">مدة المستوى</TableHead>
                             <TableHead className="text-center">إمكانية الهبوط</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -502,6 +507,7 @@ export default function LevelPage() {
                               <TableCell className="text-center">{level.requiredStars}</TableCell>
                               <TableCell className="text-center">{level.conversionRate}</TableCell>
                               <TableCell className="text-center">{level.monthlyCards}</TableCell>
+                              <TableCell className="text-center">30 يوم</TableCell>
                               <TableCell className="text-center">
                                 {level.maxDuration === 0 ? 
                                   "غير محدد" : 
