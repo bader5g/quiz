@@ -132,7 +132,8 @@ export default function LevelPage() {
   });
 
   // تنسيق التاريخ باللغة العربية
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "غير متوفر";
     try {
       const date = new Date(dateString);
       return format(date, 'dd MMMM yyyy', { locale: ar });
@@ -142,7 +143,8 @@ export default function LevelPage() {
   };
 
   // تنسيق الوقت المتبقي
-  const formatRemainingDays = (days: number) => {
+  const formatRemainingDays = (days?: number) => {
+    if (!days) return "غير محدد";
     if (days === 0) return "غير محدد";
     if (days === 1) return "يوم واحد";
     if (days === 2) return "يومين";
@@ -223,7 +225,7 @@ export default function LevelPage() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">النجوم المتبقية</p>
-                          <p className="font-semibold">{currentLevel.stats.starsToNextLevel} نجمة</p>
+                          <p className="font-semibold">{currentLevel.requiredStars - currentLevel.currentStars} نجمة</p>
                         </div>
                       </div>
                       
