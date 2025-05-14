@@ -266,7 +266,7 @@ export function GameSettingsModal({
                         <SelectValue placeholder="اختر عدد الفرق" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="z-[9999]" side="bottom" sideOffset={4} forceMount>
+                    <SelectContent className="z-[9999]" side="bottom" sideOffset={4}>
                       {teamOptions}
                     </SelectContent>
                   </Select>
@@ -320,7 +320,7 @@ export function GameSettingsModal({
                         <SelectValue placeholder="اختر وقت الإجابة الأول" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="z-[9999]" side="bottom" sideOffset={4}>
                       {settings.allowedFirstAnswerTimes.map((time) => (
                         <SelectItem key={time} value={time.toString()}>
                           {time} ثانية
@@ -348,7 +348,7 @@ export function GameSettingsModal({
                         <SelectValue placeholder="اختر وقت الإجابة الثاني" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="z-[9999]" side="bottom" sideOffset={4} forceMount>
+                    <SelectContent className="z-[9999]" side="bottom" sideOffset={4}>
                       {settings.allowedSecondAnswerTimes.map((time) => (
                         <SelectItem key={time} value={time.toString()}>
                           {time} ثانية
