@@ -65,6 +65,9 @@ interface UserProfile {
 export default function ProfilePage() {
   const { toast } = useToast();
   const { user: currentUser, updateUser: setUser } = useUser();
+  
+  // الحد الأقصى لعدد المستخدمين الفرعيين
+  const maxSubUsers = 5; // القيمة الافتراضية، يمكن استبدالها بقيمة من إعدادات اللعبة
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editType, setEditType] = useState<'name' | 'email' | 'phone' | 'password' | 'avatar'>('name');
   const [phonePrefix, setPhonePrefix] = useState<string>('+966');
@@ -213,6 +216,16 @@ export default function ProfilePage() {
   
   // إضافة مستخدم فرعي جديد
   const handleAddSubUser = async () => {
+    // التحقق من الحد الأقصى للمستخدمين الفرعيين
+    if (linkedUsers && linkedUsers.length >= maxSubUsers) {
+      toast({
+        title: "الحد الأقصى",
+        description: "لقد وصلت إلى الحد الأقصى لعدد المستخدمين المسموح به.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // التحقق من صحة البيانات المدخلة
     if (!newUserName.trim()) {
       toast({
@@ -255,7 +268,8 @@ export default function ProfilePage() {
     setIsSubmitting(true);
     
     try {
-      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // ⚠️ هام: يجب ربط هذه العمليات بـ API حقيقية على الخادم
+      // والتأكد من تنفيذ التحقق الأمني من جهة الخادم أيضًا لمنع التلاعب
       // await apiRequest("POST", "/api/linked-users", {
       //   name: newUserName,
       //   email: newUserEmail || undefined,
