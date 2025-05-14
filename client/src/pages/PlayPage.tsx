@@ -166,74 +166,75 @@ export default function PlayPage() {
 
   return (
     <div dir="rtl" className="container mx-auto p-4 pb-8">
-      {/* شعار اللعبة في الأعلى */}
-      <div className="flex justify-center mb-6">
-        {siteSettings && (
-          <div className="relative h-20 w-full flex items-center justify-center">
-            <img 
-              src={siteSettings.logoUrl} 
-              alt={siteSettings.appName} 
-              className="h-full object-contain"
-            />
-          </div>
-        )}
+      {/* الهيدر العلوي مع الشعار */}
+      <div className="flex justify-between items-center mb-8">
+        {/* الشعار على اليمين */}
+        <div className="flex items-center gap-4">
+          {siteSettings && (
+            <div className="relative h-16 flex items-center">
+              <img 
+                src={siteSettings.logoUrl} 
+                alt={siteSettings.appName} 
+                className="h-full object-contain"
+              />
+            </div>
+          )}
+          
+          {/* الدور الحالي */}
+          <Badge 
+            className="text-lg py-2 px-4 rounded-full shadow-sm flex items-center gap-2" 
+            style={{ backgroundColor: currentTeam.color }}
+          >
+            <Trophy className="h-5 w-5" />
+            <span>الدور الحالي: {currentTeam.name}</span>
+          </Badge>
+        </div>
+
+        {/* أزرار التحكم */}
+        <div className="flex gap-3 items-center">
+          <Badge variant="outline" className="py-1 px-3 rounded-full">
+            اسم اللعبة: {game.name}
+          </Badge>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  onClick={saveAndExit} 
+                  className="flex items-center gap-2 rounded-lg border-2 border-gray-300 shadow-sm hover:bg-gray-100"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">حفظ والخروج</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>حفظ حالة اللعبة والخروج</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  onClick={endGame} 
+                  className="flex items-center gap-2 rounded-lg shadow-sm"
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">إنهاء اللعبة</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>إنهاء اللعبة واحتساب النتائج</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
 
-      {/* الهيدر العلوي */}
-      <Card className="mb-8 shadow-md border-t-4" style={{ borderTopColor: currentTeam.color }}>
-        <CardContent className="p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Badge 
-              className="text-lg py-2 px-4 rounded-full shadow-sm flex items-center gap-2" 
-              style={{ backgroundColor: currentTeam.color }}
-            >
-              <Trophy className="h-5 w-5" />
-              <span>الدور الحالي: {currentTeam.name}</span>
-            </Badge>
-            <Badge variant="outline" className="py-1 px-3 rounded-full">
-              اسم اللعبة: {game.name}
-            </Badge>
-          </div>
-          
-          <div className="flex gap-3 items-center">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    onClick={saveAndExit} 
-                    className="flex items-center gap-2 rounded-lg border-2 border-gray-300 shadow-sm hover:bg-gray-100"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span className="hidden sm:inline">حفظ والخروج</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>حفظ حالة اللعبة والخروج</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="destructive" 
-                    onClick={endGame} 
-                    className="flex items-center gap-2 rounded-lg shadow-sm"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    <span className="hidden sm:inline">إنهاء اللعبة</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>إنهاء اللعبة واحتساب النتائج</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* عرض الفئات والأسئلة */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
