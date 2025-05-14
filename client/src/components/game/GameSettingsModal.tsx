@@ -93,11 +93,24 @@ export function GameSettingsModal({
       const fetchSettings = async () => {
         try {
           const response = await axios.get('/api/game-settings');
+          
+          // طباعة إعدادات اللعبة المستلمة للتشخيص
+          console.log("Game settings received:", response.data);
+          
+          // حفظ الإعدادات في الحالة
           setSettings(response.data);
           
           // تحديث القيم الافتراضية بناءً على الإعدادات المستلمة
           form.setValue("answerTimeFirst", response.data.defaultFirstAnswerTime.toString());
           form.setValue("answerTimeSecond", response.data.defaultSecondAnswerTime.toString());
+          
+          // تعيين عدد الفرق مع التأكد من أنه ضمن الحدود المسموح بها
+          const defaultTeamCount = Math.min(
+            Math.max(response.data.minTeams, 2), 
+            response.data.maxTeams
+          ).toString();
+          console.log("Setting default team count to:", defaultTeamCount);
+          form.setValue("teamCount", defaultTeamCount);
         } catch (error) {
           console.error('Error fetching game settings:', error);
           toast({
