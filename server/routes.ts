@@ -8,6 +8,14 @@ import {
   insertCardPackageSchema,
   updateCardPackageSchema
 } from "@shared/schema";
+import { 
+  getGameDetails, 
+  getQuestionDetails,
+  submitAnswer,
+  endGame,
+  saveGameState,
+  getGameResults
+} from './game-controller';
 import { z } from "zod";
 
 // Helper function to validate request with Zod schema
@@ -164,6 +172,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to fetch game sessions' });
     }
   });
+  
+  // API routes for game play
+  // Get game details
+  app.get('/api/games/:gameId', getGameDetails);
+  
+  // Get question details
+  app.get('/api/games/:gameId/questions/:questionId', getQuestionDetails);
+  
+  // Submit answer
+  app.post('/api/games/:gameId/answer', submitAnswer);
+  
+  // End game
+  app.post('/api/games/:gameId/end', endGame);
+  
+  // Save game state
+  app.post('/api/games/:gameId/save', saveGameState);
+  
+  // Get game results
+  app.get('/api/games/:gameId/result', getGameResults);
   
   // Get game log by ID
   app.get('/api/game-log/:id', async (req, res) => {
