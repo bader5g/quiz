@@ -74,6 +74,24 @@ export default function ProfilePage() {
   const [editUserModalOpen, setEditUserModalOpen] = useState(false);
   const [selectedSubUser, setSelectedSubUser] = useState<LinkedUser | null>(null);
   const [addCardModalOpen, setAddCardModalOpen] = useState(false);
+  
+  // حالة بيانات المستخدم الفرعي الجديد
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserConfirmPassword, setNewUserConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // حالة بيانات تعديل المستخدم الفرعي
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserPhone, setEditUserPhone] = useState('');
+  const [editUserPassword, setEditUserPassword] = useState('');
+  
+  // حالة إضافة الكروت
+  const [freeCardsToAdd, setFreeCardsToAdd] = useState<number>(0);
+  const [paidCardsToAdd, setPaidCardsToAdd] = useState<number>(0);
 
   // تحديد رمز الدولة عند تحميل الصفحة
   useEffect(() => {
@@ -180,6 +198,267 @@ export default function ProfilePage() {
     
     // إعادة تحميل بيانات الملف الشخصي
     refetchProfile();
+  };
+  
+  // إضافة مستخدم فرعي جديد
+  const handleAddSubUser = async () => {
+    // التحقق من صحة البيانات المدخلة
+    if (!newUserName.trim()) {
+      toast({
+        title: "خطأ في البيانات",
+        description: "يرجى إدخال اسم المستخدم",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (newUserPassword !== newUserConfirmPassword) {
+      toast({
+        title: "خطأ في كلمة المرور",
+        description: "كلمة المرور وتأكيدها غير متطابقين",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // التحقق من صحة البريد الإلكتروني
+    if (newUserEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newUserEmail)) {
+      toast({
+        title: "خطأ في البريد الإلكتروني",
+        description: "يرجى إدخال بريد إلكتروني صحيح",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // التحقق من صحة رقم الهاتف
+    if (newUserPhone && !/^\d{8,12}$/.test(newUserPhone)) {
+      toast({
+        title: "خطأ في رقم الهاتف",
+        description: "يرجى إدخال رقم هاتف صحيح (8-12 رقم)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // await apiRequest("POST", "/api/linked-users", {
+      //   name: newUserName,
+      //   email: newUserEmail || undefined,
+      //   phone: newUserPhone ? `${phonePrefix}${newUserPhone}` : undefined,
+      //   password: newUserPassword,
+      //   relationshipType: "sub-user"
+      // });
+      
+      // محاكاة الاستجابة
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "تمت الإضافة بنجاح",
+        description: `تم إضافة ${newUserName} كمستخدم فرعي`
+      });
+      
+      // إعادة تحميل قائمة المستخدمين المرتبطين
+      refetchLinkedUsers();
+      
+      // مسح النموذج وإغلاق النافذة
+      resetAddUserForm();
+      setAddUserModalOpen(false);
+    } catch (error) {
+      toast({
+        title: "فشل في إضافة المستخدم",
+        description: "حدث خطأ أثناء إضافة المستخدم، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // مسح نموذج إضافة المستخدم
+  const resetAddUserForm = () => {
+    setNewUserName('');
+    setNewUserEmail('');
+    setNewUserPhone('');
+    setNewUserPassword('');
+    setNewUserConfirmPassword('');
+  };
+  
+  // تحديث بيانات المستخدم الفرعي
+  const handleUpdateSubUser = async () => {
+    if (!selectedSubUser) return;
+    
+    // التحقق من صحة البريد الإلكتروني
+    if (editUserEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editUserEmail)) {
+      toast({
+        title: "خطأ في البريد الإلكتروني",
+        description: "يرجى إدخال بريد إلكتروني صحيح",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // التحقق من صحة رقم الهاتف
+    if (editUserPhone && !/^\d{8,12}$/.test(editUserPhone)) {
+      toast({
+        title: "خطأ في رقم الهاتف",
+        description: "يرجى إدخال رقم هاتف صحيح (8-12 رقم)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // await apiRequest("PATCH", `/api/linked-users/${selectedSubUser.id}`, {
+      //   name: editUserName || undefined,
+      //   email: editUserEmail || undefined,
+      //   phone: editUserPhone ? `${phonePrefix}${editUserPhone}` : undefined,
+      //   password: editUserPassword || undefined
+      // });
+      
+      // محاكاة الاستجابة
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "تم التحديث بنجاح",
+        description: `تم تحديث بيانات المستخدم ${editUserName || selectedSubUser.name}`
+      });
+      
+      // إعادة تحميل قائمة المستخدمين المرتبطين
+      refetchLinkedUsers();
+      
+      // إغلاق النافذة
+      setEditUserModalOpen(false);
+    } catch (error) {
+      toast({
+        title: "فشل في تحديث البيانات",
+        description: "حدث خطأ أثناء تحديث البيانات، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // إضافة كروت للمستخدم الفرعي
+  const handleAddCards = async () => {
+    if (!selectedSubUser) return;
+    
+    if (freeCardsToAdd < 0 || paidCardsToAdd < 0) {
+      toast({
+        title: "قيمة غير صالحة",
+        description: "يجب أن تكون الكروت المضافة أكبر من أو تساوي صفر",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (freeCardsToAdd === 0 && paidCardsToAdd === 0) {
+      toast({
+        title: "لم يتم إضافة كروت",
+        description: "يرجى تحديد عدد الكروت المراد إضافتها",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // await apiRequest("POST", `/api/linked-users/${selectedSubUser.id}/add-cards`, {
+      //   freeCards: freeCardsToAdd,
+      //   paidCards: paidCardsToAdd
+      // });
+      
+      // محاكاة الاستجابة
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "تمت الإضافة بنجاح",
+        description: `تم إضافة ${freeCardsToAdd} كروت مجانية و ${paidCardsToAdd} كروت مدفوعة`
+      });
+      
+      // إعادة تحميل قائمة المستخدمين المرتبطين
+      refetchLinkedUsers();
+      
+      // مسح النموذج وإغلاق النافذة
+      setFreeCardsToAdd(0);
+      setPaidCardsToAdd(0);
+      setAddCardModalOpen(false);
+    } catch (error) {
+      toast({
+        title: "فشل في إضافة الكروت",
+        description: "حدث خطأ أثناء إضافة الكروت، يرجى المحاولة مرة أخرى",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // تبديل حالة المستخدم (تفعيل/تعطيل)
+  const toggleUserStatus = async (user: LinkedUser) => {
+    try {
+      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // await apiRequest("PATCH", `/api/linked-users/${user.id}/toggle-status`, {
+      //   status: user.status === 'active' ? 'disabled' : 'active'
+      // });
+      
+      // محاكاة الاستجابة
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      toast({
+        title: user.status === 'active' ? "تم تعطيل المستخدم" : "تم تفعيل المستخدم",
+        description: `تم ${user.status === 'active' ? 'تعطيل' : 'تفعيل'} المستخدم ${user.name || user.username}`
+      });
+      
+      // إعادة تحميل قائمة المستخدمين المرتبطين
+      refetchLinkedUsers();
+      
+    } catch (error) {
+      toast({
+        title: "فشل في تغيير الحالة",
+        description: "حدث خطأ أثناء محاولة تغيير حالة المستخدم",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // حذف المستخدم الفرعي
+  const handleDeleteSubUser = async (user: LinkedUser) => {
+    if (!confirm(`هل أنت متأكد من رغبتك في حذف المستخدم ${user.name || user.username}؟`)) {
+      return;
+    }
+    
+    try {
+      // في تطبيق حقيقي، سنرسل هذه البيانات إلى الخادم عبر طلب API
+      // await apiRequest("DELETE", `/api/linked-users/${user.id}`);
+      
+      // محاكاة الاستجابة
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      toast({
+        title: "تم الحذف بنجاح",
+        description: `تم حذف المستخدم ${user.name || user.username}`
+      });
+      
+      // إعادة تحميل قائمة المستخدمين المرتبطين
+      refetchLinkedUsers();
+      
+    } catch (error) {
+      toast({
+        title: "فشل في حذف المستخدم",
+        description: "حدث خطأ أثناء محاولة حذف المستخدم",
+        variant: "destructive"
+      });
+    }
   };
 
   // التحقق من وجود المستخدم الحالي
@@ -402,12 +681,31 @@ export default function ProfilePage() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-red-500"
+                                  onClick={() => handleDeleteSubUser(linkedUser)}
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                                
                                 {linkedUser.status === 'active' ? (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-muted-foreground"
+                                    onClick={() => toggleUserStatus(linkedUser)}
+                                  >
                                     <Lock className="h-4 w-4" />
                                   </Button>
                                 ) : (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-green-500"
+                                    onClick={() => toggleUserStatus(linkedUser)}
+                                  >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                                       <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
