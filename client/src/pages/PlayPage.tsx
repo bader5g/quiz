@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogOut, XCircle } from 'lucide-react';
+import { Loader2, LogOut, XCircle, Trophy, User, Minus, Repeat, UserX } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 interface GameTeam {
   name: string;
@@ -159,28 +163,65 @@ export default function PlayPage() {
   const currentTeam = game.teams[game.currentTeamIndex];
 
   return (
-    <div dir="rtl" className="container mx-auto p-4">
+    <div dir="rtl" className="container mx-auto p-4 pb-8">
       {/* الهيدر العلوي */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <Badge className="text-lg py-2" style={{ backgroundColor: currentTeam.color }}>
-            دور فريق: {currentTeam.name}
-          </Badge>
-        </div>
-        <div className="space-x-2 space-x-reverse">
-          <Button variant="outline" onClick={saveAndExit} className="flex items-center gap-2">
-            <LogOut className="h-4 w-4" />
-            خروج
-          </Button>
-          <Button variant="destructive" onClick={endGame} className="flex items-center gap-2">
-            <XCircle className="h-4 w-4" />
-            إنهاء اللعبة
-          </Button>
-        </div>
-      </div>
+      <Card className="mb-8 shadow-md border-t-4" style={{ borderTopColor: currentTeam.color }}>
+        <CardContent className="p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Badge 
+              className="text-lg py-2 px-4 rounded-full shadow-sm flex items-center gap-2" 
+              style={{ backgroundColor: currentTeam.color }}
+            >
+              <Trophy className="h-5 w-5" />
+              <span>الدور الحالي: {currentTeam.name}</span>
+            </Badge>
+            <Badge variant="outline" className="py-1 px-3 rounded-full">
+              اسم اللعبة: {game.name}
+            </Badge>
+          </div>
+          
+          <div className="flex gap-3 items-center">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    onClick={saveAndExit} 
+                    className="flex items-center gap-2 rounded-lg border-2 border-gray-300 shadow-sm hover:bg-gray-100"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="hidden sm:inline">حفظ والخروج</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>حفظ حالة اللعبة والخروج</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    onClick={endGame} 
+                    className="flex items-center gap-2 rounded-lg shadow-sm"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    <span className="hidden sm:inline">إنهاء اللعبة</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>إنهاء اللعبة واحتساب النتائج</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* عرض الفئات والأسئلة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
         {game.categories.map((category) => {
           // تصفية الأسئلة حسب الفئة الحالية
           const categoryQuestions = game.questions.filter(q => q.categoryId === category.id);
@@ -192,41 +233,79 @@ export default function PlayPage() {
           });
 
           return (
-            <Card key={category.id} className="shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-center gap-2 text-xl">
-                  <span>{category.icon}</span>
+            <Card 
+              key={category.id} 
+              className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200 overflow-hidden"
+            >
+              <CardHeader className="pb-2 bg-gray-50 border-b">
+                <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold">
+                  <span className="text-2xl">{category.icon}</span>
                   <span>{category.name}</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid" style={{ 
-                  gridTemplateColumns: `repeat(${game.teams.length}, 1fr)`,
-                  gap: '0.5rem'
-                }}>
-                  {game.teams.map((_, teamIndex) => (
-                    <div key={teamIndex} className="flex flex-col items-center gap-2">
-                      {/* عرض أرقام الأسئلة 1-3 لكل فريق */}
+              <CardContent className="p-4">
+                {game.teams.map((team, teamIndex) => (
+                  <div key={teamIndex} className="mb-3 last:mb-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: team.color }}
+                      ></div>
+                      <span className="text-sm font-medium">{team.name}</span>
+                    </div>
+                    <div className="flex gap-2 justify-center">
                       {[1, 2, 3].map((difficulty) => {
                         const question = questionsByTeam[teamIndex]?.find(q => q.difficulty === difficulty);
                         
-                        if (!question) return null;
+                        if (!question) return (
+                          <div key={`${teamIndex}-${difficulty}`} className="w-10 h-10"></div>
+                        );
+                        
+                        const isCurrentTeam = teamIndex === game.currentTeamIndex;
                         
                         return (
-                          <Button
-                            key={`${teamIndex}-${difficulty}`}
-                            variant={question.isAnswered ? "outline" : "default"}
-                            className={`w-12 h-12 ${question.isAnswered ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={question.isAnswered}
-                            onClick={() => !question.isAnswered && selectQuestion(question.id)}
-                          >
-                            {difficulty}
-                          </Button>
+                          <TooltipProvider key={`${teamIndex}-${difficulty}`}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <Button
+                                    variant={question.isAnswered ? "outline" : "default"}
+                                    className={cn(
+                                      "w-10 h-10 rounded-full flex items-center justify-center",
+                                      question.isAnswered ? 'opacity-40 cursor-not-allowed' : '',
+                                      isCurrentTeam && !question.isAnswered ? 'ring-2 ring-offset-2' : '',
+                                      difficulty === 1 ? 'bg-green-500 hover:bg-green-600' : '',
+                                      difficulty === 2 ? 'bg-yellow-500 hover:bg-yellow-600' : '',
+                                      difficulty === 3 ? 'bg-red-500 hover:bg-red-600' : '',
+                                      question.isAnswered ? 'bg-gray-200 hover:bg-gray-200 text-gray-600' : ''
+                                    )}
+                                    style={{
+                                      ...(isCurrentTeam && !question.isAnswered ? { ringColor: team.color } : {})
+                                    }}
+                                    disabled={question.isAnswered}
+                                    onClick={() => !question.isAnswered && selectQuestion(question.id)}
+                                  >
+                                    {difficulty}
+                                  </Button>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                {!question.isAnswered ? (
+                                  <>سؤال {difficulty === 1 ? 'سهل' : difficulty === 2 ? 'متوسط' : 'صعب'} ({difficulty} {difficulty === 1 ? 'نقطة' : 'نقاط'})</>
+                                ) : (
+                                  <>تمت الإجابة على هذا السؤال</>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         );
                       })}
                     </div>
-                  ))}
-                </div>
+                    {teamIndex < game.teams.length - 1 && (
+                      <Separator className="my-3" />
+                    )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
           );
@@ -234,32 +313,106 @@ export default function PlayPage() {
       </div>
 
       {/* عرض الفرق والنقاط */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-        {game.teams.map((team, index) => (
-          <Card key={index} className="shadow-md" style={{ borderColor: team.color, borderWidth: '2px' }}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex justify-between items-center">
-                <span>{team.name}</span>
-                <Badge variant="outline" className="ml-2">{team.score}</Badge>
-              </CardTitle>
-            </CardHeader>
-            {game.teams.length === 2 && (
-              <CardContent className="pt-0">
-                <div className="flex gap-2 justify-center">
-                  <Button variant="outline" size="sm" className="text-xs">
-                    خصم نقاط
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    عكس السؤال
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    طرد لاعب
-                  </Button>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        ))}
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+        <Trophy className="h-5 w-5 text-yellow-500" />
+        <span>النتائج الحالية</span>
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {game.teams.map((team, index) => {
+          const isCurrentTeam = index === game.currentTeamIndex;
+          
+          return (
+            <Card 
+              key={index} 
+              className={cn(
+                "shadow-md transition-all duration-200",
+                isCurrentTeam ? "ring-2 ring-offset-2" : ""
+              )}
+              style={{ 
+                borderColor: team.color, 
+                borderWidth: '2px',
+                ...(isCurrentTeam ? { ringColor: team.color } : {})
+              }}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8 border-2" style={{ borderColor: team.color }}>
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-base truncate flex-1">{team.name}</span>
+                  <Badge 
+                    className="ml-1 px-3 py-1 text-lg" 
+                    style={{ backgroundColor: team.color }}
+                  >
+                    {team.score}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              
+              {game.teams.length === 2 && (
+                <CardFooter className="pt-0 pb-3">
+                  <div className="flex flex-wrap gap-2 justify-center w-full">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8 rounded-full flex items-center gap-1"
+                          >
+                            <Minus className="h-3 w-3" />
+                            <span className="hidden sm:inline">خصم</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p>خصم نقاط من الفريق</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8 rounded-full flex items-center gap-1"
+                          >
+                            <Repeat className="h-3 w-3" />
+                            <span className="hidden sm:inline">عكس</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p>عكس السؤال للفريق الآخر</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8 rounded-full flex items-center gap-1"
+                          >
+                            <UserX className="h-3 w-3" />
+                            <span className="hidden sm:inline">طرد</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p>طرد لاعب من الفريق</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardFooter>
+              )}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
