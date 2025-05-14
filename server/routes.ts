@@ -337,6 +337,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       default_answer_time_second: 15
     });
   });
+  
+  // باقات الكروت - Card packages endpoint
+  app.get('/api/card-packages', (_req, res) => {
+    res.json([
+      {
+        id: 1,
+        name: "الباقة البرونزية",
+        price: 5.99,
+        paidCards: 20,
+        freeCards: 5,
+        isActive: true,
+        badge: null,
+        description: "مناسبة للمبتدئين"
+      },
+      {
+        id: 2,
+        name: "الباقة الفضية",
+        price: 9.99,
+        paidCards: 50,
+        freeCards: 15,
+        isActive: true,
+        badge: "⭐ الأكثر شيوعاً",
+        description: "باقة متوازنة بسعر مناسب"
+      },
+      {
+        id: 3,
+        name: "الباقة الذهبية",
+        price: 19.99,
+        paidCards: 120,
+        freeCards: 40,
+        isActive: true,
+        badge: "🔥 العرض المميز",
+        description: "القيمة الأفضل مقابل السعر"
+      },
+      {
+        id: 4,
+        name: "باقة المحترفين",
+        price: 29.99,
+        paidCards: 200,
+        freeCards: 100,
+        isActive: true,
+        badge: "💎 قيمة مميزة",
+        description: "للاعبين المتحمسين والمجموعات"
+      },
+      {
+        id: 5,
+        name: "عرض خاص محدود",
+        price: 14.99,
+        paidCards: 75,
+        freeCards: 50,
+        isActive: false,
+        badge: "⏱️ عرض محدود",
+        description: "عرض لفترة محدودة - ينتهي قريباً!"
+      }
+    ]);
+  });
 
   // Get specific game session
   app.get('/api/game-sessions/:id', async (req, res) => {
