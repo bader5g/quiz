@@ -638,7 +638,7 @@ export default function ProfilePage() {
                           <div>
                             <p className="text-sm text-muted-foreground">آخر لعبة</p>
                             <p className="font-bold" dir="ltr">
-                              {new Date(userStats.lastPlayed).toLocaleDateString('ar-SA', {
+                              {new Date(userStats.lastPlayed).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit'
