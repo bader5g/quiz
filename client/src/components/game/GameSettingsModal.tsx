@@ -273,8 +273,8 @@ export function GameSettingsModal({
                 <FormItem className="space-y-2">
                   <FormLabel>عدد الفرق</FormLabel>
                   <Select
+                    value={field.value}
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -311,35 +311,32 @@ export function GameSettingsModal({
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage className="text-xs" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
                 ))}
               </div>
-              <p className="text-xs text-gray-500">
-                الحد الأقصى لاسم الفريق: {settings.maxTeamNameLength} حرف
-              </p>
             </div>
             
-            {/* وقت الإجابة الأولى */}
+            {/* وقت الإجابة للمرة الأولى */}
             <FormField
               control={form.control}
               name="answerTimeFirst"
               render={({ field }) => (
                 <FormItem className="space-y-2">
-                  <FormLabel>وقت الإجابة الأولى (ثانية)</FormLabel>
+                  <FormLabel>وقت الإجابة الأول (بالثواني)</FormLabel>
                   <Select
+                    value={field.value}
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر وقت الإجابة الأولى" />
+                        <SelectValue placeholder="اختر وقت الإجابة الأول" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {settings?.allowedFirstAnswerTimes?.map((time) => (
+                      {settings.allowedFirstAnswerTimes.map((time) => (
                         <SelectItem key={time} value={time.toString()}>
                           {time} ثانية
                         </SelectItem>
@@ -351,24 +348,24 @@ export function GameSettingsModal({
               )}
             />
             
-            {/* وقت الإجابة الثانية */}
+            {/* وقت الإجابة للمرة الثانية */}
             <FormField
               control={form.control}
               name="answerTimeSecond"
               render={({ field }) => (
                 <FormItem className="space-y-2">
-                  <FormLabel>وقت الإجابة الثانية (ثانية)</FormLabel>
+                  <FormLabel>وقت الإجابة الثاني (بالثواني)</FormLabel>
                   <Select
+                    value={field.value}
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر وقت الإجابة الثانية" />
+                        <SelectValue placeholder="اختر وقت الإجابة الثاني" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {settings?.allowedSecondAnswerTimes?.map((time) => (
+                      {settings.allowedSecondAnswerTimes.map((time) => (
                         <SelectItem key={time} value={time.toString()}>
                           {time} ثانية
                         </SelectItem>
@@ -380,20 +377,22 @@ export function GameSettingsModal({
               )}
             />
             
-            {/* زر بدء اللعبة */}
-            <Button
-              type="submit"
-              disabled={loading || selectedCategories.length < settings.minCategories}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-4 text-lg"
-            >
-              {loading ? 'جاري الإنشاء...' : '🎮 ابدأ اللعبة'}
-            </Button>
-            
-            {selectedCategories.length < settings.minCategories && (
-              <p className="text-red-500 text-xs text-center mt-2">
-                يجب اختيار {settings.minCategories} فئات على الأقل للبدء
-              </p>
-            )}
+            <DialogFooter className="pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)} 
+                disabled={loading}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={loading}
+              >
+                {loading ? 'جاري الإنشاء...' : 'إنشاء اللعبة'}
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
       </ModalDialogContent>
