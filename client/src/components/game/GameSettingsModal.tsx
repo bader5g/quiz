@@ -273,7 +273,7 @@ export function GameSettingsModal({
                 <FormItem className="space-y-2">
                   <FormLabel>عدد الفرق</FormLabel>
                   <Select
-                    value={field.value}
+                    defaultValue={field.value}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
@@ -327,7 +327,7 @@ export function GameSettingsModal({
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الأول (بالثواني)</FormLabel>
                   <Select
-                    value={field.value}
+                    defaultValue={field.value}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
@@ -356,7 +356,7 @@ export function GameSettingsModal({
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الثاني (بالثواني)</FormLabel>
                   <Select
-                    value={field.value}
+                    defaultValue={field.value}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
