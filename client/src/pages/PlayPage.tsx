@@ -247,93 +247,12 @@ export default function PlayPage() {
         </div>
       </div>
 
-      {/* عرض الفئات والأسئلة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-        {game.categories.map((category) => {
-          // تصفية الأسئلة حسب الفئة الحالية
-          const categoryQuestions = game.questions.filter(q => q.categoryId === category.id);
-
-          // تنظيم الأسئلة حسب الفريق
-          const questionsByTeam: { [teamIndex: number]: GameQuestion[] } = {};
-          game.teams.forEach((_, index) => {
-            questionsByTeam[index] = categoryQuestions.filter(q => q.teamIndex === index);
-          });
-
-          return (
-            <Card 
-              key={category.id} 
-              className="shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden bg-white rounded-xl"
-            >
-              <CardHeader className="pb-2 bg-indigo-50 border-b border-indigo-100">
-                <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold text-indigo-800">
-                  <span className="text-2xl">{category.icon}</span>
-                  <span>{category.name}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                {game.teams.map((team, teamIndex) => (
-                  <div key={teamIndex} className="mb-3 last:mb-0">
-                    <div className="flex justify-center mb-2 border-b pb-1 border-gray-200">
-                      <span className="font-semibold text-sm" style={{ color: team.color }}>{team.name}</span>
-                    </div>
-                    <div className="flex flex-col gap-2 items-center">
-                      {[1, 2, 3].map((difficulty) => {
-                        const question = questionsByTeam[teamIndex]?.find(q => q.difficulty === difficulty);
-                        
-                        if (!question) return (
-                          <div key={`${teamIndex}-${difficulty}`} className="w-full h-8"></div>
-                        );
-                        
-                        const isCurrentTeam = teamIndex === game.currentTeamIndex;
-                        
-                        return (
-                          <TooltipProvider key={`${teamIndex}-${difficulty}`}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="w-full">
-                                  <Button
-                                    variant={question.isAnswered ? "outline" : "default"}
-                                    className={cn(
-                                      "w-full h-8 rounded-md flex items-center justify-center shadow-md",
-                                      question.isAnswered ? 'opacity-40 cursor-not-allowed bg-gray-200 hover:bg-gray-200 text-gray-600' : 'bg-indigo-500 hover:bg-indigo-600',
-                                      isCurrentTeam && !question.isAnswered ? 'ring-1 ring-gray-800' : ''
-                                    )}
-                                    disabled={question.isAnswered}
-                                    onClick={() => !question.isAnswered && selectQuestion(question.id)}
-                                  >
-                                    {difficulty}
-                                  </Button>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                {!question.isAnswered ? (
-                                  <>سؤال {difficulty === 1 ? 'سهل' : difficulty === 2 ? 'متوسط' : 'صعب'} ({difficulty} {difficulty === 1 ? 'نقطة' : 'نقاط'})</>
-                                ) : (
-                                  <>تمت الإجابة على هذا السؤال</>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      })}
-                    </div>
-                    {teamIndex < game.teams.length - 1 && (
-                      <Separator className="my-3" />
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
       {/* عرض الفرق والنقاط */}
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-indigo-800">
         <Award className="h-6 w-6 text-indigo-600" />
         <span>النتائج الحالية</span>
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
         {game.teams.map((team, index) => {
           const isCurrentTeam = index === game.currentTeamIndex;
           
@@ -425,6 +344,90 @@ export default function PlayPage() {
                   </div>
                 </CardFooter>
               )}
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* عرض الفئات والأسئلة */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {game.categories.map((category) => {
+          // تصفية الأسئلة حسب الفئة الحالية
+          const categoryQuestions = game.questions.filter(q => q.categoryId === category.id);
+
+          // تنظيم الأسئلة حسب الفريق
+          const questionsByTeam: { [teamIndex: number]: GameQuestion[] } = {};
+          game.teams.forEach((_, index) => {
+            questionsByTeam[index] = categoryQuestions.filter(q => q.teamIndex === index);
+          });
+
+          return (
+            <Card 
+              key={category.id} 
+              className="shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden bg-white rounded-xl"
+            >
+              <CardHeader className="pb-2 bg-indigo-50 border-b border-indigo-100">
+                <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold text-indigo-800">
+                  <span className="text-2xl">{category.icon}</span>
+                  <span>{category.name}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                {game.teams.map((team, teamIndex) => (
+                  <div key={teamIndex} className="mb-3 last:mb-0">
+                    <div className="flex justify-center mb-2 border-b pb-1 border-gray-200">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: team.color }}
+                      ></div>
+                    </div>
+                    <div className="flex gap-2 justify-center">
+                      {[1, 2, 3].map((difficulty) => {
+                        const question = questionsByTeam[teamIndex]?.find(q => q.difficulty === difficulty);
+                        
+                        if (!question) return (
+                          <div key={`${teamIndex}-${difficulty}`} className="w-8 h-8"></div>
+                        );
+                        
+                        const isCurrentTeam = teamIndex === game.currentTeamIndex;
+                        
+                        return (
+                          <TooltipProvider key={`${teamIndex}-${difficulty}`}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <Button
+                                    variant={question.isAnswered ? "outline" : "default"}
+                                    className={cn(
+                                      "w-8 h-8 rounded-md flex items-center justify-center shadow-md",
+                                      question.isAnswered ? 'opacity-40 cursor-not-allowed bg-gray-200 hover:bg-gray-200 text-gray-600' : 'bg-indigo-500 hover:bg-indigo-600',
+                                      isCurrentTeam && !question.isAnswered ? 'ring-1 ring-gray-800' : ''
+                                    )}
+                                    disabled={question.isAnswered}
+                                    onClick={() => !question.isAnswered && selectQuestion(question.id)}
+                                  >
+                                    {difficulty}
+                                  </Button>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                {!question.isAnswered ? (
+                                  <>سؤال {difficulty === 1 ? 'سهل' : difficulty === 2 ? 'متوسط' : 'صعب'} ({difficulty} {difficulty === 1 ? 'نقطة' : 'نقاط'})</>
+                                ) : (
+                                  <>تمت الإجابة على هذا السؤال</>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })}
+                    </div>
+                    {teamIndex < game.teams.length - 1 && (
+                      <Separator className="my-3" />
+                    )}
+                  </div>
+                ))}
+              </CardContent>
             </Card>
           );
         })}
