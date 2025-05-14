@@ -257,13 +257,16 @@ export function GameSettingsModal({
               render={({ field }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>عدد الفرق</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select 
+                    defaultValue={field.value} 
+                    onValueChange={field.onChange}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر عدد الفرق" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="z-50">
+                    <SelectContent className="z-[9999]" side="bottom" sideOffset={4} forceMount>
                       {teamOptions}
                     </SelectContent>
                   </Select>
@@ -308,7 +311,10 @@ export function GameSettingsModal({
               render={({ field }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الأول</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select 
+                    defaultValue={field.value} 
+                    onValueChange={field.onChange}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر وقت الإجابة الأول" />
@@ -333,13 +339,16 @@ export function GameSettingsModal({
               render={({ field }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الثاني</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select 
+                    defaultValue={field.value} 
+                    onValueChange={field.onChange}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر وقت الإجابة الثاني" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="z-[9999]" side="bottom" sideOffset={4} forceMount>
                       {settings.allowedSecondAnswerTimes.map((time) => (
                         <SelectItem key={time} value={time.toString()}>
                           {time} ثانية
