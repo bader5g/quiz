@@ -133,11 +133,15 @@ export default function LevelPage() {
   });
 
   // تنسيق التاريخ باللغة العربية
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string, includeTime = false) => {
     if (!dateString) return "غير متوفر";
     try {
       const date = new Date(dateString);
-      return format(date, 'dd MMMM yyyy', { locale: ar });
+      return format(
+        date, 
+        includeTime ? 'dd MMMM yyyy - hh:mm a' : 'dd MMMM yyyy', 
+        { locale: ar }
+      );
     } catch (e) {
       return 'تاريخ غير صالح';
     }
@@ -321,6 +325,10 @@ export default function LevelPage() {
                       <Skeleton className="h-20 w-full" />
                       <Skeleton className="h-20 w-full" />
                     </div>
+                  ) : !userLevel ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      لم يتم تصنيفك بعد. ابدأ باستخدام الكروت لتكتسب النجوم وتفتح المستويات!
+                    </div>
                   ) : userLevel && userLevel.stats && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="bg-muted/20 p-4 rounded-lg">
@@ -376,6 +384,11 @@ export default function LevelPage() {
                             : "المتبقي قبل فقدان المستوى"
                           }
                         </p>
+                        {userLevel.stats.daysBeforeDemotion !== 0 && userLevel.stats.daysBeforeDemotion <= 5 && (
+                          <p className="text-red-600 text-sm mt-2 font-semibold flex items-center gap-1">
+                            <span className="text-lg">⚠️</span> يجب عليك استهلاك كروت إضافية خلال {formatRemainingDays(userLevel.stats.daysBeforeDemotion)} لتفادي خسارة المستوى
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
