@@ -44,6 +44,7 @@ interface GameSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedCategories: CategoryChild[];
+  onGameCreated?: (gameId: string) => void;
 }
 
 // زود سكيما للتحقق من صحة البيانات
@@ -66,7 +67,8 @@ type FormValues = z.infer<typeof formSchema>;
 export function GameSettingsModal({
   open,
   onOpenChange,
-  selectedCategories
+  selectedCategories,
+  onGameCreated
 }: GameSettingsModalProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -121,7 +123,7 @@ export function GameSettingsModal({
     if (!watchTeamCount) return;
     
     const count = parseInt(watchTeamCount, 10);
-    const currentTeamNames = form.getValues("teamNames");
+    let currentTeamNames = form.getValues("teamNames");
     
     // إذا كان عدد الأسماء أقل من عدد الفرق المطلوبة، نضيف أسماء افتراضية
     if (currentTeamNames.length < count) {
@@ -130,6 +132,12 @@ export function GameSettingsModal({
         newTeamNames.push(`الفريق ${i + 1}`);
       }
       form.setValue("teamNames", newTeamNames);
+    }
+    
+    // ✅ إذا تم تقليل عدد الفرق: نقصّ المصفوفة
+    if (currentTeamNames.length > count) {
+      currentTeamNames = currentTeamNames.slice(0, count);
+      form.setValue("teamNames", currentTeamNames);
     }
     
     // ضبط حقول أسماء الفرق بناء على العدد المحدد
@@ -167,8 +175,13 @@ export function GameSettingsModal({
         description: "جاري الانتقال إلى صفحة اللعب"
       });
       
-      // الانتقال إلى صفحة اللعب مع معرف اللعبة
-      navigate(`/play/${response.data.id}`);
+      // استدعاء دالة onGameCreated إذا تم تمريرها
+      if (onGameCreated) {
+        onGameCreated(response.data.id);
+      } else {
+        // الانتقال إلى صفحة اللعب مع معرف اللعبة (كخطة بديلة)
+        navigate(`/play/${response.data.id}`);
+      }
     } catch (error) {
       console.error('Error creating game session:', error);
       toast({
