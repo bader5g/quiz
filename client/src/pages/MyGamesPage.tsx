@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { CalendarIcon, ClipboardIcon, RefreshCwIcon, Users, Clock, SearchXIcon, ArrowRightIcon } from 'lucide-react';
+import { CalendarIcon, ClipboardIcon, RefreshCwIcon, Users, Clock, SearchXIcon, ArrowRightIcon, PlayIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 // @ts-ignore - تجاهل مشكلة استيراد المكون
 import ReplayGameModal from '@/components/game/ReplayGameModal';
@@ -166,6 +166,10 @@ export default function MyGamesPage() {
   const handleReplayGame = (game: GameSummary) => {
     setSelectedGame(game);
     setReplayModalOpen(true);
+  };
+  
+  const handlePlayGame = (gameId: string) => {
+    navigate(`/play/${gameId}`);
   };
 
   const formatCreatedAt = (dateString: string) => {
@@ -452,13 +456,23 @@ export default function MyGamesPage() {
                   <ClipboardIcon className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> سجل اللعبة
                 </Button>
                 
-                <Button
-                  size="sm"
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
-                  onClick={() => handleReplayGame(game)}
-                >
-                  <RefreshCwIcon className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> إعادة اللعب
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
+                    onClick={() => handlePlayGame(game.id)}
+                  >
+                    <PlayIcon className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> استكمال اللعب
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
+                    onClick={() => handleReplayGame(game)}
+                  >
+                    <RefreshCwIcon className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> إعادة اللعب
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
           ))}
