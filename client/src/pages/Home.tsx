@@ -308,6 +308,11 @@ export default function Home() {
           open={showGameSettingsModal}
           onOpenChange={setShowGameSettingsModal}
           selectedCategories={selectedCategories}
+          onGameCreated={(gameId) => {
+            console.log("Game created with ID:", gameId);
+            // تنقل المستخدم إلى صفحة اللعب
+            navigate(`/play/${gameId}`);
+          }}
         />
       </div>
     </Layout>
