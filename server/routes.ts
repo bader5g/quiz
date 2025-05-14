@@ -1,7 +1,13 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { gameSessionSchema, updateGameSettingsSchema, updateSiteSettingsSchema } from "@shared/schema";
+import { 
+  gameSessionSchema, 
+  updateGameSettingsSchema, 
+  updateSiteSettingsSchema,
+  insertCardPackageSchema,
+  updateCardPackageSchema
+} from "@shared/schema";
 import { z } from "zod";
 
 // Helper function to validate request with Zod schema

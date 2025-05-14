@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, varchar, numeric, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -93,3 +93,33 @@ export const gameSessionSchema = z.object({
 
 export type GameSession = typeof gameSessions.$inferSelect;
 export type InsertGameSession = z.infer<typeof gameSessionSchema>;
+
+// تعريف جدول باقات الكروت
+export const cardPackages = pgTable("card_packages", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  price: numeric("price", { precision: 10, scale: 3 }).notNull(),
+  paidCards: integer("paid_cards").notNull(),
+  freeCards: integer("free_cards"),
+  isActive: boolean("is_active").default(true).notNull(),
+  badge: varchar("badge", { length: 50 }),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCardPackageSchema = createInsertSchema(cardPackages).omit({ 
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const updateCardPackageSchema = createInsertSchema(cardPackages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type CardPackage = typeof cardPackages.$inferSelect;
+export type InsertCardPackage = z.infer<typeof insertCardPackageSchema>;
+export type UpdateCardPackage = z.infer<typeof updateCardPackageSchema>;
