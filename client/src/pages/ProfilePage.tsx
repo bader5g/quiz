@@ -29,25 +29,7 @@ import {
   Pencil
 } from "lucide-react";
 
-interface UserLevel {
-  level: string;
-  badge: string;
-  color: string;
-  progress?: number;
-  nextLevel?: string;
-  requiredStars?: number;
-  currentStars?: number;
-}
-
-interface UserCards {
-  freeCards: number;
-  paidCards: number;
-  totalCards: number;
-  freeIcon: string;
-  paidIcon: string;
-  usedFreeCards: number;
-  usedPaidCards: number;
-}
+// تم حذف واجهة معلومات المستوى والكروت
 
 interface UserStats {
   gamesPlayed: number;
@@ -91,23 +73,7 @@ export default function ProfilePage() {
       });
   }, []);
 
-  // جلب معلومات مستوى اللاعب
-  const { 
-    data: userLevel, 
-    isLoading: levelLoading
-  } = useQuery<UserLevel, Error>({
-    queryKey: ['/api/user-level'],
-    queryFn: getQueryFn({ on401: "throw" }),
-  });
-
-  // جلب معلومات البطاقات
-  const { 
-    data: userCards, 
-    isLoading: cardsLoading
-  } = useQuery<UserCards, Error>({
-    queryKey: ['/api/user-cards'],
-    queryFn: getQueryFn({ on401: "throw" }),
-  });
+  // تم حذف استعلامات المستوى والكروت
 
   // جلب إحصائيات المستخدم
   const { 
