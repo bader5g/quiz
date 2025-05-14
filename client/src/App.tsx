@@ -10,6 +10,9 @@ import GameLogPage from "@/pages/GameLogPage";
 import ProfilePage from "@/pages/ProfilePage";
 import BuyCardsPage from "@/pages/BuyCardsPage";
 import LevelPage from "@/pages/LevelPage";
+import PlayPage from "@/pages/PlayPage";
+import QuestionPage from "@/pages/QuestionPage";
+import GameResultPage from "@/pages/GameResultPage";
 import TestDialogPage from "@/pages/TestDialogPage";
 import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
@@ -35,7 +38,9 @@ function Router() {
           <LoginButton />
         </div>
       )} />
-      <Route path="/play" component={() => <div dir="rtl" className="p-10 text-center">صفحة اللعب (قيد التطوير)</div>} />
+      <Route path="/play/:gameId" component={PlayPage} />
+      <Route path="/play/:gameId/question/:questionId" component={QuestionPage} />
+      <Route path="/game-result/:gameId" component={GameResultPage} />
       <Route path="/categories" component={() => <div dir="rtl" className="p-10 text-center">صفحة الفئات (قيد التطوير)</div>} />
       {/* صفحات الألعاب والتاريخ */}
       <Route path="/my-games" component={MyGamesPage} />
