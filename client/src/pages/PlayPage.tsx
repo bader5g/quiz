@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useSite } from '@/context/SiteContext';
 
 interface GameTeam {
   name: string;
@@ -46,6 +47,7 @@ export default function PlayPage() {
   const { gameId } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { siteSettings } = useSite();
   const [game, setGame] = useState<GameDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +166,19 @@ export default function PlayPage() {
 
   return (
     <div dir="rtl" className="container mx-auto p-4 pb-8">
+      {/* شعار اللعبة في الأعلى */}
+      <div className="flex justify-center mb-6">
+        {siteSettings && (
+          <div className="relative h-20 w-full flex items-center justify-center">
+            <img 
+              src={siteSettings.logoUrl} 
+              alt={siteSettings.appName} 
+              className="h-full object-contain"
+            />
+          </div>
+        )}
+      </div>
+
       {/* الهيدر العلوي */}
       <Card className="mb-8 shadow-md border-t-4" style={{ borderTopColor: currentTeam.color }}>
         <CardContent className="p-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -246,12 +261,11 @@ export default function PlayPage() {
               <CardContent className="p-4">
                 {game.teams.map((team, teamIndex) => (
                   <div key={teamIndex} className="mb-3 last:mb-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex justify-center mb-2">
                       <div 
-                        className="w-3 h-3 rounded-full" 
+                        className="w-4 h-4 rounded-full" 
                         style={{ backgroundColor: team.color }}
                       ></div>
-                      <span className="text-sm font-medium">{team.name}</span>
                     </div>
                     <div className="flex gap-2 justify-center">
                       {[1, 2, 3].map((difficulty) => {
@@ -280,7 +294,7 @@ export default function PlayPage() {
                                       question.isAnswered ? 'bg-gray-200 hover:bg-gray-200 text-gray-600' : ''
                                     )}
                                     style={{
-                                      ...(isCurrentTeam && !question.isAnswered ? { ringColor: team.color } : {})
+                                      ...(isCurrentTeam && !question.isAnswered ? { '--ring-color': team.color } as React.CSSProperties : {})
                                     }}
                                     disabled={question.isAnswered}
                                     onClick={() => !question.isAnswered && selectQuestion(question.id)}
