@@ -115,6 +115,11 @@ export function GameSettingsModal({
   
   // عند تغيير عدد الفرق، نتأكد من توفر أسماء كافية للفرق
   useEffect(() => {
+    // طباعة قيمة watchTeamCount للتأكد من تحديثها
+    console.log("Selected team count:", watchTeamCount);
+    
+    if (!watchTeamCount) return;
+    
     const count = parseInt(watchTeamCount, 10);
     const currentTeamNames = form.getValues("teamNames");
     
@@ -126,6 +131,9 @@ export function GameSettingsModal({
       }
       form.setValue("teamNames", newTeamNames);
     }
+    
+    // ضبط حقول أسماء الفرق بناء على العدد المحدد
+    form.trigger("teamNames");
   }, [watchTeamCount, form]);
   
   // معالجة تقديم النموذج
@@ -177,9 +185,16 @@ export function GameSettingsModal({
     return null;
   }
   
+  // طباعة قيم الإعدادات للتشخيص
+  console.log("Game settings:", settings);
+  
   // إعداد خيارات عدد الفرق
   const teamOptions: JSX.Element[] = [];
-  for (let i = settings.minTeams; i <= settings.maxTeams; i++) {
+  // ضمان استخدام القيم الافتراضية إذا كانت الإعدادات غير متوفرة بعد
+  const minTeams = settings.minTeams || 2;
+  const maxTeams = settings.maxTeams || 4;
+  
+  for (let i = minTeams; i <= maxTeams; i++) {
     teamOptions.push(
       <SelectItem key={i} value={i.toString()}>{i} فرق</SelectItem>
     );
