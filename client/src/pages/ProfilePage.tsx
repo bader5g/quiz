@@ -596,6 +596,64 @@ export default function ProfilePage() {
           {/* معلومات اللاعب */}
           <div className="md:col-span-2">
             <div className="grid gap-6">
+              {/* إحصائيات اللعب */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold">إحصائيات اللعب</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {statsLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : userStats ? (
+                    <div className="grid grid-cols-3 gap-4">
+                      <Card>
+                        <CardContent className="p-4 flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-purple-100">
+                            <BarChart className="h-5 w-5 text-purple-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">إجمالي الألعاب</p>
+                            <p className="font-bold">{userStats.gamesPlayed + (linkedUsers?.reduce((acc, user) => acc + user.gamesPlayed, 0) || 0)} لعبة</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-4 flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-indigo-100">
+                            <UserIcon className="h-5 w-5 text-indigo-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">ألعاب حسابي</p>
+                            <p className="font-bold">{userStats.gamesPlayed} لعبة</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-4 flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-orange-100">
+                            <Clock className="h-5 w-5 text-orange-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">آخر لعبة</p>
+                            <p className="font-bold" dir="ltr">
+                              {new Date(userStats.lastPlayed).toLocaleDateString('ar-SA', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : (
+                    <p>لا توجد إحصائيات متاحة</p>
+                  )}
+                </CardContent>
+              </Card>
+              
               {/* بطاقة المستخدمين المرتبطين */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -796,52 +854,7 @@ export default function ProfilePage() {
                   )}
                 </CardContent>
               </Card>
-              
-              {/* إحصائيات اللعب */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold">إحصائيات اللعب</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {statsLoading ? (
-                    <Skeleton className="h-40 w-full" />
-                  ) : userStats ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <Card>
-                        <CardContent className="p-4 flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-purple-100">
-                            <BarChart className="h-5 w-5 text-purple-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">الألعاب الكلية</p>
-                            <p className="font-bold">{userStats.gamesPlayed} لعبة</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardContent className="p-4 flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-orange-100">
-                            <Clock className="h-5 w-5 text-orange-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">آخر لعبة</p>
-                            <p className="font-bold" dir="ltr">
-                              {new Date(userStats.lastPlayed).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit'
-                              })}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ) : (
-                    <p>لا توجد إحصائيات متاحة</p>
-                  )}
-                </CardContent>
-              </Card>
+
             </div>
           </div>
         </div>
