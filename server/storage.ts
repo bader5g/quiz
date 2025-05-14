@@ -31,6 +31,13 @@ export interface IStorage {
   createGameSession(userId: number, session: InsertGameSession): Promise<GameSession>;
   getUserGameSessions(userId: number): Promise<GameSession[]>;
   getGameSession(id: number): Promise<GameSession | undefined>;
+  
+  // Game play methods
+  getGameById(id: number): Promise<GameSession | undefined>;
+  updateGameTeams(gameId: number, teams: any[]): Promise<void>;
+  updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void>;
+  endGame(gameId: number, winnerIndex: number): Promise<void>;
+  saveGameState(gameId: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -208,6 +215,50 @@ export class MemStorage implements IStorage {
   
   async getGameSession(id: number): Promise<GameSession | undefined> {
     return this.gameSessions.get(id);
+  }
+
+  // Implement Game play methods
+  async getGameById(id: number): Promise<GameSession | undefined> {
+    return this.getGameSession(id);
+  }
+
+  async updateGameTeams(gameId: number, teams: any[]): Promise<void> {
+    const game = await this.getGameSession(gameId);
+    if (game) {
+      const updatedGame = { ...game, teams };
+      this.gameSessions.set(gameId, updatedGame);
+    }
+  }
+
+  async updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void> {
+    const game = await this.getGameSession(gameId);
+    if (game) {
+      const updatedGame = { ...game, currentTeamIndex: teamIndex };
+      this.gameSessions.set(gameId, updatedGame);
+    }
+  }
+
+  async endGame(gameId: number, winnerIndex: number): Promise<void> {
+    const game = await this.getGameSession(gameId);
+    if (game) {
+      const updatedGame = { 
+        ...game, 
+        isCompleted: true,
+        winnerIndex
+      };
+      this.gameSessions.set(gameId, updatedGame);
+    }
+  }
+
+  async saveGameState(gameId: number): Promise<void> {
+    const game = await this.getGameSession(gameId);
+    if (game) {
+      const updatedGame = { 
+        ...game, 
+        isSaved: true
+      };
+      this.gameSessions.set(gameId, updatedGame);
+    }
   }
 }
 
