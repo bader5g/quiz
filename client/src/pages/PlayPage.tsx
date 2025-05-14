@@ -187,11 +187,11 @@ export default function PlayPage() {
           
           {/* الدور الحالي */}
           <Badge 
-            className="text-lg py-2 px-4 rounded-full shadow-md flex items-center gap-2 transition-all" 
-            style={{ backgroundColor: currentTeam.color }}
+            className="text-lg py-2 px-4 rounded-md shadow-md flex items-center gap-2 transition-all text-black border-2 border-gray-800" 
+            style={{ backgroundColor: 'white' }}
           >
-            <Trophy className="h-5 w-5 animate-pulse" />
-            <span>الدور الحالي: {currentTeam.name}</span>
+            <Trophy className="h-5 w-5 text-gray-800" />
+            <span className="text-sm">الدور الحالي: {currentTeam.name}</span>
           </Badge>
         </div>
 
@@ -273,18 +273,15 @@ export default function PlayPage() {
               <CardContent className="p-4">
                 {game.teams.map((team, teamIndex) => (
                   <div key={teamIndex} className="mb-3 last:mb-0">
-                    <div className="flex justify-center mb-2">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: team.color }}
-                      ></div>
+                    <div className="flex justify-center mb-2 border-b pb-1 border-gray-200">
+                      <span className="font-semibold text-sm" style={{ color: team.color }}>{team.name}</span>
                     </div>
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex flex-col gap-2 items-center">
                       {[1, 2, 3].map((difficulty) => {
                         const question = questionsByTeam[teamIndex]?.find(q => q.difficulty === difficulty);
                         
                         if (!question) return (
-                          <div key={`${teamIndex}-${difficulty}`} className="w-10 h-10"></div>
+                          <div key={`${teamIndex}-${difficulty}`} className="w-full h-8"></div>
                         );
                         
                         const isCurrentTeam = teamIndex === game.currentTeamIndex;
@@ -293,13 +290,13 @@ export default function PlayPage() {
                           <TooltipProvider key={`${teamIndex}-${difficulty}`}>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div>
+                                <div className="w-full">
                                   <Button
                                     variant={question.isAnswered ? "outline" : "default"}
                                     className={cn(
-                                      "w-10 h-10 rounded-full flex items-center justify-center shadow-md",
+                                      "w-full h-8 rounded-md flex items-center justify-center shadow-md",
                                       question.isAnswered ? 'opacity-40 cursor-not-allowed bg-gray-200 hover:bg-gray-200 text-gray-600' : 'bg-indigo-500 hover:bg-indigo-600',
-                                      isCurrentTeam && !question.isAnswered ? 'ring-2 ring-offset-2 ring-indigo-300' : ''
+                                      isCurrentTeam && !question.isAnswered ? 'ring-1 ring-gray-800' : ''
                                     )}
                                     disabled={question.isAnswered}
                                     onClick={() => !question.isAnswered && selectQuestion(question.id)}
