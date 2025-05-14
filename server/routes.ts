@@ -393,6 +393,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     ]);
   });
+  
+  // المستخدمين المرتبطين - Linked users endpoint
+  app.get('/api/linked-users', (_req, res) => {
+    res.json([
+      {
+        id: 1,
+        username: "samar_92",
+        name: "سمر محمد",
+        avatarUrl: "https://i.pravatar.cc/150?img=5",
+        relationshipType: "friend",
+        lastGameDate: "2025-05-01T14:30:00.000Z"
+      },
+      {
+        id: 2,
+        username: "khalid_h",
+        name: "خالد حسين",
+        avatarUrl: "https://i.pravatar.cc/150?img=8",
+        relationshipType: "teammate",
+        lastGameDate: "2025-04-25T16:45:00.000Z"
+      },
+      {
+        id: 3,
+        username: "fatima_22",
+        name: "فاطمة أحمد",
+        avatarUrl: "https://i.pravatar.cc/150?img=9",
+        relationshipType: "family",
+        lastGameDate: "2025-04-29T10:15:00.000Z"
+      }
+    ]);
+  });
 
   // Get specific game session
   app.get('/api/game-sessions/:id', async (req, res) => {
