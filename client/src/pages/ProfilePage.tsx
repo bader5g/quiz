@@ -659,7 +659,7 @@ export default function ProfilePage() {
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <div>
                     <CardTitle className="text-xl font-bold">المستخدمون المرتبطون</CardTitle>
-                    <p className="text-muted-foreground text-sm mt-1">يمكنك إضافة حتى 5 مستخدمين فرعيين</p>
+                    <p className="text-muted-foreground text-sm mt-1">يمكنك إضافة مستخدمين فرعيين (الحد يحدده المدير)</p>
                   </div>
                   <Button 
                     variant="outline" 

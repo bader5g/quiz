@@ -29,6 +29,7 @@ export const gameSettings = pgTable("game_settings", {
   defaultSecondAnswerTime: integer("default_second_answer_time").notNull().default(15),
   allowedFirstAnswerTimes: jsonb("allowed_first_answer_times").notNull().default([15, 30, 45, 60]),
   allowedSecondAnswerTimes: jsonb("allowed_second_answer_times").notNull().default([10, 15, 20, 30]),
+  maxSubUsers: integer("max_sub_users").notNull().default(5),
   modalTitle: text("modal_title").notNull().default("إعدادات اللعبة"),
   pageDescription: text("page_description").notNull().default("اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!"),
   createdAt: text("created_at").notNull().default(new Date().toISOString()),

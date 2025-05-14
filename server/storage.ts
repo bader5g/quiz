@@ -122,6 +122,7 @@ export class MemStorage implements IStorage {
       defaultSecondAnswerTime: 15,
       allowedFirstAnswerTimes: [15, 30, 45, 60],
       allowedSecondAnswerTimes: [10, 15, 20, 30],
+      maxSubUsers: 5, // الحد الأقصى للمستخدمين الفرعيين
       modalTitle: "إعدادات اللعبة",
       pageDescription: "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!",
       createdAt: new Date().toISOString(),
