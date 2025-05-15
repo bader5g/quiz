@@ -373,60 +373,64 @@ export default function PlayPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                {game.teams.map((team, teamIndex) => (
-                  <div key={teamIndex} className="mb-3 last:mb-0">
-                    <div className="flex justify-center mb-2 border-b pb-1 border-gray-200">
+                <div className="grid" style={{ gridTemplateColumns: `repeat(${game.teams.length}, 1fr)` }}>
+                  {/* عرض رأس الأعمدة: نقاط فريق */}
+                  {game.teams.map((team, index) => (
+                    <div key={`team-header-${index}`} className="flex justify-center mb-2">
                       <div 
                         className="w-4 h-4 rounded-full" 
                         style={{ backgroundColor: team.color }}
                       ></div>
                     </div>
-                    <div className="flex gap-2 justify-center">
-                      {[1, 2, 3].map((difficulty) => {
+                  ))}
+                  
+                  {/* صف السؤال الأول (سهل) */}
+                  {[1, 2, 3].map((difficulty) => (
+                    <React.Fragment key={`row-${difficulty}`}>
+                      {game.teams.map((team, teamIndex) => {
                         const question = questionsByTeam[teamIndex]?.find(q => q.difficulty === difficulty);
                         
                         if (!question) return (
-                          <div key={`${teamIndex}-${difficulty}`} className="w-8 h-8"></div>
+                          <div key={`empty-${teamIndex}-${difficulty}`} className="flex justify-center p-1">
+                            <div className="w-12 h-12"></div>
+                          </div>
                         );
                         
                         const isCurrentTeam = teamIndex === game.currentTeamIndex;
                         
                         return (
-                          <TooltipProvider key={`${teamIndex}-${difficulty}`}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div>
+                          <div key={`q-${teamIndex}-${difficulty}`} className="flex justify-center p-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
                                   <Button
                                     variant={question.isAnswered ? "outline" : "default"}
                                     className={cn(
-                                      "w-8 h-8 rounded-md flex items-center justify-center shadow-md",
-                                      question.isAnswered ? 'opacity-40 cursor-not-allowed bg-gray-200 hover:bg-gray-200 text-gray-600' : 'bg-indigo-500 hover:bg-indigo-600',
-                                      isCurrentTeam && !question.isAnswered ? 'ring-1 ring-gray-800' : ''
+                                      "w-12 h-12 rounded-full text-white shadow-md flex items-center justify-center",
+                                      question.isAnswered ? 'opacity-40 bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300' : 'bg-sky-500 hover:bg-sky-600',
+                                      isCurrentTeam && !question.isAnswered ? 'ring-2 ring-yellow-400' : ''
                                     )}
                                     disabled={question.isAnswered}
                                     onClick={() => !question.isAnswered && selectQuestion(question.id)}
                                   >
                                     {difficulty}
                                   </Button>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                {!question.isAnswered ? (
-                                  <>سؤال {difficulty === 1 ? 'سهل' : difficulty === 2 ? 'متوسط' : 'صعب'} ({difficulty} {difficulty === 1 ? 'نقطة' : 'نقاط'})</>
-                                ) : (
-                                  <>تمت الإجابة على هذا السؤال</>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">
+                                  {!question.isAnswered ? (
+                                    <>سؤال {difficulty === 1 ? 'سهل' : difficulty === 2 ? 'متوسط' : 'صعب'} ({difficulty} {difficulty === 1 ? 'نقطة' : 'نقاط'})</>
+                                  ) : (
+                                    <>تمت الإجابة على هذا السؤال</>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         );
                       })}
-                    </div>
-                    {teamIndex < game.teams.length - 1 && (
-                      <Separator className="my-3" />
-                    )}
-                  </div>
-                ))}
+                    </React.Fragment>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           );

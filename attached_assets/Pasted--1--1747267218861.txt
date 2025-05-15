@@ -1,0 +1,66 @@
+🎯 المطلوب: تعديل صفحة اللعب لتكون أكثر احترافية ووضوحًا في توزيع الأسئلة بين الفرق
+✅ 1. تعديل طريقة عرض أزرار الأسئلة:
+الشكل المطلوب:
+يتم عرض أزرار الأسئلة بشكل عمودي لكل فريق.
+
+ترتيب الأزرار داخل كل فئة يكون بهذا الشكل:
+
+css
+Copy
+Edit
+[1]   [1]   [1]
+[2]   [2]   [2]
+[3]   [3]   [3]
+بحيث كل عمود يمثّل فريق، وكل صف يمثّل سؤال (سهل، متوسط، صعب) لكن بدون عرض مستوى السؤال وبدون اسم الفريق.
+
+✅ 2. تنسيق الأزرار المطلوب:
+العنصر	المواصفات
+الحجم	w-10 h-10 أو w-12 h-12
+الشكل	دائري rounded-full
+اللون الأساسي	موحد لجميع الأزرار: bg-sky-500 hover:bg-sky-600 text-white
+السؤال المُجاب عليه	opacity-40 bg-gray-300 text-gray-600 cursor-not-allowed
+الفريق الحالي	يتم إبراز أزراره بـ ring-2 ring-yellow-400 أو animate-pulse
+
+✅ 3. كود تخطيطي لطريقة العرض:
+tsx
+Copy
+Edit
+<div className="grid grid-cols-{NUM_TEAMS} gap-4 justify-center">
+  {game.teams.map((_, teamIndex) => (
+    <div key={teamIndex} className="flex flex-col items-center gap-2">
+      {[1, 2, 3].map((difficulty) => {
+        const question = questionsByTeam[teamIndex]?.find(q => q.difficulty === difficulty);
+
+        if (!question) return <div key={`empty-${teamIndex}-${difficulty}`} className="w-10 h-10"></div>;
+
+        const isCurrentTeam = teamIndex === game.currentTeamIndex;
+
+        return (
+          <Button
+            key={`q-${teamIndex}-${difficulty}`}
+            onClick={() => !question.isAnswered && selectQuestion(question.id)}
+            disabled={question.isAnswered}
+            className={cn(
+              'w-10 h-10 rounded-full text-white shadow',
+              question.isAnswered ? 'opacity-40 bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-sky-500 hover:bg-sky-600',
+              isCurrentTeam && !question.isAnswered ? 'ring-2 ring-yellow-400' : ''
+            )}
+          >
+            {difficulty}
+          </Button>
+        );
+      })}
+    </div>
+  ))}
+</div>
+✅ 4. تعليمات إضافية:
+يجب إزالة عرض اسم الفريق تمامًا من أسفل أو أعلى الأزرار.
+
+لا يتم عرض كلمات مثل "سهل / متوسط / صعب".
+
+يتم فقط عرض الأزرار كأرقام (1 / 2 / 3).
+
+عدد الأعمدة = عدد الفرق المختارة (2 أو 3 أو 4).
+
+يجب أن يكون التنسيق متجاوب (Responsive) لجميع الشاشات.
+
