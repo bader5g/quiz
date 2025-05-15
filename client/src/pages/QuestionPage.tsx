@@ -326,7 +326,9 @@ export default function QuestionPage() {
       
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
         questionId: parseInt(questionId as string),
-        teamId: teamIndex !== undefined ? questionData?.teams[teamIndex].id : null,
+        teamId: teamIndex !== undefined ? teamIndex : null, // نرسل الindوقيل رقم الفريق
+        categoryId: questionData.question.categoryId, // إضافة معرف التصنيف
+        difficulty: requestedDifficulty, // إضافة مستوى الصعوبة
         isCorrect,
         points: isCorrect ? points : 0
       });

@@ -239,6 +239,33 @@ export class MemStorage implements IStorage {
     }
   }
 
+  async updateGameQuestions(gameId: number, questions: any[]): Promise<void> {
+    const game = await this.getGameSession(gameId);
+    if (game) {
+      // ندمج الأسئلة مع الأسئلة الموجودة حاليًا في اللعبة
+      // نخزن الأسئلة المجاب عليها بخاصية answeredQuestions
+      const answeredQuestions = game.answeredQuestions || [];
+      
+      // إضافة الأسئلة الجديدة المجاب عليها
+      questions.forEach(q => {
+        if (q.isAnswered) {
+          // إذا لم يكن السؤال موجود بالفعل في القائمة، نضيفه
+          const questionKey = `${q.categoryId}-${q.difficulty}-${q.teamIndex}-${q.questionId}`;
+          if (!answeredQuestions.some(aq => aq === questionKey)) {
+            answeredQuestions.push(questionKey);
+          }
+        }
+      });
+      
+      // تحديث اللعبة بالأسئلة المجاب عليها
+      const updatedGame = { 
+        ...game, 
+        answeredQuestions 
+      };
+      this.gameSessions.set(gameId, updatedGame);
+    }
+  }
+
   async endGame(gameId: number, winnerIndex: number): Promise<void> {
     const game = await this.getGameSession(gameId);
     if (game) {

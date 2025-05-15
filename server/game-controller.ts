@@ -101,7 +101,7 @@ export async function getQuestionDetails(req: Request, res: Response) {
 export async function submitAnswer(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
-    const { questionId, teamId, isCorrect, points } = req.body;
+    const { questionId, teamId, categoryId, difficulty, isCorrect, points } = req.body;
     
     const game = await storage.getGameById(gameId);
     if (!game) {
@@ -120,7 +120,7 @@ export async function submitAnswer(req: Request, res: Response) {
     // تحديث حالة السؤال ليصبح مُجاب (تمت الإجابة عليه)
     // البحث عن السؤال المناسب وتحديث حالته
     const updatedQuestions = generateGameQuestions(game).map(q => {
-      if (q.questionId === questionId) {
+      if (q.questionId === questionId && q.categoryId === categoryId && q.teamIndex === teamId && q.difficulty === difficulty) {
         return { ...q, isAnswered: true };
       }
       return q;
@@ -305,6 +305,9 @@ function generateGameQuestions(game: any) {
   const questionIds = ["q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9"];
   let questionCounter = 1;
   
+  // الحصول على الأسئلة التي تم الإجابة عليها مسبقًا
+  const answeredQuestions = game.answeredQuestions || [];
+  
   // إنشاء 3 أسئلة لكل فريق لكل فئة
   for (let catIndex = 0; catIndex < game.selectedCategories.length; catIndex++) {
     const categoryId = game.selectedCategories[catIndex];
@@ -312,13 +315,19 @@ function generateGameQuestions(game: any) {
     for (let teamIndex = 0; teamIndex < game.teams.length; teamIndex++) {
       for (let difficulty = 1; difficulty <= 3; difficulty++) {
         const id = questionIds.shift() || `q${questionCounter++}`;
+        const questionId = parseInt(id.substring(1));
+        
+        // التحقق مما إذا كان السؤال مُجاب عليه مسبقًا
+        const questionKey = `${categoryId}-${difficulty}-${teamIndex}-${questionId}`;
+        const isAnswered = answeredQuestions.includes(questionKey);
+        
         questions.push({
           id: questionCounter,
           difficulty: difficulty as 1 | 2 | 3,
           teamIndex,
           categoryId,
-          isAnswered: false,
-          questionId: parseInt(id.substring(1))
+          isAnswered,
+          questionId
         });
       }
     }
