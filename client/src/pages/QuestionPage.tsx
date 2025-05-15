@@ -284,8 +284,8 @@ export default function QuestionPage() {
         if (prevTime <= 1) {
           clearInterval(interval);
           setTimerRunning(false);
-          // تحويل الدور للفريق التالي عند انتهاء الوقت مع إظهار رسالة أن الفريق لم يجب
-          moveToNextTeam(true);
+          // تحويل الدور للفريق التالي عند انتهاء الوقت بدون إظهار رسالة
+          moveToNextTeam(false);
           return 0;
         }
         return prevTime - 1;
@@ -563,10 +563,10 @@ export default function QuestionPage() {
                   {/* وسائل المساعدة - تظهر فقط إذا كان عدد الفرق = 2 */}
                   {questionData.teams.length === 2 && (
                     <div className="flex gap-1 justify-center">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-white shadow-sm border-sky-200 text-xs text-sky-700"
+                      <HelpButton 
+                        icon={<Minus className="h-3 w-3 text-sky-600" />}
+                        label="خصم"
+                        tooltip="خصم نقاط من الفريق"
                         disabled={helpUsed.discount || index !== currentTeamIndex}
                         onClick={() => {
                           // تأكيد استخدام مساعدة "خصم"
@@ -594,14 +594,12 @@ export default function QuestionPage() {
                             });
                           }
                         }}
-                      >
-                        خصم
-                      </Button>
+                      />
                       
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-white shadow-sm border-sky-200 text-xs text-sky-700"
+                      <HelpButton 
+                        icon={<RefreshCcw className="h-3 w-3 text-sky-600" />}
+                        label="عكس"
+                        tooltip="عكس الدور إلى الفريق الآخر"
                         disabled={helpUsed.swap || index !== currentTeamIndex}
                         onClick={() => {
                           // تأكيد استخدام مساعدة "عكس"
@@ -626,14 +624,12 @@ export default function QuestionPage() {
                             });
                           }
                         }}
-                      >
-                        عكس
-                      </Button>
+                      />
                       
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-white shadow-sm border-sky-200 text-xs text-sky-700"
+                      <HelpButton 
+                        icon={<UserX className="h-3 w-3 text-sky-600" />}
+                        label="تخطي"
+                        tooltip="تخطي دور هذا الفريق"
                         disabled={helpUsed.skip || index !== currentTeamIndex}
                         onClick={() => {
                           // تأكيد استخدام مساعدة "تخطي"
@@ -665,9 +661,7 @@ export default function QuestionPage() {
                             });
                           }
                         }}
-                      >
-                        تخطي
-                      </Button>
+                      />
                     </div>
                   )}
                 </CardContent>
@@ -754,7 +748,12 @@ export default function QuestionPage() {
                       ? { backgroundColor: team.color, color: '#ffffff' } 
                       : {})
                   }}
-                  onClick={() => setSelectedTeam(index)}
+                  onClick={() => {
+                    setSelectedTeam(index);
+                    setAnswerCorrect(true);
+                    submitAnswer(true);
+                    setShowTeamSelection(false);
+                  }}
                 >
                   {team.name}
                 </Button>
@@ -762,41 +761,18 @@ export default function QuestionPage() {
               <Button
                 variant={selectedTeam === null ? "default" : "outline"}
                 className="h-16 text-lg col-span-full shadow-md"
-                onClick={() => setSelectedTeam(null)}
+                onClick={() => {
+                  setSelectedTeam(null);
+                  setAnswerCorrect(false);
+                  submitAnswer(false);
+                  setShowTeamSelection(false);
+                }}
               >
                 لم يُجب أحد
               </Button>
             </div>
             
-            <div className="flex flex-col gap-4 mt-8">
-              <div className="flex justify-center gap-4">
-                <Button 
-                  variant="default" 
-                  className="bg-green-600 hover:bg-green-700 text-white h-14 px-6 rounded-lg shadow-md"
-                  onClick={() => {
-                    setAnswerCorrect(true);
-                    submitAnswer(true);
-                    setShowTeamSelection(false);
-                  }}
-                  disabled={selectedTeam === null}
-                >
-                  صحيحة
-                </Button>
-                
-                <Button 
-                  variant="default" 
-                  className="bg-red-600 hover:bg-red-700 text-white h-14 px-6 rounded-lg shadow-md"
-                  onClick={() => {
-                    setAnswerCorrect(false);
-                    submitAnswer(false);
-                    setShowTeamSelection(false);
-                  }}
-                  disabled={selectedTeam === null}
-                >
-                  خاطئة
-                </Button>
-              </div>
-            </div>
+
           </div>
           <DialogFooter>
             {selectedTeam === null && (
