@@ -41,6 +41,9 @@ interface Question {
   categoryId: number;
   categoryName: string;
   categoryIcon: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video' | null;
 }
 
 interface GameTeam {
@@ -90,6 +93,8 @@ export default function QuestionPage() {
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
   const [answerCorrect, setAnswerCorrect] = useState<boolean | null>(null);
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notFoundError, setNotFoundError] = useState(false);
   
   // جلب تفاصيل السؤال
   useEffect(() => {
@@ -97,14 +102,35 @@ export default function QuestionPage() {
       try {
         setLoading(true);
         const response = await apiRequest('GET', `/api/games/${gameId}/questions/${questionId}`);
+        
+        // التحقق من الاستجابة إذا كانت 404 (غير موجود)
+        if (response.status === 404) {
+          setNotFoundError(true);
+          setError('السؤال المطلوب غير موجود.');
+          return;
+        }
+        
         const data = await response.json();
         setQuestionData(data);
         setTimeLeft(data.firstAnswerTime);
         
-        // تعيين الفريق الحالي (نفترض أنه الأول في المصفوفة)
-        const gameResponse = await apiRequest('GET', `/api/games/${gameId}`);
-        const gameData = await gameResponse.json();
-        setCurrentTeamIndex(gameData.currentTeamIndex || 0);
+        // تعيين الفريق الحالي
+        try {
+          const gameResponse = await apiRequest('GET', `/api/games/${gameId}`);
+          
+          // التحقق إذا كانت اللعبة غير موجودة
+          if (gameResponse.status === 404) {
+            setNotFoundError(true);
+            setError('اللعبة المطلوبة غير موجودة.');
+            return;
+          }
+          
+          const gameData = await gameResponse.json();
+          setCurrentTeamIndex(gameData.currentTeamIndex || 0);
+        } catch (gameErr) {
+          console.error('Error fetching game details:', gameErr);
+          setError('تعذر تحميل بيانات اللعبة. يرجى المحاولة مرة أخرى.');
+        }
         
         setError(null);
       } catch (err) {
@@ -133,8 +159,25 @@ export default function QuestionPage() {
   }, [gameId, questionId, toast]);
 
   // تحويل الدور للفريق التالي وضبط الوقت المخصص له
-  const moveToNextTeam = async () => {
+  const moveToNextTeam = async (showNotAnsweredMessage = false) => {
     try {
+      // إذا كان مطلوب إظهار رسالة "لم يجب"
+      if (showNotAnsweredMessage) {
+        const currentTeam = questionData!.teams[currentTeamIndex];
+        // عرض تنبيه أن الفريق الحالي لم يجب
+        const alertElement = document.createElement('div');
+        alertElement.className = 'fixed top-0 left-0 right-0 bg-amber-100 text-amber-800 p-2 text-center z-50 transition-all';
+        alertElement.textContent = `انتهى الوقت! الفريق "${currentTeam.name}" لم يجب.`;
+        document.body.appendChild(alertElement);
+        
+        // إزالة التنبيه بعد 3 ثواني
+        setTimeout(() => {
+          if (alertElement.parentNode) {
+            alertElement.parentNode.removeChild(alertElement);
+          }
+        }, 3000);
+      }
+      
       // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
       const nextTeamIndex = (currentTeamIndex + 1) % questionData!.teams.length;
       
@@ -159,10 +202,7 @@ export default function QuestionPage() {
       // بدء المؤقت من جديد للفريق الجديد
       startTimer();
       
-      toast({
-        title: "تم تغيير الدور",
-        description: `الدور الآن للفريق: ${questionData!.teams[nextTeamIndex].name}`
-      });
+      // لا نعرض الـ toast الآن، لأن المستخدم طلب إلغاء تلك الرسالة
       
     } catch (err) {
       console.error('Error changing team turn:', err);
@@ -209,8 +249,8 @@ export default function QuestionPage() {
         if (prevTime <= 1) {
           clearInterval(interval);
           setTimerRunning(false);
-          // تحويل الدور للفريق التالي عند انتهاء الوقت
-          moveToNextTeam();
+          // تحويل الدور للفريق التالي عند انتهاء الوقت مع إظهار رسالة أن الفريق لم يجب
+          moveToNextTeam(true);
           return 0;
         }
         return prevTime - 1;
@@ -229,6 +269,11 @@ export default function QuestionPage() {
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean) => {
     try {
+      // منع النقر المكرر
+      if (isSubmitting) {
+        return;
+      }
+      
       if (selectedTeam === null) {
         toast({
           variant: 'destructive',
@@ -238,6 +283,9 @@ export default function QuestionPage() {
         return;
       }
 
+      // تمكين حالة الإرسال
+      setIsSubmitting(true);
+      
       const points = questionData?.question.difficulty || 0;
       
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
@@ -265,6 +313,9 @@ export default function QuestionPage() {
         title: 'خطأ',
         description: 'حدث خطأ أثناء تسجيل الإجابة. يرجى المحاولة مرة أخرى.',
       });
+      
+      // إعادة تعيين حالة الإرسال في حالة الخطأ
+      setIsSubmitting(false);
     }
   };
 
@@ -293,9 +344,24 @@ export default function QuestionPage() {
     }
   };
 
-  // العودة إلى صفحة اللعبة
-  const returnToGame = () => {
-    navigate(`/play/${gameId}`);
+  // العودة إلى صفحة اللعبة مع حفظ حالة اللعبة أولاً
+  const returnToGame = async () => {
+    try {
+      // حفظ حالة اللعبة قبل العودة (لضمان عدم فقدان التقدم)
+      await apiRequest('POST', `/api/games/${gameId}/save-state`);
+      
+      // العودة إلى صفحة اللعبة
+      navigate(`/play/${gameId}`);
+    } catch (err) {
+      console.error('Error saving game state:', err);
+      // على الرغم من الخطأ نعود للعبة مع رسالة تحذير
+      toast({
+        variant: 'warning',
+        title: 'تحذير',
+        description: 'لم يتم حفظ حالة اللعبة، لكن يمكنك المتابعة.',
+      });
+      navigate(`/play/${gameId}`);
+    }
   };
 
   // تنسيق الوقت
@@ -329,14 +395,19 @@ export default function QuestionPage() {
     );
   }
 
-  if (!questionData) {
+  if (!questionData || notFoundError) {
     return (
-      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-white min-h-screen">
-        <Alert variant="destructive" className="max-w-xl mx-auto shadow-md">
-          <AlertDescription>لم يتم العثور على السؤال المطلوب.</AlertDescription>
+      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-white min-h-screen font-[Cairo]">
+        <Alert variant={notFoundError ? "destructive" : "warning"} className="max-w-xl mx-auto shadow-md">
+          <AlertTriangle className="h-6 w-6 mr-2" />
+          <AlertDescription className="text-lg">
+            {notFoundError 
+              ? `${error || 'السؤال المطلوب غير موجود.'}`
+              : 'لم يتم العثور على بيانات السؤال.'}
+          </AlertDescription>
         </Alert>
         <div className="mt-4 flex justify-center">
-          <Button onClick={() => navigate(`/play/${gameId}`)} className="shadow-md">
+          <Button onClick={() => navigate(`/play/${gameId}`)} className="shadow-md px-6 py-2 h-auto">
             العودة إلى اللعبة
           </Button>
         </div>
