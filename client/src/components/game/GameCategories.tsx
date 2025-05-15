@@ -142,7 +142,7 @@ export function GameCategories({
                                 question.isAnswered ? "outline" : "default"
                               }
                               className={cn(
-                                "w-10 h-10 md:w-12 md:h-12 rounded-full text-white shadow-md flex items-center justify-center",
+                                "w-10 h-10 md:w-12 md:h-12 rounded-full text-white shadow-md flex items-center justify-center relative",
                                 question.isAnswered
                                   ? "opacity-40 bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300"
                                   : "bg-sky-500 hover:bg-sky-600",
@@ -156,12 +156,17 @@ export function GameCategories({
                                 onSelectQuestion(question.id, difficulty)
                               }
                             >
-                              {difficulty}
+                              <span className="relative">
+                                {difficulty}
+                                <span className="absolute -top-1 -right-2 text-[8px] font-bold bg-yellow-300 text-black rounded-full w-3 h-3 flex items-center justify-center">
+                                  {difficulty}
+                                </span>
+                              </span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="bottom">
                             {!question.isAnswered ? (
-                              <>سؤال رقم {difficulty}</>
+                              <>سؤال {category.name} رقم {difficulty}</>
                             ) : (
                               <>تمت الإجابة على هذا السؤال</>
                             )}
