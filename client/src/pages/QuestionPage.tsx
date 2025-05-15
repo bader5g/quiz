@@ -335,18 +335,18 @@ export default function QuestionPage() {
         </div>
       </header>
       
-      {/* مؤقت العد التنازلي */}
-      <div className="container mx-auto flex justify-center -mt-4">
-        <div className={`flex items-center gap-2 text-xl font-bold px-5 py-2 rounded-full ${
-          timeLeft < 10 ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-sky-700 bg-sky-50 border border-sky-200'
-        } shadow-md`}>
-          <ClockIcon className="h-5 w-5" />
-          <span>{formatTime(timeLeft)}</span>
-        </div>
-      </div>
-      
       {/* محتوى رئيسي */}
-      <main className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-4">
+      <main className="container mx-auto px-4 pt-6 pb-10 flex flex-col md:flex-row gap-4">
+      
+        {/* مؤقت العد التنازلي - وضعناه هنا ليكون فوق بوكس السؤال مباشرة */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 -mt-7 z-10 w-full flex justify-center">
+          <div className={`flex items-center gap-2 text-xl font-bold px-6 py-3 rounded-full ${
+            timeLeft < 10 ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-sky-700 bg-sky-50 border border-sky-200'
+          } shadow-lg`}>
+            <ClockIcon className="h-5 w-5" />
+            <span>{formatTime(timeLeft)}</span>
+          </div>
+        </div>
         {/* فرق وأدوات المساعدة (يمين) */}
         <div className="w-full md:w-1/5 order-2 md:order-1">
           <div className="space-y-3">
