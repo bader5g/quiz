@@ -118,6 +118,7 @@ export default function QuestionPage() {
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   
   // حالة استخدام وسائل المساعدة
   const [helpUsed, setHelpUsed] = useState<{
@@ -299,12 +300,12 @@ export default function QuestionPage() {
     setTimer(interval);
   };
   
-  // بدء المؤقت
+  // بدء المؤقت - فقط عندما تظهر الإجابة ونكون في وضع الإجابة
   useEffect(() => {
-    if (questionData && !timerRunning && !showTeamSelection) {
+    if (questionData && !timerRunning && !showTeamSelection && showAnswer) {
       startTimer();
     }
-  }, [questionData, timerRunning, showTeamSelection]);
+  }, [questionData, timerRunning, showTeamSelection, showAnswer]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean) => {
@@ -704,8 +705,6 @@ export default function QuestionPage() {
                 {questionData.question.text}
               </div>
               
-
-              
               {/* وسائط السؤال (صورة أو فيديو) */}
               {questionData.question.mediaType === 'image' && questionData.question.imageUrl && (
                 <div className="mt-4 flex justify-center">
@@ -726,18 +725,48 @@ export default function QuestionPage() {
                   />
                 </div>
               )}
+              
+              {/* عرض الإجابة بعد الضغط على زر "عرض الإجابة" */}
+              {showAnswer && (
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg shadow-md">
+                  <div className="font-bold text-green-700 mb-1 text-lg">الإجابة الصحيحة:</div>
+                  <div className="text-xl font-semibold text-green-800">
+                    {questionData.question.answer}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
           
-          {/* زر من أجاب على السؤال */}
-          <div className="mt-6 flex justify-center">
-            <Button
-              onClick={handleRecordAnswer}
-              className="px-8 py-6 h-auto text-xl bg-sky-600 hover:bg-sky-700 shadow-md rounded-full"
-            >
-              <HelpCircle className="h-5 w-5 mr-2" />
-              منو جاوب؟
-            </Button>
+          {/* أزرار التحكم */}
+          <div className="mt-6 flex justify-center gap-4">
+            {!showAnswer ? (
+              // عرض زر "عرض الإجابة" فقط إذا لم تُعرض الإجابة بعد
+              <Button
+                onClick={() => {
+                  setShowAnswer(true);
+                  // بعد إظهار الإجابة، نبدأ المؤقت
+                  setTimeout(() => {
+                    if (!timerRunning) {
+                      startTimer();
+                    }
+                  }, 100);
+                }}
+                className="px-8 py-6 h-auto text-xl bg-green-600 hover:bg-green-700 shadow-md rounded-full"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                عرض الإجابة
+              </Button>
+            ) : (
+              // عرض زر "منو جاوب؟" فقط بعد عرض الإجابة
+              <Button
+                onClick={handleRecordAnswer}
+                className="px-8 py-6 h-auto text-xl bg-sky-600 hover:bg-sky-700 shadow-md rounded-full"
+              >
+                <HelpCircle className="h-5 w-5 mr-2" />
+                منو جاوب؟
+              </Button>
+            )}
           </div>
         </div>
       </main>
