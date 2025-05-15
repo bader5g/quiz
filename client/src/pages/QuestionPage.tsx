@@ -6,8 +6,14 @@ import {
   ClockIcon, 
   CheckCircle, 
   XCircle, 
+  LogOut,
   ChevronRight,
-  AlertTriangle
+  XCircleIcon,
+  Hand,
+  Phone,
+  RefreshCcw,
+  HelpCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ModalDialogContent } from '@/components/ui/modal-dialog';
 import { useSite } from '@/context/SiteContext';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface Question {
   id: number;
@@ -50,6 +57,22 @@ interface QuestionDetails {
   gameId: number;
 }
 
+// مكون زر المساعدة
+const HelpButton = ({ icon, label, tooltip }: { icon: React.ReactNode; label: string; tooltip: string }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/90 hover:bg-white">
+          {icon}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 export default function QuestionPage() {
   const { gameId, questionId } = useParams();
   const [, navigate] = useLocation();
@@ -62,10 +85,10 @@ export default function QuestionPage() {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
   const [answerCorrect, setAnswerCorrect] = useState<boolean | null>(null);
+  const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   
   // جلب تفاصيل السؤال
   useEffect(() => {
@@ -76,6 +99,12 @@ export default function QuestionPage() {
         const data = await response.json();
         setQuestionData(data);
         setTimeLeft(data.firstAnswerTime);
+        
+        // تعيين الفريق الحالي (نفترض أنه الأول في المصفوفة)
+        const gameResponse = await apiRequest('GET', `/api/games/${gameId}`);
+        const gameData = await gameResponse.json();
+        setCurrentTeamIndex(gameData.currentTeamIndex || 0);
+        
         setError(null);
       } catch (err) {
         console.error('Error fetching question details:', err);
@@ -104,7 +133,7 @@ export default function QuestionPage() {
 
   // بدء المؤقت
   useEffect(() => {
-    if (questionData && !timerRunning && !showAnswer && !showTeamSelection) {
+    if (questionData && !timerRunning && !showTeamSelection) {
       const startTimer = () => {
         setTimerRunning(true);
         const interval = setInterval(() => {
@@ -112,8 +141,6 @@ export default function QuestionPage() {
             if (prevTime <= 1) {
               clearInterval(interval);
               setTimerRunning(false);
-              // إزالة الفتح التلقائي لشاشة من أجاب على السؤال عند انتهاء الوقت
-              // setShowTeamSelection(true);
               return 0;
             }
             return prevTime - 1;
@@ -124,7 +151,7 @@ export default function QuestionPage() {
       
       startTimer();
     }
-  }, [questionData, timerRunning, showAnswer, showTeamSelection]);
+  }, [questionData, timerRunning, showTeamSelection]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean) => {
@@ -168,16 +195,6 @@ export default function QuestionPage() {
     }
   };
 
-  // إظهار الإجابة
-  const toggleShowAnswer = () => {
-    // إيقاف المؤقت إذا كان يعمل
-    if (timer) {
-      clearInterval(timer);
-      setTimerRunning(false);
-    }
-    setShowAnswer(!showAnswer);
-  };
-
   // تسجيل إجابة - فتح نافذة الاختيار
   const handleRecordAnswer = () => {
     // إيقاف المؤقت إذا كان يعمل
@@ -186,6 +203,21 @@ export default function QuestionPage() {
       setTimerRunning(false);
     }
     setShowTeamSelection(true);
+  };
+
+  // إنهاء اللعبة
+  const endGame = async () => {
+    try {
+      await apiRequest('POST', `/api/games/${gameId}/end`);
+      navigate('/my-games');
+    } catch (err) {
+      console.error('Error ending game:', err);
+      toast({
+        variant: 'destructive',
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء إنهاء اللعبة. يرجى المحاولة مرة أخرى.',
+      });
+    }
   };
 
   // العودة إلى صفحة اللعبة
@@ -203,15 +235,15 @@ export default function QuestionPage() {
   // محتوى الصفحة الرئيسي
   if (loading) {
     return (
-      <div dir="rtl" className="flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-50 to-indigo-50">
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+      <div dir="rtl" className="flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-50 to-white">
+        <Loader2 className="h-12 w-12 animate-spin text-sky-500" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-indigo-50 min-h-screen">
+      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-white min-h-screen">
         <Alert variant="destructive" className="max-w-xl mx-auto shadow-md">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -226,7 +258,7 @@ export default function QuestionPage() {
 
   if (!questionData) {
     return (
-      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-indigo-50 min-h-screen">
+      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-white min-h-screen">
         <Alert variant="destructive" className="max-w-xl mx-auto shadow-md">
           <AlertDescription>لم يتم العثور على السؤال المطلوب.</AlertDescription>
         </Alert>
@@ -239,167 +271,261 @@ export default function QuestionPage() {
     );
   }
 
+  const currentTeam = questionData.teams[currentTeamIndex];
+
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-b from-sky-50 to-indigo-50 py-6">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* هيدر الصفحة: المؤقت والفئة */}
-        <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-md">
-          <Badge className="text-lg py-2 px-4 bg-indigo-100 text-indigo-800 border-0 shadow-sm">
-            <span className="ml-2">{questionData.question.categoryIcon}</span>
-            <span>{questionData.question.categoryName}</span>
-          </Badge>
+    <div dir="rtl" className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
+      {/* شريط الهيدر */}
+      <header className="bg-white shadow-md py-3 px-4">
+        <div className="container mx-auto flex justify-between items-center">
+          {/* شعار الموقع (يمين) */}
+          <div className="flex items-center">
+            <img src="/assets/jaweb-logo.png" alt="جاوب" className="h-10" />
+          </div>
           
-          <div className={`flex items-center gap-2 text-xl font-bold px-4 py-2 rounded-lg ${timeLeft < 10 ? 'text-red-600 bg-red-50' : 'text-indigo-600 bg-indigo-50'}`}>
-            <ClockIcon className="h-6 w-6" />
-            <span>{formatTime(timeLeft)}</span>
+          {/* اسم الفريق الذي عليه الدور (وسط) */}
+          <div className="text-lg font-bold px-4 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+            دور: {currentTeam?.name || 'الفريق الأول'}
+          </div>
+          
+          {/* أزرار التحكم (يسار) */}
+          <div className="flex gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={returnToGame} 
+                    className="border-sky-200 hover:bg-sky-50">
+                    <ChevronRight className="h-4 w-4 text-sky-700" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>الرجوع للعبة</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={endGame}
+                    className="border-rose-200 hover:bg-rose-50">
+                    <XCircleIcon className="h-4 w-4 text-rose-700" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>إنهاء اللعبة</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={() => navigate('/')}
+                    className="border-slate-200 hover:bg-slate-50">
+                    <LogOut className="h-4 w-4 text-slate-700" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>الخروج من اللعبة</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
-
-        {/* بطاقة السؤال */}
-        <Card className="mb-8 shadow-xl border border-indigo-100 overflow-hidden">
-          {/* شريط مستوى الصعوبة */}
-          <div className="bg-gradient-to-r from-indigo-500 to-blue-500 py-3 px-4 text-white flex justify-between items-center">
-            <span className="font-semibold text-xl">السؤال</span>
-            <Badge variant="outline" className="bg-white/20 text-white border-white/50">
-              المستوى: {
-                questionData.question.difficulty === 1 ? 'سهل' : 
-                questionData.question.difficulty === 2 ? 'متوسط' : 'صعب'
-              }
-            </Badge>
+      </header>
+      
+      {/* مؤقت العد التنازلي */}
+      <div className="container mx-auto flex justify-center -mt-4">
+        <div className={`flex items-center gap-2 text-xl font-bold px-5 py-2 rounded-full ${
+          timeLeft < 10 ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-sky-700 bg-sky-50 border border-sky-200'
+        } shadow-md`}>
+          <ClockIcon className="h-5 w-5" />
+          <span>{formatTime(timeLeft)}</span>
+        </div>
+      </div>
+      
+      {/* محتوى رئيسي */}
+      <main className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-4">
+        {/* فرق وأدوات المساعدة (يمين) */}
+        <div className="w-full md:w-1/5 order-2 md:order-1">
+          <div className="space-y-3">
+            {questionData.teams.map((team, index) => (
+              <Card key={team.id} className={`overflow-hidden shadow-md ${
+                currentTeamIndex === index ? 'ring-2 ring-sky-400 ring-offset-2' : ''
+              }`}>
+                <div className="bg-gradient-to-r from-sky-500 to-sky-600 py-2 px-3 text-white">
+                  <div className="font-bold truncate">{team.name}</div>
+                </div>
+                <CardContent className="p-3 flex flex-col items-center">
+                  <div className="text-2xl font-bold text-sky-700 mb-2">{team.score}</div>
+                  
+                  {/* وسائل المساعدة - تظهر فقط إذا كان عدد الفرق = 2 */}
+                  {questionData.teams.length === 2 && (
+                    <div className="flex gap-1 justify-center">
+                      <HelpButton 
+                        icon={<Hand className="h-3 w-3 text-sky-600" />}
+                        label="يد"
+                        tooltip="طلب مساعدة"
+                      />
+                      
+                      <HelpButton 
+                        icon={<Phone className="h-3 w-3 text-sky-600" />}
+                        label="اتصال"
+                        tooltip="اتصال بصديق"
+                      />
+                      
+                      <HelpButton 
+                        icon={<RefreshCcw className="h-3 w-3 text-sky-600" />}
+                        label="تغيير"
+                        tooltip="تغيير السؤال"
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          
-          <CardContent className="p-6">
-            {/* نص السؤال */}
-            <div className="text-2xl font-semibold mb-8 text-center p-6 bg-white rounded-lg shadow-inner border border-indigo-50">
-              {questionData.question.text}
+        </div>
+        
+        {/* صندوق السؤال (وسط) */}
+        <div className="w-full md:w-4/5 order-1 md:order-2">
+          <Card className="shadow-xl border border-sky-100 overflow-hidden min-h-[350px] flex flex-col">
+            {/* شريط الفئة */}
+            <div className="bg-gradient-to-r from-sky-500 to-sky-600 py-3 px-4 text-white flex justify-between items-center">
+              <Badge variant="outline" className="bg-white/20 text-white border-white/50">
+                <span className="ml-2">{questionData.question.categoryIcon}</span>
+                <span>{questionData.question.categoryName}</span>
+              </Badge>
+              
+              <Badge variant="outline" className="bg-white/20 text-white border-white/50">
+                المستوى: {
+                  questionData.question.difficulty === 1 ? 'سهل' : 
+                  questionData.question.difficulty === 2 ? 'متوسط' : 'صعب'
+                }
+              </Badge>
             </div>
             
-            {/* عرض الإجابة (اختياري) */}
-            {showAnswer && (
-              <div className="mt-6 p-5 bg-green-50 border border-green-200 rounded-lg shadow-inner">
-                <h3 className="font-semibold mb-2 text-lg text-green-800">الإجابة الصحيحة:</h3>
-                <p className="text-xl text-green-700">{questionData.question.answer}</p>
+            {/* نص السؤال */}
+            <CardContent className="flex-grow p-6 flex flex-col justify-center">
+              <div className="text-2xl font-semibold text-center p-6 bg-white rounded-lg shadow-inner border border-sky-50 mb-4">
+                {questionData.question.text}
+              </div>
+              
+              {/* صورة السؤال (اختياري) */}
+              {/* {questionData.question.imageUrl && (
+                <div className="mt-4 flex justify-center">
+                  <img 
+                    src={questionData.question.imageUrl} 
+                    alt="صورة السؤال" 
+                    className="max-h-64 rounded-lg shadow-md"
+                  />
+                </div>
+              )} */}
+            </CardContent>
+          </Card>
+          
+          {/* زر من أجاب على السؤال */}
+          <div className="mt-6 flex justify-center">
+            <Button
+              onClick={handleRecordAnswer}
+              className="px-8 py-6 h-auto text-xl bg-sky-600 hover:bg-sky-700 shadow-md rounded-full"
+            >
+              <HelpCircle className="h-5 w-5 mr-2" />
+              منو جاوب؟
+            </Button>
+          </div>
+        </div>
+      </main>
+
+      {/* مربع حوار اختيار الفريق */}
+      <Dialog
+        open={showTeamSelection}
+        onOpenChange={(open) => { 
+          if (!open) setSelectedTeam(null);
+          setShowTeamSelection(open);
+        }}
+      >
+        <ModalDialogContent className={getModalClass()}>
+          <DialogHeader>
+            <DialogTitle className="text-xl">من أجاب على السؤال؟</DialogTitle>
+            <DialogDescription>
+              حدد الفريق الذي قام بالإجابة على السؤال
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {questionData.teams.map((team, index) => (
+                <Button
+                  key={team.id}
+                  variant={selectedTeam === index ? "default" : "outline"}
+                  className="h-16 text-lg shadow-md transition-all"
+                  style={{
+                    borderColor: team.color,
+                    ...(selectedTeam === index 
+                      ? { backgroundColor: team.color, color: '#ffffff' } 
+                      : {})
+                  }}
+                  onClick={() => setSelectedTeam(index)}
+                >
+                  {team.name}
+                </Button>
+              ))}
+              <Button
+                variant={selectedTeam === null ? "default" : "outline"}
+                className="h-16 text-lg col-span-full shadow-md"
+                onClick={() => setSelectedTeam(null)}
+              >
+                لم يُجب أحد
+              </Button>
+            </div>
+            
+            {selectedTeam !== null && (
+              <div className="flex flex-col gap-4 mt-8">
+                <h3 className="font-semibold text-center text-lg">هل الإجابة صحيحة؟</h3>
+                <div className="flex justify-center gap-4">
+                  <Button 
+                    variant="outline" 
+                    className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex items-center gap-2 h-14 text-lg shadow-md"
+                    onClick={() => {
+                      setAnswerCorrect(true);
+                      submitAnswer(true);
+                      setShowTeamSelection(false);
+                    }}
+                  >
+                    <CheckCircle className="h-5 w-5" />
+                    <span>إجابة صحيحة</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="bg-red-50 border-red-200 hover:bg-red-100 text-red-700 flex items-center gap-2 h-14 text-lg shadow-md"
+                    onClick={() => {
+                      setAnswerCorrect(false);
+                      submitAnswer(false);
+                      setShowTeamSelection(false);
+                    }}
+                  >
+                    <XCircle className="h-5 w-5" />
+                    <span>إجابة خاطئة</span>
+                  </Button>
+                </div>
               </div>
             )}
-            
-            {/* أزرار التحكم */}
-            <div className="flex justify-center mt-8 gap-4">
-              <Button
-                variant="outline"
-                onClick={toggleShowAnswer}
-                className="px-5 py-6 h-auto text-lg flex items-center gap-2 border-indigo-200 hover:bg-indigo-50 shadow-sm"
+          </div>
+          <DialogFooter>
+            {selectedTeam === null && (
+              <Button 
+                onClick={() => {
+                  setShowTeamSelection(false);
+                }}
+                className="px-5 shadow-md"
               >
-                {showAnswer ? 'إخفاء الإجابة' : 'عرض الإجابة'}
+                إلغاء
               </Button>
-              
-              <Button
-                onClick={handleRecordAnswer}
-                className="px-5 py-6 h-auto text-lg flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md"
-              >
-                تسجيل إجابة
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={returnToGame}
-                className="px-5 py-6 h-auto text-lg flex items-center gap-2 border-slate-200 hover:bg-slate-50 shadow-sm"
-              >
-                <ChevronRight className="h-5 w-5" />
-                العودة للعبة
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* مربع حوار اختيار الفريق */}
-        <Dialog
-          open={showTeamSelection}
-          onOpenChange={(open) => { 
-            if (!open) setSelectedTeam(null);
-            setShowTeamSelection(open);
-          }}
-        >
-          <ModalDialogContent className={getModalClass()}>
-            <DialogHeader>
-              <DialogTitle className="text-xl">من أجاب على السؤال؟</DialogTitle>
-              <DialogDescription>
-                حدد الفريق الذي قام بالإجابة على السؤال
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                {questionData.teams.map((team, index) => (
-                  <Button
-                    key={team.id}
-                    variant={selectedTeam === index ? "default" : "outline"}
-                    className="h-16 text-lg shadow-md transition-all"
-                    style={{
-                      borderColor: team.color,
-                      ...(selectedTeam === index 
-                        ? { backgroundColor: team.color, color: '#ffffff' } 
-                        : {})
-                    }}
-                    onClick={() => setSelectedTeam(index)}
-                  >
-                    {team.name}
-                  </Button>
-                ))}
-                <Button
-                  variant={selectedTeam === null ? "default" : "outline"}
-                  className="h-16 text-lg col-span-full shadow-md"
-                  onClick={() => setSelectedTeam(null)}
-                >
-                  لم يُجب أحد
-                </Button>
-              </div>
-              
-              {selectedTeam !== null && (
-                <div className="flex flex-col gap-4 mt-8">
-                  <h3 className="font-semibold text-center text-lg">هل الإجابة صحيحة؟</h3>
-                  <div className="flex justify-center gap-4">
-                    <Button 
-                      variant="outline" 
-                      className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex items-center gap-2 h-14 text-lg shadow-md"
-                      onClick={() => {
-                        setAnswerCorrect(true);
-                        submitAnswer(true);
-                        setShowTeamSelection(false);
-                      }}
-                    >
-                      <CheckCircle className="h-5 w-5" />
-                      <span>إجابة صحيحة</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="bg-red-50 border-red-200 hover:bg-red-100 text-red-700 flex items-center gap-2 h-14 text-lg shadow-md"
-                      onClick={() => {
-                        setAnswerCorrect(false);
-                        submitAnswer(false);
-                        setShowTeamSelection(false);
-                      }}
-                    >
-                      <XCircle className="h-5 w-5" />
-                      <span>إجابة خاطئة</span>
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              {selectedTeam === null && (
-                <Button 
-                  onClick={() => {
-                    setShowTeamSelection(false);
-                  }}
-                  className="px-5 shadow-md"
-                >
-                  إلغاء
-                </Button>
-              )}
-            </DialogFooter>
-          </ModalDialogContent>
-        </Dialog>
-      </div>
+            )}
+          </DialogFooter>
+        </ModalDialogContent>
+      </Dialog>
     </div>
   );
 }
