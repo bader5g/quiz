@@ -202,13 +202,6 @@ export default function PlayPage() {
           onEndGame={handleEndGame}
         />
 
-        {/* عرض النتائج */}
-        <GameScoreBoard 
-          teams={game.teams} 
-          currentTeamIndex={game.currentTeamIndex}
-          onUpdateScore={handleUpdateScore}
-        />
-
         {/* عرض الفئات والأسئلة */}
         <GameCategories 
           categories={game.categories}
@@ -217,6 +210,15 @@ export default function PlayPage() {
           currentTeamIndex={game.currentTeamIndex}
           onSelectQuestion={handleSelectQuestion}
         />
+        
+        {/* عرض النتائج في نهاية الصفحة */}
+        <div className="mt-10">
+          <GameScoreBoard 
+            teams={game.teams} 
+            currentTeamIndex={game.currentTeamIndex}
+            onUpdateScore={handleUpdateScore}
+          />
+        </div>
       </div>
     </div>
   );
