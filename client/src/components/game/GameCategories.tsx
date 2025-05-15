@@ -36,7 +36,7 @@ interface GameCategoriesProps {
   questions: GameQuestion[];
   teams: GameTeam[];
   currentTeamIndex: number;
-  onSelectQuestion: (questionId: number) => void;
+  onSelectQuestion: (questionId: number, indexInCategory: number) => void;
 }
 
 export function GameCategories({
@@ -153,7 +153,7 @@ export function GameCategories({
                               disabled={question.isAnswered}
                               onClick={() =>
                                 !question.isAnswered &&
-                                onSelectQuestion(question.id)
+                                onSelectQuestion(question.id, difficulty)
                               }
                             >
                               {difficulty}

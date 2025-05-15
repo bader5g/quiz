@@ -133,6 +133,10 @@ export default function QuestionPage() {
   const [, navigate] = useLocation();
   const { getModalClass } = useSite();
   
+  // استخراج رقم السؤال من query parameters
+  const searchParams = new URLSearchParams(window.location.search);
+  const questionNumber = searchParams.get("number") || "؟";
+  
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -534,6 +538,9 @@ export default function QuestionPage() {
                 <h2 className="text-lg font-semibold">
                   {questionData.question.categoryName}
                 </h2>
+                <Badge variant="secondary" className="ml-2 bg-indigo-100 text-indigo-700 px-2">
+                  سؤال رقم {questionNumber}
+                </Badge>
               </div>
               <Badge variant="outline" className="text-xs">
                 {questionData.question.difficulty === 1 ? 'سهل' 
