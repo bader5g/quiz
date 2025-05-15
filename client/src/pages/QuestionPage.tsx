@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
-// تم إزالة استيراد toast حسب المتطلبات
 import { 
   Loader2, 
   ClockIcon, 
@@ -130,8 +129,6 @@ export default function QuestionPage() {
     skip: false
   });
   
-
-  
   // جلب تفاصيل السؤال
   useEffect(() => {
     const fetchQuestionDetails = async () => {
@@ -172,11 +169,6 @@ export default function QuestionPage() {
       } catch (err) {
         console.error('Error fetching question details:', err);
         setError('حدث خطأ أثناء تحميل السؤال. يرجى المحاولة مرة أخرى.');
-        toast({
-          variant: 'destructive',
-          title: 'خطأ في التحميل',
-          description: 'تعذر تحميل تفاصيل السؤال. يرجى المحاولة مرة أخرى.',
-        });
       } finally {
         setLoading(false);
       }
@@ -192,7 +184,7 @@ export default function QuestionPage() {
         clearInterval(timer);
       }
     };
-  }, [gameId, questionId, toast]);
+  }, [gameId, questionId]);
 
   // تحويل الدور للفريق التالي وضبط الوقت المخصص له
   const moveToNextTeam = async (showNotAnsweredMessage = false) => {
@@ -212,13 +204,6 @@ export default function QuestionPage() {
             alertElement.parentNode.removeChild(alertElement);
           }
         }, 3000);
-        
-        // إظهار رسالة توست للمستخدم
-        toast({
-          title: "انتهى الوقت!",
-          description: `الفريق "${currentTeam.name}" لم يجب على السؤال`,
-          variant: "destructive",
-        });
       }
       
       // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
@@ -245,11 +230,6 @@ export default function QuestionPage() {
       
     } catch (err) {
       console.error('Error changing team turn:', err);
-      toast({
-        variant: 'destructive',
-        title: 'خطأ',
-        description: 'حدث خطأ أثناء تغيير الدور. يرجى المحاولة مرة أخرى.',
-      });
     }
   };
   
@@ -264,12 +244,6 @@ export default function QuestionPage() {
         : questionData.secondAnswerTime;
         
       setTimeLeft(timeToSet);
-      
-      // إظهار إشعار بتجديد الوقت
-      toast({
-        title: "تم تجديد الوقت",
-        description: `تم ضبط المؤقت على ${formatTime(timeToSet)}`
-      });
       
       // إذا كان المؤقت متوقفاً، نعيد تشغيله
       if (!timerRunning) {
@@ -339,11 +313,6 @@ export default function QuestionPage() {
       
     } catch (err) {
       console.error('Error submitting answer:', err);
-      toast({
-        variant: 'destructive',
-        title: 'خطأ',
-        description: 'حدث خطأ أثناء تسجيل الإجابة. يرجى المحاولة مرة أخرى.',
-      });
       
       // إعادة تعيين حالة الإرسال في حالة الخطأ
       setIsSubmitting(false);
@@ -367,15 +336,8 @@ export default function QuestionPage() {
       navigate('/my-games');
     } catch (err) {
       console.error('Error ending game:', err);
-      toast({
-        variant: 'destructive',
-        title: 'خطأ',
-        description: 'حدث خطأ أثناء إنهاء اللعبة. يرجى المحاولة مرة أخرى.',
-      });
     }
   };
-  
-
 
   // العودة إلى صفحة اللعبة مع حفظ حالة اللعبة أولاً
   const returnToGame = async () => {
@@ -387,12 +349,7 @@ export default function QuestionPage() {
       navigate(`/play/${gameId}`);
     } catch (err) {
       console.error('Error saving game state:', err);
-      // على الرغم من الخطأ نعود للعبة مع رسالة تحذير
-      toast({
-        variant: 'destructive',
-        title: 'تحذير',
-        description: 'لم يتم حفظ حالة اللعبة، لكن يمكنك المتابعة.',
-      });
+      // على الرغم من الخطأ نعود للعبة
       navigate(`/play/${gameId}`);
     }
   };
@@ -518,244 +475,159 @@ export default function QuestionPage() {
       <div className="flex justify-center mt-4 mb-4">
         <div className="flex items-center gap-2">
           <div className={`flex items-center gap-2 text-xl font-bold px-6 py-3 rounded-full ${
-            timeLeft < 10 ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-sky-700 bg-sky-50 border border-sky-200'
-          } shadow-lg`}>
+            timeLeft <= 10 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+          }`}>
             <ClockIcon className="h-5 w-5" />
-            <span>{formatTime(timeLeft)}</span>
+            <span className="min-w-[60px] text-center">{formatTime(timeLeft)}</span>
           </div>
-          
-          {/* زر تجديد الوقت */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={resetTimer}
-                  className="rounded-full h-12 w-12 border-sky-200 hover:bg-sky-50 shadow-md"
-                >
-                  <RotateCw className="h-5 w-5 text-sky-700" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>تجديد الوقت</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={resetTimer}
+            className="h-12 w-12 rounded-full"
+          >
+            <RotateCw className="h-5 w-5" />
+          </Button>
         </div>
       </div>
-      
-      {/* محتوى رئيسي */}
-      <main className="container mx-auto px-4 pb-10 flex flex-col md:flex-row gap-4">
-        {/* فرق وأدوات المساعدة (يمين) */}
-        <div className="w-full md:w-1/5 order-2 md:order-1">
-          <div className="space-y-3">
-            {questionData.teams.map((team, index) => (
-              <Card key={team.id} className={`overflow-hidden shadow-md ${
-                currentTeamIndex === index ? 'ring-2 ring-sky-400 ring-offset-2' : ''
-              }`}>
-                <div className="bg-gradient-to-r from-sky-500 to-sky-600 py-2 px-3 text-white">
-                  <div className="font-bold truncate">{team.name}</div>
-                </div>
-                <CardContent className="p-3 flex flex-col items-center">
-                  <div className="text-2xl font-bold text-sky-700 mb-2">{team.score}</div>
-                  
-                  {/* وسائل المساعدة - تظهر فقط إذا كان عدد الفرق = 2 */}
-                  {questionData.teams.length === 2 && (
-                    <div className="flex gap-1 justify-center">
-                      <HelpButton 
-                        icon={<Minus className="h-3 w-3 text-sky-600" />}
-                        label="خصم"
-                        tooltip="خصم نقاط من الفريق"
-                        disabled={helpUsed.discount || index !== currentTeamIndex}
-                        onClick={() => {
-                          // تأكيد استخدام مساعدة "خصم"
-                          if (window.confirm('هل تريد خصم نقطة واحدة من الفريق الآخر؟')) {
-                            const oppositeTeamIndex = currentTeamIndex === 0 ? 1 : 0;
-                            const oppositeTeam = questionData.teams[oppositeTeamIndex];
-                            
-                            // تسجيل استخدام المساعدة
-                            apiRequest('POST', `/api/games/${gameId}/use-help`, {
-                              type: 'discount',
-                              teamId: oppositeTeam.id
-                            }).then(() => {
-                              setHelpUsed(prev => ({ ...prev, discount: true }));
-                              toast({
-                                title: 'تم استخدام المساعدة',
-                                description: `تم خصم نقطة واحدة من ${oppositeTeam.name}`
-                              });
-                            }).catch(err => {
-                              console.error('Error using help:', err);
-                              toast({
-                                variant: 'destructive',
-                                title: 'خطأ',
-                                description: 'حدث خطأ أثناء استخدام المساعدة'
-                              });
-                            });
-                          }
-                        }}
-                      />
-                      
-                      <HelpButton 
-                        icon={<RefreshCcw className="h-3 w-3 text-sky-600" />}
-                        label="عكس"
-                        tooltip="عكس الدور إلى الفريق الآخر"
-                        disabled={helpUsed.swap || index !== currentTeamIndex}
-                        onClick={() => {
-                          // تأكيد استخدام مساعدة "عكس"
-                          if (window.confirm('هل تريد عكس الدور إلى الفريق الآخر؟')) {
-                            // تسجيل استخدام المساعدة
-                            apiRequest('POST', `/api/games/${gameId}/use-help`, {
-                              type: 'swap'
-                            }).then(() => {
-                              setHelpUsed(prev => ({ ...prev, swap: true }));
-                              moveToNextTeam(); // تغيير الدور للفريق التالي
-                              toast({
-                                title: 'تم استخدام المساعدة',
-                                description: 'تم عكس الدور إلى الفريق الآخر'
-                              });
-                            }).catch(err => {
-                              console.error('Error using help:', err);
-                              toast({
-                                variant: 'destructive',
-                                title: 'خطأ',
-                                description: 'حدث خطأ أثناء استخدام المساعدة'
-                              });
-                            });
-                          }
-                        }}
-                      />
-                      
-                      <HelpButton 
-                        icon={<UserX className="h-3 w-3 text-sky-600" />}
-                        label="تخطي"
-                        tooltip="تخطي دور هذا الفريق"
-                        disabled={helpUsed.skip || index !== currentTeamIndex}
-                        onClick={() => {
-                          // تأكيد استخدام مساعدة "تخطي"
-                          if (window.confirm('هل تريد تخطي دور الفريق الحالي؟')) {
-                            // تسجيل استخدام المساعدة
-                            apiRequest('POST', `/api/games/${gameId}/use-help`, {
-                              type: 'skip'
-                            }).then(() => {
-                              setHelpUsed(prev => ({ ...prev, skip: true }));
-                              
-                              // العودة إلى صفحة اللعبة
-                              toast({
-                                title: 'تم استخدام المساعدة',
-                                description: 'تم تخطي السؤال الحالي'
-                              });
-                              
-                              // العودة للعبة بعد ثانية
-                              setTimeout(() => {
-                                returnToGame();
-                              }, 1000);
-                              
-                            }).catch(err => {
-                              console.error('Error using help:', err);
-                              toast({
-                                variant: 'destructive',
-                                title: 'خطأ',
-                                description: 'حدث خطأ أثناء استخدام المساعدة'
-                              });
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-        
-        {/* صندوق السؤال (وسط) */}
-        <div className="w-full md:w-4/5 order-1 md:order-2">
-          <Card className="shadow-xl border border-sky-100 overflow-hidden min-h-[350px] flex flex-col">
-            {/* شريط الفئة */}
-            <div className="bg-gradient-to-r from-sky-500 to-sky-600 py-3 px-4 text-white flex justify-between items-center">
-              <Badge variant="outline" className="bg-white/20 text-white border-white/50">
-                <span className="ml-2">{questionData.question.categoryIcon}</span>
-                <span>{questionData.question.categoryName}</span>
-              </Badge>
-              
-              <Badge variant="outline" className="bg-white/20 text-white border-white/50 flex items-center gap-1">
-                <span>النقاط:</span>
-                <span className="flex items-center justify-center bg-white/30 text-white w-6 h-6 rounded-full font-bold">
+
+      <main className="container mx-auto p-4">
+        {/* بطاقة السؤال */}
+        <div className="max-w-4xl mx-auto shadow-lg overflow-hidden rounded-xl">
+          {/* معلومات السؤال */}
+          <div className="bg-white p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${
+                  questionData.question.difficulty === 1 ? 'bg-green-100 text-green-600' 
+                  : questionData.question.difficulty === 2 ? 'bg-yellow-100 text-yellow-600' 
+                  : 'bg-red-100 text-red-600'
+                }`}>
                   {questionData.question.difficulty}
                 </span>
+                <h2 className="text-lg font-semibold">
+                  {questionData.question.categoryName}
+                </h2>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {questionData.question.difficulty === 1 ? 'سهل' 
+                : questionData.question.difficulty === 2 ? 'متوسط' 
+                : 'صعب'}
               </Badge>
             </div>
             
-            {/* نص السؤال */}
-            <CardContent className="flex-grow p-6 flex flex-col justify-center">
-              <div className="text-2xl font-semibold text-center p-6 bg-white rounded-lg shadow-inner border border-sky-50 mb-4">
+            <div className="bg-sky-50 p-4 rounded-lg mb-4">
+              <h3 className="text-xl font-bold mb-4 text-sky-900">
+                السؤال:
+              </h3>
+              <p className="text-lg text-gray-800">
                 {questionData.question.text}
-              </div>
-              
-              {/* وسائط السؤال (صورة أو فيديو) */}
-              {questionData.question.mediaType === 'image' && questionData.question.imageUrl && (
-                <div className="mt-4 flex justify-center">
+              </p>
+            </div>
+            
+            {/* وسائط السؤال - في حالة وجودها */}
+            {questionData.question.mediaType && (
+              <div className="my-4 rounded-lg overflow-hidden flex justify-center">
+                {questionData.question.mediaType === 'image' && questionData.question.imageUrl && (
                   <img 
                     src={questionData.question.imageUrl} 
-                    alt="صورة السؤال" 
-                    className="max-h-64 rounded-lg shadow-md"
+                    alt="صورة للسؤال" 
+                    className="max-h-[300px] w-auto object-contain rounded-md"
                   />
-                </div>
-              )}
-              
-              {questionData.question.mediaType === 'video' && questionData.question.videoUrl && (
-                <div className="mt-4 flex justify-center">
+                )}
+                
+                {questionData.question.mediaType === 'video' && questionData.question.videoUrl && (
                   <video 
-                    controls 
                     src={questionData.question.videoUrl} 
-                    className="max-h-64 rounded-lg shadow-md"
+                    controls 
+                    className="max-h-[300px] w-auto rounded-md"
                   />
-                </div>
-              )}
-              
-              {/* عرض الإجابة بعد الضغط على زر "عرض الإجابة" */}
-              {showAnswer && (
-                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg shadow-md">
-                  <div className="font-bold text-green-700 mb-1 text-lg">الإجابة الصحيحة:</div>
-                  <div className="text-xl font-semibold text-green-800">
-                    {questionData.question.answer}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          {/* أزرار التحكم */}
-          <div className="mt-6 flex justify-center gap-4">
-            {!showAnswer ? (
-              // عرض زر "عرض الإجابة" فقط إذا لم تُعرض الإجابة بعد
-              <Button
-                onClick={() => {
-                  setShowAnswer(true);
-                  // بعد إظهار الإجابة، نبدأ المؤقت
-                  setTimeout(() => {
-                    if (!timerRunning) {
-                      startTimer();
-                    }
-                  }, 100);
-                }}
-                className="px-8 py-6 h-auto text-xl bg-green-600 hover:bg-green-700 shadow-md rounded-full"
-              >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                عرض الإجابة
-              </Button>
-            ) : (
-              // عرض زر "منو جاوب؟" فقط بعد عرض الإجابة
-              <Button
-                onClick={handleRecordAnswer}
-                className="px-8 py-6 h-auto text-xl bg-sky-600 hover:bg-sky-700 shadow-md rounded-full"
-              >
-                <HelpCircle className="h-5 w-5 mr-2" />
-                منو جاوب؟
-              </Button>
+                )}
+              </div>
             )}
+            
+            {/* الإجابة - تظهر فقط بعد الضغط على زر عرض الإجابة */}
+            {showAnswer && (
+              <Card className="mt-6 bg-green-50 border-green-200">
+                <CardContent className="p-4">
+                  <h3 className="text-xl font-bold mb-2 text-green-900 flex items-center">
+                    <CheckCircle className="h-5 w-5 mr-2" /> 
+                    الإجابة الصحيحة:
+                  </h3>
+                  <p className="text-lg text-gray-800">
+                    {questionData.question.answer}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* أزرار وسائل المساعدة - تظهر فقط إذا كان هناك فريقين بالضبط */}
+            {questionData.teams.length === 2 && (
+              <div className="mt-6 flex justify-center gap-3 bg-gray-50 p-3 rounded-lg">
+                <HelpButton 
+                  icon={<Minus className="h-4 w-4" />}
+                  label="خصم"
+                  tooltip="خصم الإجابة الخاطئة"
+                  onClick={() => {
+                    setHelpUsed(prev => ({ ...prev, discount: true }));
+                  }}
+                  disabled={helpUsed.discount}
+                />
+                
+                <HelpButton 
+                  icon={<Phone className="h-4 w-4" />}
+                  label="عكس"
+                  tooltip="تبديل الدور"
+                  onClick={() => {
+                    setHelpUsed(prev => ({ ...prev, swap: true }));
+                    moveToNextTeam();
+                  }}
+                  disabled={helpUsed.swap}
+                />
+                
+                <HelpButton 
+                  icon={<UserX className="h-4 w-4" />}
+                  label="تخطي"
+                  tooltip="تخطي السؤال"
+                  onClick={() => {
+                    setHelpUsed(prev => ({ ...prev, skip: true }));
+                    navigate(`/play/${gameId}`);
+                  }}
+                  disabled={helpUsed.skip}
+                />
+              </div>
+            )}
+            
+            {/* أزرار التحكم */}
+            <div className="mt-6 flex justify-center gap-4">
+              {!showAnswer ? (
+                // عرض زر "عرض الإجابة" فقط إذا لم تُعرض الإجابة بعد
+                <Button
+                  onClick={() => {
+                    setShowAnswer(true);
+                    // بعد إظهار الإجابة، نبدأ المؤقت
+                    setTimeout(() => {
+                      if (!timerRunning) {
+                        startTimer();
+                      }
+                    }, 100);
+                  }}
+                  className="px-8 py-6 h-auto text-xl bg-green-600 hover:bg-green-700 shadow-md rounded-full"
+                >
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  عرض الإجابة
+                </Button>
+              ) : (
+                // عرض زر "منو جاوب؟" فقط بعد عرض الإجابة
+                <Button
+                  onClick={handleRecordAnswer}
+                  className="px-8 py-6 h-auto text-xl bg-sky-600 hover:bg-sky-700 shadow-md rounded-full"
+                >
+                  <HelpCircle className="h-5 w-5 mr-2" />
+                  منو جاوب؟
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </main>
@@ -804,9 +676,6 @@ export default function QuestionPage() {
           </div>
         </ModalDialogContent>
       </Dialog>
-      
-
     </div>
   );
 }
-
