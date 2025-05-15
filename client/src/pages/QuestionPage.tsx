@@ -115,7 +115,6 @@ export default function QuestionPage() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
-  const [answerCorrect, setAnswerCorrect] = useState<boolean | null>(null);
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
@@ -315,7 +314,8 @@ export default function QuestionPage() {
         return;
       }
       
-      if (selectedTeam === null) {
+      // التحقق من وجود فريق محدد إذا كانت الإجابة صحيحة
+      if (isCorrect && selectedTeam === null) {
         toast({
           variant: 'destructive',
           title: 'خطأ',
@@ -331,7 +331,7 @@ export default function QuestionPage() {
       
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
         questionId: parseInt(questionId as string),
-        teamId: questionData?.teams[selectedTeam].id,
+        teamId: selectedTeam !== null ? questionData?.teams[selectedTeam].id : null,
         isCorrect,
         points: isCorrect ? points : 0
       });
@@ -339,7 +339,7 @@ export default function QuestionPage() {
       // إظهار رسالة نجاح
       toast({
         title: 'تم تسجيل الإجابة',
-        description: isCorrect ? 'إجابة صحيحة! تم إضافة النقاط.' : 'إجابة خاطئة.',
+        description: isCorrect ? 'إجابة صحيحة! تم إضافة النقاط.' : 'تم تسجيل عدم الإجابة.',
       });
       
       // بعد ثانيتين نعود إلى صفحة اللعبة
@@ -771,9 +771,8 @@ export default function QuestionPage() {
                       : {})
                   }}
                   onClick={() => {
-                    // فقط تعيين الفريق المختار وتعيين الإجابة كصحيحة
+                    // فقط تعيين الفريق المختار
                     setSelectedTeam(index);
-                    setAnswerCorrect(true);
                   }}
                 >
                   {team.name}
@@ -783,9 +782,8 @@ export default function QuestionPage() {
                 variant={selectedTeam === null ? "default" : "outline"}
                 className="h-16 text-lg col-span-full shadow-md"
                 onClick={() => {
-                  // فقط تعيين أنه لم يجب أحد وتعيين الإجابة كخاطئة
+                  // فقط تعيين أنه لم يجب أحد
                   setSelectedTeam(null);
-                  setAnswerCorrect(false);
                 }}
               >
                 لم يُجب أحد
@@ -805,25 +803,12 @@ export default function QuestionPage() {
             
             <Button 
               onClick={() => {
-                // التحقق من وجود فريق محدد قبل تنفيذ تقديم الإجابة
-                if ((selectedTeam !== null && answerCorrect) || (selectedTeam === null && !answerCorrect)) {
-                  // تنفيذ تقديم الإجابة
-                  if (selectedTeam !== null) {
-                    submitAnswer(true);
-                  } else {
-                    submitAnswer(false);
-                  }
-                  setShowTeamSelection(false);
-                } else {
-                  // في حالة عدم تحديد فريق
-                  toast({
-                    variant: 'destructive',
-                    title: 'خطأ',
-                    description: 'الرجاء تحديد الفريق أولاً',
-                  });
-                }
+                // استخدام منطق بسيط: إذا تم تحديد فريق، فالإجابة صحيحة، وإلا فهي خاطئة
+                submitAnswer(selectedTeam !== null);
+                setShowTeamSelection(false);
               }}
               className="px-5 shadow-md"
+              disabled={isSubmitting}
             >
               تأكيد الإجابة
             </Button>
