@@ -324,6 +324,11 @@ export default function QuestionPage() {
       // استخدام مستوى الصعوبة المطلوب للنقاط (1 أو 2 أو 3)
       const points = requestedDifficulty;
       
+      // التحقق من وجود بيانات السؤال
+      if (!questionData) {
+        throw new Error("بيانات السؤال غير متوفرة");
+      }
+      
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
         questionId: parseInt(questionId as string),
         teamId: teamIndex !== undefined ? teamIndex : null, // نرسل الindوقيل رقم الفريق

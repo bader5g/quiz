@@ -51,31 +51,50 @@ export default function PlayPage() {
   const [error, setError] = useState<string | null>(null);
 
   // جلب تفاصيل اللعبة
-  useEffect(() => {
-    const fetchGameDetails = async () => {
-      try {
-        setLoading(true);
-        const response = await apiRequest('GET', `/api/games/${gameId}`);
-        const gameData = await response.json();
-        setGame(gameData);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching game details:', err);
-        setError('حدث خطأ أثناء تحميل اللعبة. يرجى المحاولة مرة أخرى.');
-        toast({
-          variant: 'destructive',
-          title: 'خطأ في التحميل',
-          description: 'تعذر تحميل تفاصيل اللعبة. يرجى المحاولة مرة أخرى.',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchGameDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest('GET', `/api/games/${gameId}`);
+      const gameData = await response.json();
+      setGame(gameData);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching game details:', err);
+      setError('حدث خطأ أثناء تحميل اللعبة. يرجى المحاولة مرة أخرى.');
+      toast({
+        variant: 'destructive',
+        title: 'خطأ في التحميل',
+        description: 'تعذر تحميل تفاصيل اللعبة. يرجى المحاولة مرة أخرى.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // استدعاء وظيفة جلب البيانات عند تحميل الصفحة وتغيير معرف اللعبة
+  useEffect(() => {
     if (gameId) {
       fetchGameDetails();
     }
-  }, [gameId, toast]);
+  }, [gameId]);
+  
+  // استخدام التأثير للتحديث عند العودة للصفحة
+  useEffect(() => {
+    // تحديث البيانات عند العودة للصفحة (focus)
+    const handleFocus = () => {
+      if (gameId) {
+        fetchGameDetails();
+      }
+    };
+    
+    // إضافة مستمع الحدث عند تثبيت المكون
+    window.addEventListener('focus', handleFocus);
+    
+    // إزالة مستمع الحدث عند إزالة المكون
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [gameId]);
 
   // إنهاء اللعبة
   const handleEndGame = async () => {

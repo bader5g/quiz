@@ -142,19 +142,21 @@ export function GameCategories({
                                 question.isAnswered ? "outline" : "default"
                               }
                               className={cn(
-                                "w-10 h-10 md:w-12 md:h-12 rounded-full text-white shadow-md flex items-center justify-center relative",
+                                "w-10 h-10 md:w-12 md:h-12 rounded-full shadow-md flex items-center justify-center relative",
                                 question.isAnswered
-                                  ? "opacity-40 bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300"
-                                  : "bg-sky-500 hover:bg-sky-600",
+                                  ? "opacity-50 bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300 border-2 border-gray-400"
+                                  : "bg-sky-500 hover:bg-sky-600 text-white",
                                 isCurrentTeam && !question.isAnswered
                                   ? "ring-2 ring-yellow-400"
                                   : "",
                               )}
                               disabled={question.isAnswered}
-                              onClick={() =>
-                                !question.isAnswered &&
-                                onSelectQuestion(question.id, difficulty)
-                              }
+                              aria-disabled={question.isAnswered}
+                              onClick={() => {
+                                if (!question.isAnswered) {
+                                  onSelectQuestion(question.id, difficulty);
+                                }
+                              }}
                             >
                               <span className="relative">
                                 {difficulty}
@@ -168,7 +170,14 @@ export function GameCategories({
                             {!question.isAnswered ? (
                               <>سؤال {category.name} رقم {difficulty}</>
                             ) : (
-                              <>تمت الإجابة على هذا السؤال</>
+                              <span className="flex items-center gap-1 text-rose-600 font-bold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <line x1="15" y1="9" x2="9" y2="15" />
+                                  <line x1="9" y1="9" x2="15" y2="15" />
+                                </svg>
+                                تمت الإجابة على هذا السؤال
+                              </span>
                             )}
                           </TooltipContent>
                         </Tooltip>
