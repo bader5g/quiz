@@ -127,26 +127,28 @@ export function GameScoreBoard({ teams, currentTeamIndex, onUpdateScore }: GameS
                   </div>
                 </div>
                 
-                {/* 3. أزرار وسائل المساعدة */}
-                <div className="p-2 flex gap-1 justify-center">
-                  <HelpButton 
-                    icon={<Minus className="h-3 w-3 text-indigo-600" />}
-                    label="خصم"
-                    tooltip="خصم نقاط من الفريق"
-                  />
-                  
-                  <HelpButton 
-                    icon={<Repeat className="h-3 w-3 text-indigo-600" />}
-                    label="عكس"
-                    tooltip="عكس الدور إلى الفريق الآخر"
-                  />
-                  
-                  <HelpButton 
-                    icon={<UserX className="h-3 w-3 text-indigo-600" />}
-                    label="تخطي"
-                    tooltip="تخطي دور هذا الفريق"
-                  />
-                </div>
+                {/* 3. أزرار وسائل المساعدة (تظهر فقط إذا كان عدد الفرق = 2) */}
+                {teams.length === 2 && (
+                  <div className="p-2 flex gap-1 justify-center">
+                    <HelpButton 
+                      icon={<Minus className="h-3 w-3 text-indigo-600" />}
+                      label="خصم"
+                      tooltip="خصم نقاط من الفريق"
+                    />
+                    
+                    <HelpButton 
+                      icon={<Repeat className="h-3 w-3 text-indigo-600" />}
+                      label="عكس"
+                      tooltip="عكس الدور إلى الفريق الآخر"
+                    />
+                    
+                    <HelpButton 
+                      icon={<UserX className="h-3 w-3 text-indigo-600" />}
+                      label="تخطي"
+                      tooltip="تخطي دور هذا الفريق"
+                    />
+                  </div>
+                )}
               </div>
             </Card>
           );
