@@ -213,6 +213,13 @@ export default function QuestionPage() {
             alertElement.parentNode.removeChild(alertElement);
           }
         }, 3000);
+        
+        // إظهار رسالة توست للمستخدم
+        toast({
+          title: "انتهى الوقت!",
+          description: `الفريق "${currentTeam.name}" لم يجب على السؤال`,
+          variant: "warning",
+        });
       }
       
       // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
@@ -226,20 +233,16 @@ export default function QuestionPage() {
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(nextTeamIndex);
       
-      // ضبط الوقت المناسب حسب الفريق
-      // إذا كان هذا هو الفريق الثاني الذي يحاول الإجابة على السؤال (كل فريق له فرصة)
-      if (nextTeamIndex !== 0) {
-        // استخدام زمن الإجابة الثانية للفريق الثاني
-        setTimeLeft(questionData!.secondAnswerTime);
-      } else {
-        // استخدام زمن الإجابة الأولى للفريق الأول
-        setTimeLeft(questionData!.firstAnswerTime);
-      }
+      // ضبط الوقت المناسب حسب الفريق باستخدام الطريقة الموحدة
+      const newTime = (nextTeamIndex === 0) 
+        ? questionData!.firstAnswerTime 
+        : questionData!.secondAnswerTime;
+      
+      // ضبط المؤقت بالوقت المناسب
+      setTimeLeft(newTime);
       
       // بدء المؤقت من جديد للفريق الجديد
       startTimer();
-      
-      // لا نعرض الـ toast الآن، لأن المستخدم طلب إلغاء تلك الرسالة
       
     } catch (err) {
       console.error('Error changing team turn:', err);
