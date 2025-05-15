@@ -42,7 +42,7 @@ export function GameCategories({
   onSelectQuestion 
 }: GameCategoriesProps) {
   
-  // استخدام useMemo لتنظيم الأسئلة حسب الفئة والفريق لتحسين الأداء
+  // استخدام useMemo لتنظيم الأسئلة حسب الفئة والمستوى لتحسين الأداء
   const questionsByCategory = useMemo(() => {
     const result: Record<number, Record<number, GameQuestion[]>> = {};
     
@@ -50,21 +50,21 @@ export function GameCategories({
     categories.forEach(category => {
       result[category.id] = {};
       
-      // تهيئة الفرق لكل فئة
-      teams.forEach((_, teamIndex) => {
-        result[category.id][teamIndex] = [];
+      // تهيئة المستويات لكل فئة (مستوى الصعوبة)
+      [1, 2, 3].forEach(difficultyLevel => {
+        result[category.id][difficultyLevel] = [];
       });
     });
     
     // تصنيف الأسئلة
     questions.forEach(question => {
-      if (result[question.categoryId] && result[question.categoryId][question.teamIndex]) {
-        result[question.categoryId][question.teamIndex].push(question);
+      if (result[question.categoryId] && result[question.categoryId][question.difficulty]) {
+        result[question.categoryId][question.difficulty].push(question);
       }
     });
     
     return result;
-  }, [categories, teams, questions]);
+  }, [categories, questions]);
   
   // التحقق ما إذا كانت جميع الأسئلة في فئة محددة قد تمت الإجابة عليها
   const allQuestionsAnsweredInCategory = useMemo(() => {
@@ -103,64 +103,63 @@ export function GameCategories({
             )}
             
             <div className="grid" style={{ gridTemplateColumns: `repeat(${teams.length}, 1fr)` }}>
-              {/* عرض رأس الأعمدة: نقاط فريق */}
-              {teams.map((team, index) => (
+              {/* عرض رأس الأعمدة: المستويات */}
+              {teams.map((_, index) => (
                 <div key={`team-header-${index}`} className="flex justify-center mb-2">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
-                    style={{ backgroundColor: team.color }}
-                  ></div>
+                  <div className="text-xs text-gray-600 font-medium">
+                    {index === 0 ? 'سهل' : index === 1 ? 'متوسط' : index === 2 ? 'صعب' : ''}
+                  </div>
                 </div>
               ))}
               
-              {/* صفوف الأسئلة حسب مستوى الصعوبة */}
-              {[1, 2, 3].map((difficulty) => (
-                <React.Fragment key={`row-${difficulty}`}>
-                  {teams.map((team, teamIndex) => {
-                    const question = questionsByCategory[category.id]?.[teamIndex]?.find(
-                      q => q.difficulty === difficulty
-                    );
-                    
-                    if (!question) return (
-                      <div key={`empty-${teamIndex}-${difficulty}`} className="flex justify-center p-1">
-                        <div className="w-10 h-10 md:w-12 md:h-12"></div>
-                      </div>
-                    );
-                    
-                    const isCurrentTeam = teamIndex === currentTeamIndex;
-                    
-                    return (
-                      <div key={`q-${teamIndex}-${difficulty}`} className="flex justify-center p-1">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant={question.isAnswered ? "outline" : "default"}
-                                className={cn(
-                                  "w-10 h-10 md:w-12 md:h-12 rounded-full text-white shadow-md flex items-center justify-center",
-                                  question.isAnswered ? 'opacity-40 bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300' : 'bg-sky-500 hover:bg-sky-600',
-                                  isCurrentTeam && !question.isAnswered ? 'ring-2 ring-yellow-400' : ''
-                                )}
-                                disabled={question.isAnswered}
-                                onClick={() => !question.isAnswered && onSelectQuestion(question.id)}
-                              >
-                                {difficulty}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom">
-                              {!question.isAnswered ? (
-                                <>سؤال {difficulty === 1 ? 'سهل' : difficulty === 2 ? 'متوسط' : 'صعب'} ({difficulty} {difficulty === 1 ? 'نقطة' : 'نقاط'})</>
-                              ) : (
-                                <>تمت الإجابة على هذا السؤال</>
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
+              {/* أزرار الأسئلة مرتبة حسب المستويات */}
+              {teams.map((team, teamIndex) => {
+                // نعرض الأسئلة حسب مستوى الصعوبة
+                const difficulty = teamIndex + 1; // المستوى يعتمد على ترتيب الفريق (1=سهل, 2=متوسط, 3=صعب)
+                
+                // نحصل على السؤال المناسب للفريق الحالي
+                const question = questions.find(q => 
+                  q.categoryId === category.id && 
+                  q.teamIndex === currentTeamIndex && 
+                  q.difficulty === difficulty
+                );
+                
+                if (!question) return (
+                  <div key={`empty-${difficulty}`} className="flex justify-center p-1">
+                    <div className="w-10 h-10 md:w-12 md:h-12"></div>
+                  </div>
+                );
+                
+                return (
+                  <div key={`q-${difficulty}`} className="flex justify-center p-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={question.isAnswered ? "outline" : "default"}
+                            className={cn(
+                              "w-10 h-10 md:w-12 md:h-12 rounded-full text-white shadow-md flex items-center justify-center",
+                              question.isAnswered ? 'opacity-40 bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300' : 'bg-sky-500 hover:bg-sky-600',
+                              !question.isAnswered ? 'ring-2 ring-yellow-400' : ''
+                            )}
+                            disabled={question.isAnswered}
+                            onClick={() => !question.isAnswered && onSelectQuestion(question.id)}
+                          >
+                            {difficulty}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          {!question.isAnswered ? (
+                            <>سؤال {difficulty === 1 ? 'سهل' : difficulty === 2 ? 'متوسط' : 'صعب'} ({difficulty} {difficulty === 1 ? 'نقطة' : 'نقاط'})</>
+                          ) : (
+                            <>تمت الإجابة على هذا السؤال</>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
