@@ -702,8 +702,8 @@ export default function QuestionPage() {
               
 
               
-              {/* صورة السؤال (اختياري) */}
-              {/* {questionData.question.imageUrl && (
+              {/* وسائط السؤال (صورة أو فيديو) */}
+              {questionData.question.mediaType === 'image' && questionData.question.imageUrl && (
                 <div className="mt-4 flex justify-center">
                   <img 
                     src={questionData.question.imageUrl} 
@@ -711,7 +711,17 @@ export default function QuestionPage() {
                     className="max-h-64 rounded-lg shadow-md"
                   />
                 </div>
-              )} */}
+              )}
+              
+              {questionData.question.mediaType === 'video' && questionData.question.videoUrl && (
+                <div className="mt-4 flex justify-center">
+                  <video 
+                    controls 
+                    src={questionData.question.videoUrl} 
+                    className="max-h-64 rounded-lg shadow-md"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
           

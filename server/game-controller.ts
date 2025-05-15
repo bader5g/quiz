@@ -49,14 +49,33 @@ export async function getQuestionDetails(req: Request, res: Response) {
     }
 
     // محاكاة جلب السؤال من قاعدة البيانات
+    const isImageQuestion = questionId % 3 === 1;
+    const isVideoQuestion = questionId % 3 === 2;
+
     const question = {
       id: questionId,
-      text: `هذا هو السؤال رقم ${questionId} من الفئة X`,
-      answer: `هذه هي الإجابة للسؤال رقم ${questionId}`,
+      text: isImageQuestion 
+        ? `ما اسم هذا المعلم السياحي الشهير؟` 
+        : isVideoQuestion 
+        ? `ما اسم هذه الرقصة التقليدية؟`
+        : `هذا هو السؤال رقم ${questionId} من الفئة ${getCategoryName(game.selectedCategories[0])}`,
+      answer: isImageQuestion 
+        ? `برج إيفل` 
+        : isVideoQuestion 
+        ? `رقصة التنورة` 
+        : `هذه هي الإجابة للسؤال رقم ${questionId}`,
       difficulty: Math.ceil(Math.random() * 3) as 1 | 2 | 3,
       categoryId: game.selectedCategories[0],
       categoryName: getCategoryName(game.selectedCategories[0]),
       categoryIcon: getCategoryIcon(game.selectedCategories[0]),
+      ...(isImageQuestion && {
+        mediaType: 'image' as const,
+        imageUrl: 'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?q=80&w=1000&auto=format&fit=crop'
+      }),
+      ...(isVideoQuestion && {
+        mediaType: 'video' as const,
+        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4'
+      })
     };
 
     // إرجاع تفاصيل السؤال
