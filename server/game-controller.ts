@@ -134,7 +134,52 @@ export async function submitAnswer(req: Request, res: Response) {
 
     // تحديث الدور للفريق التالي
     const nextTeamIndex = (game.currentTeamIndex + 1) % game.teams.length;
-    await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
+    
+    // التحقق مما إذا كان الفريق التالي لديه أسئلة متاحة
+    // هذا يتطلب إعادة إنشاء الأسئلة مع تحديثات isAnswered الجديدة
+    const updatedGameData = await storage.getGameById(gameId); // نحصل على النسخة المحدثة
+    if (updatedGameData) {
+      const updatedQuestions = generateGameQuestions(updatedGameData);
+      
+      // التحقق مما إذا كان الفريق التالي لديه أي سؤال غير مجاب
+      const hasUnansweredQuestions = updatedQuestions.some(q => 
+        q.teamIndex === nextTeamIndex && !q.isAnswered
+      );
+      
+      // إذا لم يكن لدى الفريق التالي أي أسئلة متاحة، ننتقل إلى الفريق التالي
+      if (!hasUnansweredQuestions && game.teams.length > 1) {
+        // البحث عن أول فريق لديه أسئلة غير مجاب عليها
+        let foundTeamWithQuestions = false;
+        let checkedTeamIndex = nextTeamIndex;
+        
+        // نتحقق من كل الفرق مرة واحدة على الأقل
+        for (let i = 0; i < game.teams.length; i++) {
+          checkedTeamIndex = (checkedTeamIndex + 1) % game.teams.length;
+          
+          const teamHasQuestions = updatedQuestions.some(q => 
+            q.teamIndex === checkedTeamIndex && !q.isAnswered
+          );
+          
+          if (teamHasQuestions) {
+            foundTeamWithQuestions = true;
+            // تحديث الفريق الحالي إلى الفريق الذي عثرنا عليه
+            await storage.updateGameCurrentTeam(gameId, checkedTeamIndex);
+            break;
+          }
+        }
+        
+        // إذا لم نجد أي فريق به أسئلة متبقية، نبقى على الفريق المحسوب في البداية
+        if (!foundTeamWithQuestions) {
+          await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
+        }
+      } else {
+        // الفريق التالي لديه أسئلة، ننتقل إليه
+        await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
+      }
+    } else {
+      // إذا فشلنا في الحصول على بيانات اللعبة المحدثة، نستخدم الحساب الأصلي
+      await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
+    }
 
     res.status(200).json({ success: true });
   } catch (error) {
