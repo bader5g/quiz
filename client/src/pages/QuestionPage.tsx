@@ -286,8 +286,9 @@ export default function QuestionPage() {
         if (prevTime <= 1) {
           clearInterval(interval);
           setTimerRunning(false);
-          // تحويل الدور للفريق التالي عند انتهاء الوقت بدون إظهار رسالة
-          moveToNextTeam(false);
+          
+          // تحويل الدور تلقائيًا عند انتهاء الوقت
+          moveToNextTeam(true); // مع رسالة "لم يجب الفريق"
           return 0;
         }
         return prevTime - 1;
