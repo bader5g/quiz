@@ -100,6 +100,34 @@ const HelpButton = ({
   </TooltipProvider>
 );
 
+// مكون زر الإجابة لزر الفريق
+const AnswerTeamButton = ({
+  team,
+  index,
+  onClick,
+  disabled = false
+}: {
+  team: GameTeam;
+  index: number;
+  onClick: (index: number) => void;
+  disabled?: boolean;
+}) => (
+  <Button
+    key={team.id}
+    variant="outline"
+    className="h-16 text-lg shadow-md flex items-center gap-2 justify-center"
+    style={{ 
+      backgroundColor: `${team.color}11`, // لون شفاف جدًا 
+      borderColor: team.color,
+      color: disabled ? 'gray' : team.color
+    }}
+    onClick={() => onClick(index)}
+    disabled={disabled}
+  >
+    ✅ {team.name}
+  </Button>
+);
+
 export default function QuestionPage() {
   const { gameId, questionId } = useParams();
   const [, navigate] = useLocation();
@@ -112,7 +140,7 @@ export default function QuestionPage() {
   const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const [showTeamSelection, setShowTeamSelection] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  // تم إزالة selectedTeam لأنها غير ضرورية الآن
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
@@ -192,16 +220,17 @@ export default function QuestionPage() {
       // إذا كان مطلوب إظهار رسالة "لم يجب"
       if (showNotAnsweredMessage) {
         const currentTeam = questionData!.teams[currentTeamIndex];
-        // عرض تنبيه أن الفريق الحالي لم يجب
-        const alertElement = document.createElement('div');
-        alertElement.className = 'fixed top-0 left-0 right-0 bg-amber-100 text-amber-800 p-2 text-center z-50 transition-all';
-        alertElement.textContent = `انتهى الوقت! الفريق "${currentTeam.name}" لم يجب.`;
-        document.body.appendChild(alertElement);
+        
+        // إنشاء عنصر تنبيه في React بدلاً من استخدام DOM مباشرة
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-0 left-0 right-0 bg-amber-100 text-amber-800 p-2 text-center z-50 transition-all';
+        alertDiv.textContent = `انتهى الوقت! الفريق "${currentTeam.name}" لم يجب.`;
+        document.body.appendChild(alertDiv);
         
         // إزالة التنبيه بعد 3 ثواني
         setTimeout(() => {
-          if (alertElement.parentNode) {
-            alertElement.parentNode.removeChild(alertElement);
+          if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
           }
         }, 3000);
       }
@@ -254,6 +283,9 @@ export default function QuestionPage() {
   
   // وظيفة بدء المؤقت (تم نقلها لوظيفة منفصلة)
   const startTimer = () => {
+    // تحقق إن كان المؤقت يعمل مسبقًا قبل أن تعيد تشغيله
+    if (timerRunning) return;
+    
     setTimerRunning(true);
     if (timer) clearInterval(timer);
     
@@ -281,16 +313,10 @@ export default function QuestionPage() {
   }, [questionData, timerRunning, showTeamSelection, showAnswer]);
 
   // تسجيل إجابة
-  const submitAnswer = async (isCorrect: boolean) => {
+  const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
     try {
       // منع النقر المكرر
       if (isSubmitting) {
-        return;
-      }
-      
-      // التحقق من وجود فريق محدد إذا كانت الإجابة صحيحة
-      if (isCorrect && selectedTeam === null) {
-        // لا نعرض رسائل توست بعد الآن
         return;
       }
 
@@ -301,7 +327,7 @@ export default function QuestionPage() {
       
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
         questionId: parseInt(questionId as string),
-        teamId: selectedTeam !== null ? questionData?.teams[selectedTeam].id : null,
+        teamId: teamIndex !== undefined ? questionData?.teams[teamIndex].id : null,
         isCorrect,
         points: isCorrect ? points : 0
       });
