@@ -671,26 +671,21 @@ export default function QuestionPage() {
           <div className="py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {questionData.teams.map((team, index) => (
-                <Button
+                <AnswerTeamButton
                   key={team.id}
-                  variant="outline"
-                  className="h-16 text-lg shadow-md flex items-center gap-2 justify-center"
-                  style={{ borderColor: team.color }}
-                  onClick={() => {
-                    setSelectedTeam(index);
-                    submitAnswer(true); // تسجيل إجابة صحيحة
+                  team={team}
+                  index={index}
+                  onClick={(teamIndex) => {
+                    submitAnswer(true, teamIndex); // تسجيل إجابة صحيحة مع تمرير رقم الفريق
                     setShowTeamSelection(false);
                   }}
                   disabled={isSubmitting}
-                >
-                  ✅ {team.name}
-                </Button>
+                />
               ))}
               <Button
                 variant="outline"
                 className="h-16 text-lg col-span-full shadow-md flex items-center gap-2 justify-center"
                 onClick={() => {
-                  setSelectedTeam(null);
                   submitAnswer(false); // تسجيل لم يُجب أحد
                   setShowTeamSelection(false);
                 }}
