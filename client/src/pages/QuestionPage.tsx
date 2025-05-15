@@ -14,6 +14,7 @@ import {
   RefreshCcw,
   HelpCircle,
   AlertTriangle,
+  RotateCw,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
@@ -131,24 +132,69 @@ export default function QuestionPage() {
     };
   }, [gameId, questionId, toast]);
 
+  // تحويل الدور للفريق التالي
+  const moveToNextTeam = async () => {
+    try {
+      // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
+      const nextTeamIndex = (currentTeamIndex + 1) % questionData!.teams.length;
+      
+      // تحديث الفريق الحالي في قاعدة البيانات
+      await apiRequest('POST', `/api/games/${gameId}/update-team`, {
+        teamIndex: nextTeamIndex
+      });
+      
+      // تحديث الفريق الحالي في الواجهة
+      setCurrentTeamIndex(nextTeamIndex);
+      
+      toast({
+        title: "تم تغيير الدور",
+        description: `الدور الآن للفريق: ${questionData!.teams[nextTeamIndex].name}`
+      });
+      
+    } catch (err) {
+      console.error('Error changing team turn:', err);
+      toast({
+        variant: 'destructive',
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء تغيير الدور. يرجى المحاولة مرة أخرى.',
+      });
+    }
+  };
+  
+  // تجديد المؤقت
+  const resetTimer = () => {
+    if (questionData) {
+      setTimeLeft(questionData.firstAnswerTime);
+      // إذا كان المؤقت متوقفاً، نعيد تشغيله
+      if (!timerRunning) {
+        startTimer();
+      }
+    }
+  };
+  
+  // وظيفة بدء المؤقت (تم نقلها لوظيفة منفصلة)
+  const startTimer = () => {
+    setTimerRunning(true);
+    if (timer) clearInterval(timer);
+    
+    const interval = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          clearInterval(interval);
+          setTimerRunning(false);
+          // تحويل الدور للفريق التالي عند انتهاء الوقت
+          moveToNextTeam();
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+    setTimer(interval);
+  };
+  
   // بدء المؤقت
   useEffect(() => {
     if (questionData && !timerRunning && !showTeamSelection) {
-      const startTimer = () => {
-        setTimerRunning(true);
-        const interval = setInterval(() => {
-          setTimeLeft((prevTime) => {
-            if (prevTime <= 1) {
-              clearInterval(interval);
-              setTimerRunning(false);
-              return 0;
-            }
-            return prevTime - 1;
-          });
-        }, 1000);
-        setTimer(interval);
-      };
-      
       startTimer();
     }
   }, [questionData, timerRunning, showTeamSelection]);
@@ -335,18 +381,39 @@ export default function QuestionPage() {
         </div>
       </header>
       
-      {/* محتوى رئيسي */}
-      <main className="container mx-auto px-4 pt-6 pb-10 flex flex-col md:flex-row gap-4">
-      
-        {/* مؤقت العد التنازلي - وضعناه هنا ليكون فوق بوكس السؤال مباشرة */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 -mt-7 z-10 w-full flex justify-center">
+      {/* مؤقت العد التنازلي - منعزل في المنتصف */}
+      <div className="flex justify-center mt-4 mb-4">
+        <div className="flex items-center gap-2">
           <div className={`flex items-center gap-2 text-xl font-bold px-6 py-3 rounded-full ${
             timeLeft < 10 ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-sky-700 bg-sky-50 border border-sky-200'
           } shadow-lg`}>
             <ClockIcon className="h-5 w-5" />
             <span>{formatTime(timeLeft)}</span>
           </div>
+          
+          {/* زر تجديد الوقت */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={resetTimer}
+                  className="rounded-full h-12 w-12 border-sky-200 hover:bg-sky-50 shadow-md"
+                >
+                  <RotateCw className="h-5 w-5 text-sky-700" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>تجديد الوقت</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
+      </div>
+      
+      {/* محتوى رئيسي */}
+      <main className="container mx-auto px-4 pb-10 flex flex-col md:flex-row gap-4">
         {/* فرق وأدوات المساعدة (يمين) */}
         <div className="w-full md:w-1/5 order-2 md:order-1">
           <div className="space-y-3">
