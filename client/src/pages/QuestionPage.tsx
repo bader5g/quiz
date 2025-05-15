@@ -35,12 +35,6 @@ import { ModalDialogContent } from '@/components/ui/modal-dialog';
 import { useSite } from '@/context/SiteContext';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
-interface Hint {
-  text: string;
-  type: 'cultural' | 'historical' | 'scientific' | 'linguistic' | 'general';
-  pointReduction: number;
-}
-
 interface Question {
   id: number;
   text: string;
@@ -52,7 +46,6 @@ interface Question {
   imageUrl?: string;
   videoUrl?: string;
   mediaType?: 'image' | 'video' | null;
-  hints?: Hint[];
 }
 
 interface GameTeam {
@@ -138,10 +131,7 @@ export default function QuestionPage() {
     skip: false
   });
   
-  // حالة استخدام التلميحات
-  const [hintsUsed, setHintsUsed] = useState<number[]>([]);
-  const [showHintDialog, setShowHintDialog] = useState(false);
-  const [selectedHint, setSelectedHint] = useState<Hint | null>(null);
+
   
   // جلب تفاصيل السؤال
   useEffect(() => {
@@ -391,34 +381,7 @@ export default function QuestionPage() {
     }
   };
   
-  // تطبيق غرامة استخدام التلميح
-  const applyHintPenalty = async (pointReduction: number) => {
-    try {
-      // هنا نقوم بتطبيق تخفيض النقاط المكتسبة
-      // في نظام مكتمل، يجب إرسال هذه المعلومات إلى الخادم
-      
-      toast({
-        title: 'تم استخدام تلميح',
-        description: `سيتم تخفيض النقاط المكتسبة بمقدار ${pointReduction} نقطة.`,
-        variant: 'default',
-      });
-      
-      // في المستقبل، يمكن إضافة API لتسجيل استخدام التلميح وتخفيض النقاط
-      // مثال:
-      // await apiRequest('POST', `/api/games/${gameId}/use-hint`, {
-      //   questionId: parseInt(questionId as string),
-      //   hintIndex: hintsUsed.length - 1,
-      //   pointReduction
-      // });
-    } catch (err) {
-      console.error('Error applying hint penalty:', err);
-      toast({
-        variant: 'destructive',
-        title: 'خطأ',
-        description: 'حدث خطأ أثناء تطبيق غرامة التلميح. يرجى المحاولة مرة أخرى.',
-      });
-    }
-  };
+
 
   // العودة إلى صفحة اللعبة مع حفظ حالة اللعبة أولاً
   const returnToGame = async () => {
@@ -510,24 +473,7 @@ export default function QuestionPage() {
           
           {/* أزرار التحكم (يسار) */}
           <div className="flex gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => setShowHintDialog(true)} 
-                    className="border-amber-200 hover:bg-amber-50"
-                    disabled={!questionData?.question?.hints?.length || questionData?.question?.hints?.every((_, i) => hintsUsed.includes(i))}
-                  >
-                    <HelpCircle className="h-4 w-4 text-amber-700" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>طلب تلميح</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+
             
             <TooltipProvider>
               <Tooltip>
@@ -754,19 +700,7 @@ export default function QuestionPage() {
                 {questionData.question.text}
               </div>
               
-              {/* زر التلميحات */}
-              {questionData.question.hints && questionData.question.hints.length > 0 && (
-                <div className="flex justify-center mb-4">
-                  <Button
-                    variant="outline" 
-                    onClick={() => setShowHintDialog(true)}
-                    className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                  >
-                    <HelpCircle className="h-4 w-4 ml-2" />
-                    عرض التلميحات المتاحة
-                  </Button>
-                </div>
-              )}
+
               
               {/* صورة السؤال (اختياري) */}
               {/* {questionData.question.imageUrl && (
@@ -863,106 +797,8 @@ export default function QuestionPage() {
         </ModalDialogContent>
       </Dialog>
       
-      {/* مربع حوار التلميحات */}
-      <Dialog open={showHintDialog} onOpenChange={setShowHintDialog}>
-        <ModalDialogContent className={getModalClass()}>
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl">تلميحات حول السؤال</DialogTitle>
-            <DialogDescription className="text-center">
-              اختر تلميحًا للمساعدة في الإجابة عن السؤال. <span className="text-amber-600 font-semibold">ملاحظة: قد يقلل ذلك من النقاط المستحقة!</span>
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {questionData?.question?.hints && questionData.question.hints.length > 0 ? (
-              <div className="grid gap-4">
-                {questionData.question.hints.map((hint, index) => (
-                  <Button
-                    key={index}
-                    variant={hintsUsed.includes(index) ? "default" : "outline"}
-                    className={`justify-start h-auto p-4 text-right ${
-                      hintsUsed.includes(index)
-                        ? "bg-amber-50 text-amber-800"
-                        : "hover:bg-amber-50 hover:text-amber-800"
-                    } ${
-                      getHintTypeClass(hint.type)
-                    }`}
-                    disabled={hintsUsed.includes(index)}
-                    onClick={() => {
-                      setSelectedHint(hint);
-                      setHintsUsed((prev) => [...prev, index]);
-                      // هنا نقوم بخصم النقاط حسب التلميح
-                      applyHintPenalty(hint.pointReduction);
-                    }}
-                  >
-                    <div className="flex flex-col items-start gap-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={getHintBadgeClass(hint.type)}>
-                          {getHintTypeText(hint.type)}
-                        </Badge>
-                        <span className="text-xs text-gray-500">- {hint.pointReduction} نقطة</span>
-                      </div>
-                      {hintsUsed.includes(index) ? (
-                        <p className="text-sm mt-2">{hint.text}</p>
-                      ) : (
-                        <p className="text-sm text-gray-500 mt-2">اضغط للكشف عن التلميح</p>
-                      )}
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center p-8 text-gray-500">
-                <HelpCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                <p>لا توجد تلميحات متاحة لهذا السؤال</p>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button
-              onClick={() => setShowHintDialog(false)}
-              className="w-full sm:w-auto"
-            >
-              إغلاق
-            </Button>
-          </DialogFooter>
-        </ModalDialogContent>
-      </Dialog>
+
     </div>
   );
 }
 
-// وظائف مساعدة لتلميحات
-function getHintTypeText(type: string): string {
-  switch (type) {
-    case 'cultural': return 'تلميح ثقافي';
-    case 'historical': return 'تلميح تاريخي';
-    case 'scientific': return 'تلميح علمي';
-    case 'linguistic': return 'تلميح لغوي';
-    case 'general': return 'تلميح عام';
-    default: return 'تلميح';
-  }
-}
-
-function getHintTypeClass(type: string): string {
-  switch (type) {
-    case 'cultural': return 'border-blue-200';
-    case 'historical': return 'border-amber-200';
-    case 'scientific': return 'border-green-200';
-    case 'linguistic': return 'border-purple-200';
-    case 'general': return 'border-gray-200';
-    default: return 'border-gray-200';
-  }
-}
-
-function getHintBadgeClass(type: string): string {
-  switch (type) {
-    case 'cultural': return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'historical': return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'scientific': return 'bg-green-50 text-green-700 border-green-200';
-    case 'linguistic': return 'bg-purple-50 text-purple-700 border-purple-200';
-    case 'general': return 'bg-gray-50 text-gray-700 border-gray-200';
-    default: return 'bg-gray-50 text-gray-700 border-gray-200';
-  }
-}
