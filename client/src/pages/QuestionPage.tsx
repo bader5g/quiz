@@ -132,13 +132,13 @@ export default function QuestionPage() {
   const { gameId, questionId } = useParams();
   const [, navigate] = useLocation();
   const { getModalClass } = useSite();
-  
+
   // استخراج معلومات مستوى الصعوبة من query parameters
   const searchParams = new URLSearchParams(window.location.search);
   const questionNumber = searchParams.get("number") || "؟";
   // نحصل على مستوى الصعوبة، وفي حالة عدم وجوده نستخدم القيمة 1 (سهل) كإفتراضي
   const requestedDifficulty = parseInt(searchParams.get("difficulty") || "1");
-  
+
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,7 +151,7 @@ export default function QuestionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
-  
+
   // حالة استخدام وسائل المساعدة
   const [helpUsed, setHelpUsed] = useState<{
     discount: boolean; // خصم
@@ -162,7 +162,7 @@ export default function QuestionPage() {
     swap: false,
     skip: false
   });
-  
+
   // جلب تفاصيل السؤال
   useEffect(() => {
     const fetchQuestionDetails = async () => {
@@ -170,42 +170,42 @@ export default function QuestionPage() {
         setLoading(true);
         // إضافة مستوى الصعوبة إلى طلب الحصول على السؤال
         const response = await apiRequest('GET', `/api/games/${gameId}/questions/${questionId}?difficulty=${requestedDifficulty}`);
-        
+
         // التحقق من الاستجابة إذا كانت 404 (غير موجود)
         if (response.status === 404) {
           setNotFoundError(true);
           setError('السؤال المطلوب غير موجود.');
           return;
         }
-        
+
         const data = await response.json();
-        
+
         // التحقق من أن السؤال المُسترجع يطابق مستوى الصعوبة المطلوب
         if (data.question.difficulty !== requestedDifficulty) {
           console.warn(`تم طلب سؤال بمستوى صعوبة ${requestedDifficulty} ولكن تم جلب سؤال بمستوى ${data.question.difficulty}`);
         }
-        
+
         setQuestionData(data);
         setTimeLeft(data.firstAnswerTime);
-        
+
         // تعيين الفريق الحالي
         try {
           const gameResponse = await apiRequest('GET', `/api/games/${gameId}`);
-          
+
           // التحقق إذا كانت اللعبة غير موجودة
           if (gameResponse.status === 404) {
             setNotFoundError(true);
             setError('اللعبة المطلوبة غير موجودة.');
             return;
           }
-          
+
           const gameData = await gameResponse.json();
           setCurrentTeamIndex(gameData.currentTeamIndex || 0);
         } catch (gameErr) {
           console.error('Error fetching game details:', gameErr);
           setError('تعذر تحميل بيانات اللعبة. يرجى المحاولة مرة أخرى.');
         }
-        
+
         setError(null);
       } catch (err) {
         console.error('Error fetching question details:', err);
@@ -235,34 +235,34 @@ export default function QuestionPage() {
         console.error('Cannot change team turn: questionData is null');
         return;
       }
-      
+
       // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
       const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
-      
+
       // تحديث الفريق الحالي في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/update-team`, {
         teamIndex: nextTeamIndex
       });
-      
+
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(nextTeamIndex);
-      
+
       // ضبط الوقت المناسب حسب الفريق باستخدام الطريقة الموحدة
       const newTime = (nextTeamIndex === 0) 
         ? questionData.firstAnswerTime 
         : questionData.secondAnswerTime;
-      
+
       // ضبط المؤقت بالوقت المناسب
       setTimeLeft(newTime);
-      
+
       // بدء المؤقت من جديد للفريق الجديد
       startTimer();
-      
+
     } catch (err) {
       console.error('Error changing team turn:', err);
     }
   };
-  
+
   // تجديد المؤقت
   const resetTimer = () => {
     if (questionData) {
@@ -272,30 +272,30 @@ export default function QuestionPage() {
       const timeToSet = currentTeamIndex === 0 
         ? questionData.firstAnswerTime 
         : questionData.secondAnswerTime;
-        
+
       setTimeLeft(timeToSet);
-      
+
       // إذا كان المؤقت متوقفاً، نعيد تشغيله
       if (!timerRunning) {
         startTimer();
       }
     }
   };
-  
+
   // وظيفة بدء المؤقت (تم نقلها لوظيفة منفصلة)
   const startTimer = () => {
     // تحقق إن كان المؤقت يعمل مسبقًا قبل أن تعيد تشغيله
     if (timerRunning) return;
-    
+
     setTimerRunning(true);
     if (timer) clearInterval(timer);
-    
+
     const interval = setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
           clearInterval(interval);
           setTimerRunning(false);
-          
+
           // تحويل الدور تلقائيًا عند انتهاء الوقت بدون عرض تنبيه
           moveToNextTeam();
           return 0;
@@ -305,7 +305,7 @@ export default function QuestionPage() {
     }, 1000);
     setTimer(interval);
   };
-  
+
   // بدء المؤقت تلقائيًا عند تحميل السؤال
   useEffect(() => {
     if (questionData && !timerRunning && !showTeamSelection) {
@@ -324,15 +324,15 @@ export default function QuestionPage() {
 
       // تمكين حالة الإرسال
       setIsSubmitting(true);
-      
+
       // استخدام مستوى الصعوبة المطلوب للنقاط (1 أو 2 أو 3)
       const points = requestedDifficulty;
-      
+
       // التحقق من وجود بيانات السؤال
       if (!questionData) {
         throw new Error("بيانات السؤال غير متوفرة");
       }
-      
+
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
         questionId: parseInt(questionId as string),
         teamId: teamIndex !== undefined ? teamIndex : null, // نرسل الindوقيل رقم الفريق
@@ -341,15 +341,15 @@ export default function QuestionPage() {
         isCorrect,
         points: isCorrect ? points : 0
       });
-      
+
       // بعد ثانيتين نعود إلى صفحة اللعبة
       setTimeout(() => {
         navigate(`/play/${gameId}`);
       }, 2000);
-      
+
     } catch (err) {
       console.error('Error submitting answer:', err);
-      
+
       // إعادة تعيين حالة الإرسال في حالة الخطأ
       setIsSubmitting(false);
     }
@@ -380,7 +380,7 @@ export default function QuestionPage() {
     try {
       // حفظ حالة اللعبة قبل العودة (لضمان عدم فقدان التقدم)
       await apiRequest('POST', `/api/games/${gameId}/save-state`);
-      
+
       // العودة إلى صفحة اللعبة
       navigate(`/play/${gameId}`);
     } catch (err) {
@@ -452,16 +452,16 @@ export default function QuestionPage() {
           <div className="flex items-center">
             <img src="/assets/jaweb-logo.png" alt="جاوب" className="h-10" />
           </div>
-          
+
           {/* اسم الفريق الذي عليه الدور (وسط) */}
           <div className="text-lg font-bold px-4 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
             دور: {currentTeam?.name || 'الفريق الأول'}
           </div>
-          
+
           {/* أزرار التحكم (يسار) */}
           <div className="flex gap-2">
 
-            
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -475,7 +475,7 @@ export default function QuestionPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -489,7 +489,7 @@ export default function QuestionPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -506,7 +506,7 @@ export default function QuestionPage() {
           </div>
         </div>
       </header>
-      
+
       {/* مؤقت العد التنازلي - منعزل في المنتصف */}
       <div className="flex justify-center mt-4 mb-4">
         <div className="flex items-center gap-2">
@@ -525,7 +525,7 @@ export default function QuestionPage() {
           >
             <RotateCw className="h-5 w-5" />
           </Button>
-          
+
           {/* زر تبديل الدور */}
           <Button 
             variant="outline" 
@@ -577,7 +577,7 @@ export default function QuestionPage() {
                 : 'صعب'}
               </Badge>
             </div>
-            
+
             <div className="bg-sky-50 p-4 rounded-lg mb-4">
               <h3 className="text-xl font-bold mb-4 text-sky-900">
                 السؤال:
@@ -586,7 +586,7 @@ export default function QuestionPage() {
                 {questionData.question.text}
               </p>
             </div>
-            
+
             {/* وسائط السؤال - في حالة وجودها */}
             {questionData.question.mediaType && (
               <div className="my-4 rounded-lg overflow-hidden flex justify-center">
@@ -597,7 +597,7 @@ export default function QuestionPage() {
                     className="max-h-[300px] w-auto object-contain rounded-md"
                   />
                 )}
-                
+
                 {questionData.question.mediaType === 'video' && questionData.question.videoUrl && (
                   <video 
                     src={questionData.question.videoUrl} 
@@ -607,7 +607,7 @@ export default function QuestionPage() {
                 )}
               </div>
             )}
-            
+
             {/* الإجابة - تظهر فقط بعد الضغط على زر عرض الإجابة */}
             {showAnswer && (
               <Card className="mt-6 bg-green-50 border-green-200">
@@ -622,7 +622,7 @@ export default function QuestionPage() {
                 </CardContent>
               </Card>
             )}
-            
+
             {/* أزرار وسائل المساعدة - تظهر فقط إذا كان هناك فريقين بالضبط */}
             {questionData.teams.length === 2 && (
               <div className="mt-6 flex justify-center gap-3 bg-gray-50 p-3 rounded-lg">
@@ -635,7 +635,7 @@ export default function QuestionPage() {
                   }}
                   disabled={helpUsed.discount}
                 />
-                
+
                 <HelpButton 
                   icon={<Phone className="h-4 w-4" />}
                   label="عكس"
@@ -646,7 +646,7 @@ export default function QuestionPage() {
                   }}
                   disabled={helpUsed.swap}
                 />
-                
+
                 <HelpButton 
                   icon={<UserX className="h-4 w-4" />}
                   label="تخطي"
@@ -659,7 +659,7 @@ export default function QuestionPage() {
                 />
               </div>
             )}
-            
+
             {/* أزرار التحكم */}
             <div className="mt-6 flex justify-center gap-4">
               {!showAnswer ? (
