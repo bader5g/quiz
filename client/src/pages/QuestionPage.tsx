@@ -754,6 +754,20 @@ export default function QuestionPage() {
                 {questionData.question.text}
               </div>
               
+              {/* زر التلميحات */}
+              {questionData.question.hints && questionData.question.hints.length > 0 && (
+                <div className="flex justify-center mb-4">
+                  <Button
+                    variant="outline" 
+                    onClick={() => setShowHintDialog(true)}
+                    className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  >
+                    <HelpCircle className="h-4 w-4 ml-2" />
+                    عرض التلميحات المتاحة
+                  </Button>
+                </div>
+              )}
+              
               {/* صورة السؤال (اختياري) */}
               {/* {questionData.question.imageUrl && (
                 <div className="mt-4 flex justify-center">
