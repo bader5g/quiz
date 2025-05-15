@@ -774,74 +774,45 @@ export default function QuestionPage() {
       {/* مربع حوار اختيار الفريق */}
       <Dialog
         open={showTeamSelection}
-        onOpenChange={(open) => { 
-          if (!open) setSelectedTeam(null);
-          setShowTeamSelection(open);
-        }}
+        onOpenChange={(open) => setShowTeamSelection(open)}
       >
         <ModalDialogContent className={getModalClass()}>
           <DialogHeader>
             <DialogTitle className="text-xl">من أجاب على السؤال؟</DialogTitle>
-            <DialogDescription>
-              حدد الفريق الذي قام بالإجابة على السؤال
-            </DialogDescription>
+            <DialogDescription>اختر الفريق الذي أجاب أو اختر "لم يُجب أحد"</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {questionData.teams.map((team, index) => (
                 <Button
                   key={team.id}
-                  variant={selectedTeam === index ? "default" : "outline"}
-                  className="h-16 text-lg shadow-md transition-all"
-                  style={{
-                    borderColor: team.color,
-                    ...(selectedTeam === index 
-                      ? { backgroundColor: team.color, color: '#ffffff' } 
-                      : {})
-                  }}
+                  variant="outline"
+                  className="h-16 text-lg shadow-md flex items-center gap-2 justify-center"
+                  style={{ borderColor: team.color }}
                   onClick={() => {
-                    // فقط تعيين الفريق المختار
                     setSelectedTeam(index);
+                    submitAnswer(true); // تسجيل إجابة صحيحة
+                    setShowTeamSelection(false);
                   }}
+                  disabled={isSubmitting}
                 >
-                  {team.name}
+                  ✅ {team.name}
                 </Button>
               ))}
               <Button
-                variant={selectedTeam === null ? "default" : "outline"}
-                className="h-16 text-lg col-span-full shadow-md"
+                variant="outline"
+                className="h-16 text-lg col-span-full shadow-md flex items-center gap-2 justify-center"
                 onClick={() => {
-                  // فقط تعيين أنه لم يجب أحد
                   setSelectedTeam(null);
+                  submitAnswer(false); // تسجيل لم يُجب أحد
+                  setShowTeamSelection(false);
                 }}
+                disabled={isSubmitting}
               >
-                لم يُجب أحد
+                👁‍🗨 لم يُجب أحد
               </Button>
             </div>
           </div>
-          <DialogFooter className="flex justify-between w-full">
-            <Button 
-              variant="outline"
-              onClick={() => {
-                setShowTeamSelection(false);
-              }}
-              className="px-5 shadow-md"
-            >
-              إلغاء
-            </Button>
-            
-            <Button 
-              onClick={() => {
-                // استخدام منطق بسيط: إذا تم تحديد فريق، فالإجابة صحيحة، وإلا فهي خاطئة
-                submitAnswer(selectedTeam !== null);
-                setShowTeamSelection(false);
-              }}
-              className="px-5 shadow-md"
-              disabled={isSubmitting}
-            >
-              تأكيد الإجابة
-            </Button>
-          </DialogFooter>
         </ModalDialogContent>
       </Dialog>
       
