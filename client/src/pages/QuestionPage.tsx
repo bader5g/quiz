@@ -132,7 +132,7 @@ export default function QuestionPage() {
     };
   }, [gameId, questionId, toast]);
 
-  // تحويل الدور للفريق التالي
+  // تحويل الدور للفريق التالي وضبط الوقت المخصص له
   const moveToNextTeam = async () => {
     try {
       // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
@@ -145,6 +145,19 @@ export default function QuestionPage() {
       
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(nextTeamIndex);
+      
+      // ضبط الوقت المناسب حسب الفريق
+      // إذا كان هذا هو الفريق الثاني الذي يحاول الإجابة على السؤال (كل فريق له فرصة)
+      if (nextTeamIndex !== 0) {
+        // استخدام زمن الإجابة الثانية للفريق الثاني
+        setTimeLeft(questionData!.secondAnswerTime);
+      } else {
+        // استخدام زمن الإجابة الأولى للفريق الأول
+        setTimeLeft(questionData!.firstAnswerTime);
+      }
+      
+      // بدء المؤقت من جديد للفريق الجديد
+      startTimer();
       
       toast({
         title: "تم تغيير الدور",
@@ -164,7 +177,21 @@ export default function QuestionPage() {
   // تجديد المؤقت
   const resetTimer = () => {
     if (questionData) {
-      setTimeLeft(questionData.firstAnswerTime);
+      // ضبط الوقت حسب الفريق الحالي
+      // إذا كان هذا هو الفريق الأول (index = 0)، نستخدم الوقت الأول
+      // وإلا نستخدم الوقت الثاني للفرق اللاحقة
+      const timeToSet = currentTeamIndex === 0 
+        ? questionData.firstAnswerTime 
+        : questionData.secondAnswerTime;
+        
+      setTimeLeft(timeToSet);
+      
+      // إظهار إشعار بتجديد الوقت
+      toast({
+        title: "تم تجديد الوقت",
+        description: `تم ضبط المؤقت على ${formatTime(timeToSet)}`
+      });
+      
       // إذا كان المؤقت متوقفاً، نعيد تشغيله
       if (!timerRunning) {
         startTimer();
