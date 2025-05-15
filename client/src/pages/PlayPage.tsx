@@ -83,6 +83,7 @@ export default function PlayPage() {
     // تحديث البيانات عند العودة للصفحة (focus)
     const handleFocus = () => {
       if (gameId) {
+        console.log("تحديث بيانات اللعبة عند العودة للصفحة");
         fetchGameDetails();
       }
     };
@@ -90,9 +91,26 @@ export default function PlayPage() {
     // إضافة مستمع الحدث عند تثبيت المكون
     window.addEventListener('focus', handleFocus);
     
-    // إزالة مستمع الحدث عند إزالة المكون
+    // تحديث البيانات عند الانتقال من صفحة السؤال
+    // هذا سيحدث عند رسم المكون وعند كل تحديث للواجهة
+    const checkPageVisibility = () => {
+      if (document.visibilityState === 'visible' && gameId) {
+        console.log("تحديث بيانات اللعبة عند العودة من صفحة أخرى");
+        fetchGameDetails();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', checkPageVisibility);
+    
+    // تحديث فوري عند تركيب المكون (بعد الانتقال من صفحة أخرى)
+    if (document.visibilityState === 'visible' && gameId) {
+      fetchGameDetails();
+    }
+    
+    // إزالة مستمعات الأحداث عند إزالة المكون
     return () => {
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', checkPageVisibility);
     };
   }, [gameId]);
 

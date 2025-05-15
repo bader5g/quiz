@@ -230,10 +230,14 @@ export default function QuestionPage() {
   // تحويل الدور للفريق التالي وضبط الوقت المخصص له
   const moveToNextTeam = async () => {
     try {
-      // تم إزالة كود عرض التنبيهات عند انتهاء الوقت
+      // تحقق من وجود بيانات السؤال
+      if (!questionData) {
+        console.error('Cannot change team turn: questionData is null');
+        return;
+      }
       
       // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
-      const nextTeamIndex = (currentTeamIndex + 1) % questionData!.teams.length;
+      const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
       
       // تحديث الفريق الحالي في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/update-team`, {
@@ -245,8 +249,8 @@ export default function QuestionPage() {
       
       // ضبط الوقت المناسب حسب الفريق باستخدام الطريقة الموحدة
       const newTime = (nextTeamIndex === 0) 
-        ? questionData!.firstAnswerTime 
-        : questionData!.secondAnswerTime;
+        ? questionData.firstAnswerTime 
+        : questionData.secondAnswerTime;
       
       // ضبط المؤقت بالوقت المناسب
       setTimeLeft(newTime);
