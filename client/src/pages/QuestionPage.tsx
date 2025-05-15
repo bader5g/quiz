@@ -18,7 +18,8 @@ import {
   DialogContent, 
   DialogFooter, 
   DialogHeader, 
-  DialogTitle
+  DialogTitle,
+  DialogDescription 
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ModalDialogContent } from '@/components/ui/modal-dialog';
@@ -111,7 +112,8 @@ export default function QuestionPage() {
             if (prevTime <= 1) {
               clearInterval(interval);
               setTimerRunning(false);
-              setShowTeamSelection(true);
+              // إزالة الفتح التلقائي لشاشة من أجاب على السؤال عند انتهاء الوقت
+              // setShowTeamSelection(true);
               return 0;
             }
             return prevTime - 1;
@@ -176,6 +178,16 @@ export default function QuestionPage() {
     setShowAnswer(!showAnswer);
   };
 
+  // تسجيل إجابة - فتح نافذة الاختيار
+  const handleRecordAnswer = () => {
+    // إيقاف المؤقت إذا كان يعمل
+    if (timer) {
+      clearInterval(timer);
+      setTimerRunning(false);
+    }
+    setShowTeamSelection(true);
+  };
+
   // العودة إلى صفحة اللعبة
   const returnToGame = () => {
     navigate(`/play/${gameId}`);
@@ -191,20 +203,22 @@ export default function QuestionPage() {
   // محتوى الصفحة الرئيسي
   if (loading) {
     return (
-      <div dir="rtl" className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div dir="rtl" className="flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-50 to-indigo-50">
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div dir="rtl" className="p-8">
-        <Alert variant="destructive">
+      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-indigo-50 min-h-screen">
+        <Alert variant="destructive" className="max-w-xl mx-auto shadow-md">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
         <div className="mt-4 flex justify-center">
-          <Button onClick={() => navigate(`/play/${gameId}`)}>العودة إلى اللعبة</Button>
+          <Button onClick={() => navigate(`/play/${gameId}`)} className="shadow-md">
+            العودة إلى اللعبة
+          </Button>
         </div>
       </div>
     );
@@ -212,38 +226,41 @@ export default function QuestionPage() {
 
   if (!questionData) {
     return (
-      <div dir="rtl" className="p-8">
-        <Alert variant="destructive">
+      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-indigo-50 min-h-screen">
+        <Alert variant="destructive" className="max-w-xl mx-auto shadow-md">
           <AlertDescription>لم يتم العثور على السؤال المطلوب.</AlertDescription>
         </Alert>
         <div className="mt-4 flex justify-center">
-          <Button onClick={() => navigate(`/play/${gameId}`)}>العودة إلى اللعبة</Button>
+          <Button onClick={() => navigate(`/play/${gameId}`)} className="shadow-md">
+            العودة إلى اللعبة
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="container mx-auto p-4">
-      {/* المؤقت والفئة */}
-      <div className="flex justify-between items-center mb-6">
-        <Badge className="text-lg py-2 px-3">
-          <span className="ml-2">{questionData.question.categoryIcon}</span>
-          <span>{questionData.question.categoryName}</span>
-        </Badge>
-        
-        <div className={`flex items-center gap-2 text-lg font-semibold ${timeLeft < 10 ? 'text-red-500' : ''}`}>
-          <ClockIcon className="h-5 w-5" />
-          <span>{formatTime(timeLeft)}</span>
+    <div dir="rtl" className="min-h-screen bg-gradient-to-b from-sky-50 to-indigo-50 py-6">
+      <div className="container mx-auto px-4 max-w-4xl">
+        {/* هيدر الصفحة: المؤقت والفئة */}
+        <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-md">
+          <Badge className="text-lg py-2 px-4 bg-indigo-100 text-indigo-800 border-0 shadow-sm">
+            <span className="ml-2">{questionData.question.categoryIcon}</span>
+            <span>{questionData.question.categoryName}</span>
+          </Badge>
+          
+          <div className={`flex items-center gap-2 text-xl font-bold px-4 py-2 rounded-lg ${timeLeft < 10 ? 'text-red-600 bg-red-50' : 'text-indigo-600 bg-indigo-50'}`}>
+            <ClockIcon className="h-6 w-6" />
+            <span>{formatTime(timeLeft)}</span>
+          </div>
         </div>
-      </div>
 
-      {/* بطاقة السؤال */}
-      <Card className="mb-8 shadow-lg">
-        <CardContent className="p-6">
-          {/* مستوى الصعوبة */}
-          <div className="flex justify-end mb-4">
-            <Badge variant="outline">
+        {/* بطاقة السؤال */}
+        <Card className="mb-8 shadow-xl border border-indigo-100 overflow-hidden">
+          {/* شريط مستوى الصعوبة */}
+          <div className="bg-gradient-to-r from-indigo-500 to-blue-500 py-3 px-4 text-white flex justify-between items-center">
+            <span className="font-semibold text-xl">السؤال</span>
+            <Badge variant="outline" className="bg-white/20 text-white border-white/50">
               المستوى: {
                 questionData.question.difficulty === 1 ? 'سهل' : 
                 questionData.question.difficulty === 2 ? 'متوسط' : 'صعب'
@@ -251,132 +268,138 @@ export default function QuestionPage() {
             </Badge>
           </div>
           
-          {/* نص السؤال */}
-          <div className="text-2xl font-semibold mb-8 text-center">
-            {questionData.question.text}
-          </div>
-          
-          {/* عرض الإجابة (اختياري) */}
-          {showAnswer && (
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <h3 className="font-semibold mb-2">الإجابة الصحيحة:</h3>
-              <p className="text-lg">{questionData.question.answer}</p>
-            </div>
-          )}
-          
-          {/* أزرار التحكم */}
-          <div className="flex justify-center mt-6 gap-3">
-            <Button
-              variant="outline"
-              onClick={toggleShowAnswer}
-              className="flex items-center gap-2"
-            >
-              {showAnswer ? 'إخفاء الإجابة' : 'عرض الإجابة'}
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => setShowTeamSelection(true)}
-              className="flex items-center gap-2"
-            >
-              تسجيل إجابة
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={returnToGame}
-              className="flex items-center gap-2"
-            >
-              <ChevronRight className="h-4 w-4" />
-              العودة للعبة
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* مربع حوار اختيار الفريق */}
-      <Dialog
-        open={showTeamSelection}
-        onOpenChange={(open) => { 
-          if (!open) setSelectedTeam(null);
-          setShowTeamSelection(open);
-        }}
-      >
-        <ModalDialogContent className={getModalClass()}>
-          <DialogHeader>
-            <DialogTitle>من أجاب على السؤال؟</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              {questionData.teams.map((team, index) => (
-                <Button
-                  key={team.id}
-                  variant={selectedTeam === index ? "default" : "outline"}
-                  className="h-16 text-lg"
-                  style={{
-                    borderColor: team.color,
-                    ...(selectedTeam === index ? { backgroundColor: team.color } : {})
-                  }}
-                  onClick={() => setSelectedTeam(index)}
-                >
-                  {team.name}
-                </Button>
-              ))}
-              <Button
-                variant={selectedTeam === null ? "default" : "outline"}
-                className="h-16 text-lg col-span-full"
-                onClick={() => setSelectedTeam(null)}
-              >
-                لم يُجب أحد
-              </Button>
+          <CardContent className="p-6">
+            {/* نص السؤال */}
+            <div className="text-2xl font-semibold mb-8 text-center p-6 bg-white rounded-lg shadow-inner border border-indigo-50">
+              {questionData.question.text}
             </div>
             
-            {selectedTeam !== null && (
-              <div className="flex flex-col gap-4">
-                <h3 className="font-semibold text-center">هل الإجابة صحيحة؟</h3>
-                <div className="flex justify-center gap-4">
-                  <Button 
-                    variant="outline" 
-                    className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex items-center gap-2 h-12"
-                    onClick={() => {
-                      setAnswerCorrect(true);
-                      submitAnswer(true);
-                      setShowTeamSelection(false);
-                    }}
-                  >
-                    <CheckCircle className="h-5 w-5" />
-                    <span>إجابة صحيحة</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="bg-red-50 border-red-200 hover:bg-red-100 text-red-700 flex items-center gap-2 h-12"
-                    onClick={() => {
-                      setAnswerCorrect(false);
-                      submitAnswer(false);
-                      setShowTeamSelection(false);
-                    }}
-                  >
-                    <XCircle className="h-5 w-5" />
-                    <span>إجابة خاطئة</span>
-                  </Button>
-                </div>
+            {/* عرض الإجابة (اختياري) */}
+            {showAnswer && (
+              <div className="mt-6 p-5 bg-green-50 border border-green-200 rounded-lg shadow-inner">
+                <h3 className="font-semibold mb-2 text-lg text-green-800">الإجابة الصحيحة:</h3>
+                <p className="text-xl text-green-700">{questionData.question.answer}</p>
               </div>
             )}
-          </div>
-          <DialogFooter>
-            {selectedTeam === null && (
-              <Button 
-                onClick={() => {
-                  setShowTeamSelection(false);
-                  navigate(`/play/${gameId}`);
-                }}
+            
+            {/* أزرار التحكم */}
+            <div className="flex justify-center mt-8 gap-4">
+              <Button
+                variant="outline"
+                onClick={toggleShowAnswer}
+                className="px-5 py-6 h-auto text-lg flex items-center gap-2 border-indigo-200 hover:bg-indigo-50 shadow-sm"
               >
+                {showAnswer ? 'إخفاء الإجابة' : 'عرض الإجابة'}
+              </Button>
+              
+              <Button
+                onClick={handleRecordAnswer}
+                className="px-5 py-6 h-auto text-lg flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md"
+              >
+                تسجيل إجابة
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={returnToGame}
+                className="px-5 py-6 h-auto text-lg flex items-center gap-2 border-slate-200 hover:bg-slate-50 shadow-sm"
+              >
+                <ChevronRight className="h-5 w-5" />
                 العودة للعبة
               </Button>
-            )}
-          </DialogFooter>
-        </ModalDialogContent>
-      </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* مربع حوار اختيار الفريق */}
+        <Dialog
+          open={showTeamSelection}
+          onOpenChange={(open) => { 
+            if (!open) setSelectedTeam(null);
+            setShowTeamSelection(open);
+          }}
+        >
+          <ModalDialogContent className={getModalClass()}>
+            <DialogHeader>
+              <DialogTitle className="text-xl">من أجاب على السؤال؟</DialogTitle>
+              <DialogDescription>
+                حدد الفريق الذي قام بالإجابة على السؤال
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {questionData.teams.map((team, index) => (
+                  <Button
+                    key={team.id}
+                    variant={selectedTeam === index ? "default" : "outline"}
+                    className="h-16 text-lg shadow-md transition-all"
+                    style={{
+                      borderColor: team.color,
+                      ...(selectedTeam === index 
+                        ? { backgroundColor: team.color, color: '#ffffff' } 
+                        : {})
+                    }}
+                    onClick={() => setSelectedTeam(index)}
+                  >
+                    {team.name}
+                  </Button>
+                ))}
+                <Button
+                  variant={selectedTeam === null ? "default" : "outline"}
+                  className="h-16 text-lg col-span-full shadow-md"
+                  onClick={() => setSelectedTeam(null)}
+                >
+                  لم يُجب أحد
+                </Button>
+              </div>
+              
+              {selectedTeam !== null && (
+                <div className="flex flex-col gap-4 mt-8">
+                  <h3 className="font-semibold text-center text-lg">هل الإجابة صحيحة؟</h3>
+                  <div className="flex justify-center gap-4">
+                    <Button 
+                      variant="outline" 
+                      className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex items-center gap-2 h-14 text-lg shadow-md"
+                      onClick={() => {
+                        setAnswerCorrect(true);
+                        submitAnswer(true);
+                        setShowTeamSelection(false);
+                      }}
+                    >
+                      <CheckCircle className="h-5 w-5" />
+                      <span>إجابة صحيحة</span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="bg-red-50 border-red-200 hover:bg-red-100 text-red-700 flex items-center gap-2 h-14 text-lg shadow-md"
+                      onClick={() => {
+                        setAnswerCorrect(false);
+                        submitAnswer(false);
+                        setShowTeamSelection(false);
+                      }}
+                    >
+                      <XCircle className="h-5 w-5" />
+                      <span>إجابة خاطئة</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              {selectedTeam === null && (
+                <Button 
+                  onClick={() => {
+                    setShowTeamSelection(false);
+                  }}
+                  className="px-5 shadow-md"
+                >
+                  إلغاء
+                </Button>
+              )}
+            </DialogFooter>
+          </ModalDialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
