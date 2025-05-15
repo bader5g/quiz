@@ -218,7 +218,7 @@ export default function QuestionPage() {
         toast({
           title: "انتهى الوقت!",
           description: `الفريق "${currentTeam.name}" لم يجب على السؤال`,
-          variant: "warning",
+          variant: "destructive",
         });
       }
       
@@ -771,10 +771,9 @@ export default function QuestionPage() {
                       : {})
                   }}
                   onClick={() => {
+                    // فقط تعيين الفريق المختار وتعيين الإجابة كصحيحة
                     setSelectedTeam(index);
                     setAnswerCorrect(true);
-                    submitAnswer(true);
-                    setShowTeamSelection(false);
                   }}
                 >
                   {team.name}
@@ -784,29 +783,50 @@ export default function QuestionPage() {
                 variant={selectedTeam === null ? "default" : "outline"}
                 className="h-16 text-lg col-span-full shadow-md"
                 onClick={() => {
+                  // فقط تعيين أنه لم يجب أحد وتعيين الإجابة كخاطئة
                   setSelectedTeam(null);
                   setAnswerCorrect(false);
-                  submitAnswer(false);
-                  setShowTeamSelection(false);
                 }}
               >
                 لم يُجب أحد
               </Button>
             </div>
-            
-
           </div>
-          <DialogFooter>
-            {selectedTeam === null && (
-              <Button 
-                onClick={() => {
+          <DialogFooter className="flex justify-between w-full">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setShowTeamSelection(false);
+              }}
+              className="px-5 shadow-md"
+            >
+              إلغاء
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                // التحقق من وجود فريق محدد قبل تنفيذ تقديم الإجابة
+                if ((selectedTeam !== null && answerCorrect) || (selectedTeam === null && !answerCorrect)) {
+                  // تنفيذ تقديم الإجابة
+                  if (selectedTeam !== null) {
+                    submitAnswer(true);
+                  } else {
+                    submitAnswer(false);
+                  }
                   setShowTeamSelection(false);
-                }}
-                className="px-5 shadow-md"
-              >
-                إلغاء
-              </Button>
-            )}
+                } else {
+                  // في حالة عدم تحديد فريق
+                  toast({
+                    variant: 'destructive',
+                    title: 'خطأ',
+                    description: 'الرجاء تحديد الفريق أولاً',
+                  });
+                }
+              }}
+              className="px-5 shadow-md"
+            >
+              تأكيد الإجابة
+            </Button>
           </DialogFooter>
         </ModalDialogContent>
       </Dialog>
