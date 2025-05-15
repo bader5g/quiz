@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, ChevronDown, ChevronUp, Minus, Repeat, User, UserX } from 'lucide-react';
+import { Award, Minus, Plus, Repeat, User, UserX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,10 +59,10 @@ export function GameScoreBoard({ teams, currentTeamIndex, onUpdateScore }: GameS
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="p-0 h-6 w-6 text-indigo-600 hover:bg-indigo-50"
+                            className="p-0 h-6 w-6 text-green-600 hover:bg-green-50 font-bold"
                             onClick={() => onUpdateScore(index, 1)}
                           >
-                            <ChevronUp className="h-4 w-4" />
+                            <Plus className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="top">
@@ -84,10 +84,10 @@ export function GameScoreBoard({ teams, currentTeamIndex, onUpdateScore }: GameS
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="p-0 h-6 w-6 text-indigo-600 hover:bg-indigo-50"
+                            className="p-0 h-6 w-6 text-red-600 hover:bg-red-50 font-bold"
                             onClick={() => onUpdateScore(index, -1)}
                           >
-                            <ChevronDown className="h-4 w-4" />
+                            <Minus className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
@@ -99,65 +99,64 @@ export function GameScoreBoard({ teams, currentTeamIndex, onUpdateScore }: GameS
                 </CardTitle>
               </CardHeader>
               
-              {teams.length === 2 && (
-                <CardFooter className="pt-0 pb-3">
-                  <div className="flex flex-wrap gap-2 justify-center w-full">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs h-8 rounded-full flex items-center gap-1 border-indigo-200 hover:bg-indigo-50"
-                          >
-                            <Minus className="h-3 w-3 text-indigo-600" />
-                            <span className="hidden sm:inline">خصم</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p>خصم نقاط من الفريق</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs h-8 rounded-full flex items-center gap-1 border-indigo-200 hover:bg-indigo-50"
-                          >
-                            <Repeat className="h-3 w-3 text-indigo-600" />
-                            <span className="hidden sm:inline">عكس</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p>عكس الدور إلى الفريق الآخر</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs h-8 rounded-full flex items-center gap-1 border-indigo-200 hover:bg-indigo-50"
-                          >
-                            <UserX className="h-3 w-3 text-indigo-600" />
-                            <span className="hidden sm:inline">تخطي</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p>تخطي دور هذا الفريق</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </CardFooter>
-              )}
+              <CardFooter className="pt-0 pb-3">
+                <div className="flex flex-wrap gap-2 justify-center w-full">
+                  {/* أزرار وسائل المساعدة منعزلة تحت أيقونة الفريق */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs h-8 rounded-full flex items-center gap-1 border-indigo-200 hover:bg-indigo-50"
+                        >
+                          <Minus className="h-3 w-3 text-indigo-600" />
+                          <span className="hidden sm:inline">خصم</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>خصم نقاط من الفريق</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs h-8 rounded-full flex items-center gap-1 border-indigo-200 hover:bg-indigo-50"
+                        >
+                          <Repeat className="h-3 w-3 text-indigo-600" />
+                          <span className="hidden sm:inline">عكس</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>عكس الدور إلى الفريق الآخر</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs h-8 rounded-full flex items-center gap-1 border-indigo-200 hover:bg-indigo-50"
+                        >
+                          <UserX className="h-3 w-3 text-indigo-600" />
+                          <span className="hidden sm:inline">تخطي</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>تخطي دور هذا الفريق</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </CardFooter>
             </Card>
           );
         })}
