@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, Minus, Repeat, User, UserX } from 'lucide-react';
+import { Award, ChevronDown, ChevronUp, Minus, Repeat, User, UserX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +16,10 @@ interface GameTeam {
 interface GameScoreBoardProps {
   teams: GameTeam[];
   currentTeamIndex: number;
+  onUpdateScore: (teamIndex: number, change: number) => void;
 }
 
-export function GameScoreBoard({ teams, currentTeamIndex }: GameScoreBoardProps) {
+export function GameScoreBoard({ teams, currentTeamIndex, onUpdateScore }: GameScoreBoardProps) {
   return (
     <>
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-indigo-800">
@@ -49,12 +50,52 @@ export function GameScoreBoard({ teams, currentTeamIndex }: GameScoreBoardProps)
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-base truncate flex-1">{team.name}</span>
-                  <Badge 
-                    className="ml-1 px-3 py-1 text-lg" 
-                    style={{ backgroundColor: team.color }}
-                  >
-                    {team.score}
-                  </Badge>
+                  
+                  {/* عرض النقاط مع أزرار الزيادة والنقصان */}
+                  <div className="flex items-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="p-0 h-6 w-6 text-indigo-600 hover:bg-indigo-50"
+                            onClick={() => onUpdateScore(index, 1)}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p>زيادة نقطة واحدة</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <Badge 
+                      className="mx-1 px-3 py-1 text-lg" 
+                      style={{ backgroundColor: team.color }}
+                    >
+                      {team.score}
+                    </Badge>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="p-0 h-6 w-6 text-indigo-600 hover:bg-indigo-50"
+                            onClick={() => onUpdateScore(index, -1)}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p>نقص نقطة واحدة</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </CardTitle>
               </CardHeader>
               

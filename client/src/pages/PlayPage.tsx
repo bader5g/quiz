@@ -128,6 +128,50 @@ export default function PlayPage() {
   const handleBackToMyGames = () => {
     navigate('/my-games');
   };
+  
+  // تحديث نقاط الفريق
+  const handleUpdateScore = async (teamIndex: number, change: number) => {
+    if (!game) return;
+    
+    // لا نسمح بأن تقل النقاط عن صفر
+    if (game.teams[teamIndex].score + change < 0) {
+      toast({
+        variant: 'destructive',
+        title: 'خطأ',
+        description: 'لا يمكن أن تقل النقاط عن صفر',
+      });
+      return;
+    }
+    
+    try {
+      // تحديث النقاط محليا أولا للاستجابة السريعة للمستخدم
+      const updatedTeams = [...game.teams];
+      updatedTeams[teamIndex].score += change;
+      
+      setGame({
+        ...game,
+        teams: updatedTeams
+      });
+      
+      // إرسال التحديث إلى الخادم
+      await apiRequest('PATCH', `/api/games/${gameId}/teams/${teamIndex}/score`, {
+        scoreChange: change
+      });
+      
+    } catch (err) {
+      console.error('Error updating team score:', err);
+      toast({
+        variant: 'destructive',
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء تحديث النقاط. يرجى المحاولة مرة أخرى.',
+      });
+      
+      // استعادة حالة اللعبة من الخادم في حالة حدوث خطأ
+      const response = await apiRequest('GET', `/api/games/${gameId}`);
+      const gameData = await response.json();
+      setGame(gameData);
+    }
+  };
 
   // استخدام "return early" لتقليل التعشيش
   if (loading) {
@@ -161,7 +205,8 @@ export default function PlayPage() {
         {/* عرض النتائج */}
         <GameScoreBoard 
           teams={game.teams} 
-          currentTeamIndex={game.currentTeamIndex} 
+          currentTeamIndex={game.currentTeamIndex}
+          onUpdateScore={handleUpdateScore}
         />
 
         {/* عرض الفئات والأسئلة */}
