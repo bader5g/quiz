@@ -563,11 +563,11 @@ export default function QuestionPage() {
                   {/* وسائل المساعدة - تظهر فقط إذا كان عدد الفرق = 2 */}
                   {questionData.teams.length === 2 && (
                     <div className="flex gap-1 justify-center">
-                      <HelpButton 
-                        icon={<Minus className="h-3 w-3 text-sky-600" />}
-                        label="خصم"
-                        tooltip="خصم نقاط من الفريق"
-                        disabled={helpUsed.discount}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-white shadow-sm border-sky-200 text-xs text-sky-700"
+                        disabled={helpUsed.discount || index !== currentTeamIndex}
                         onClick={() => {
                           // تأكيد استخدام مساعدة "خصم"
                           if (window.confirm('هل تريد خصم نقطة واحدة من الفريق الآخر؟')) {
@@ -594,18 +594,18 @@ export default function QuestionPage() {
                             });
                           }
                         }}
-                      />
+                      >
+                        خصم
+                      </Button>
                       
-                      <HelpButton 
-                        icon={<RefreshCcw className="h-3 w-3 text-sky-600" />}
-                        label="عكس"
-                        tooltip="عكس الدور إلى الفريق الآخر"
-                        disabled={helpUsed.swap}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-white shadow-sm border-sky-200 text-xs text-sky-700"
+                        disabled={helpUsed.swap || index !== currentTeamIndex}
                         onClick={() => {
                           // تأكيد استخدام مساعدة "عكس"
                           if (window.confirm('هل تريد عكس الدور إلى الفريق الآخر؟')) {
-                            const oppositeTeamIndex = currentTeamIndex === 0 ? 1 : 0;
-                            
                             // تسجيل استخدام المساعدة
                             apiRequest('POST', `/api/games/${gameId}/use-help`, {
                               type: 'swap'
@@ -626,17 +626,18 @@ export default function QuestionPage() {
                             });
                           }
                         }}
-                      />
+                      >
+                        عكس
+                      </Button>
                       
-                      <HelpButton 
-                        icon={<UserX className="h-3 w-3 text-sky-600" />}
-                        label="تخطي"
-                        tooltip="تخطي دور هذا الفريق"
-                        disabled={helpUsed.skip}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-white shadow-sm border-sky-200 text-xs text-sky-700"
+                        disabled={helpUsed.skip || index !== currentTeamIndex}
                         onClick={() => {
                           // تأكيد استخدام مساعدة "تخطي"
                           if (window.confirm('هل تريد تخطي دور الفريق الحالي؟')) {
-                            
                             // تسجيل استخدام المساعدة
                             apiRequest('POST', `/api/games/${gameId}/use-help`, {
                               type: 'skip'
@@ -664,7 +665,9 @@ export default function QuestionPage() {
                             });
                           }
                         }}
-                      />
+                      >
+                        تخطي
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -765,37 +768,35 @@ export default function QuestionPage() {
               </Button>
             </div>
             
-            {selectedTeam !== null && (
-              <div className="flex flex-col gap-4 mt-8">
-                <h3 className="font-semibold text-center text-lg">هل الإجابة صحيحة؟</h3>
-                <div className="flex justify-center gap-4">
-                  <Button 
-                    variant="outline" 
-                    className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex items-center gap-2 h-14 text-lg shadow-md"
-                    onClick={() => {
-                      setAnswerCorrect(true);
-                      submitAnswer(true);
-                      setShowTeamSelection(false);
-                    }}
-                  >
-                    <CheckCircle className="h-5 w-5" />
-                    <span>إجابة صحيحة</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="bg-red-50 border-red-200 hover:bg-red-100 text-red-700 flex items-center gap-2 h-14 text-lg shadow-md"
-                    onClick={() => {
-                      setAnswerCorrect(false);
-                      submitAnswer(false);
-                      setShowTeamSelection(false);
-                    }}
-                  >
-                    <XCircle className="h-5 w-5" />
-                    <span>إجابة خاطئة</span>
-                  </Button>
-                </div>
+            <div className="flex flex-col gap-4 mt-8">
+              <div className="flex justify-center gap-4">
+                <Button 
+                  variant="default" 
+                  className="bg-green-600 hover:bg-green-700 text-white h-14 px-6 rounded-lg shadow-md"
+                  onClick={() => {
+                    setAnswerCorrect(true);
+                    submitAnswer(true);
+                    setShowTeamSelection(false);
+                  }}
+                  disabled={selectedTeam === null}
+                >
+                  صحيحة
+                </Button>
+                
+                <Button 
+                  variant="default" 
+                  className="bg-red-600 hover:bg-red-700 text-white h-14 px-6 rounded-lg shadow-md"
+                  onClick={() => {
+                    setAnswerCorrect(false);
+                    submitAnswer(false);
+                    setShowTeamSelection(false);
+                  }}
+                  disabled={selectedTeam === null}
+                >
+                  خاطئة
+                </Button>
               </div>
-            )}
+            </div>
           </div>
           <DialogFooter>
             {selectedTeam === null && (

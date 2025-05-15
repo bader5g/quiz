@@ -202,6 +202,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'اللعبة غير موجودة' });
       }
       
+      // تحويل البيانات إلى النوع المناسب
+      const gameDataTyped = gameData as any;
+      const teams = gameDataTyped.teams as any[];
+      const currentTeamIndex = gameDataTyped.currentTeamIndex || 0;
+      
       const { type, teamId } = req.body;
       
       switch (type) {
@@ -211,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ error: 'معرف الفريق مطلوب للخصم' });
           }
           
-          const penaltyTeam = gameData.teams.find((t: any) => t.id === teamId);
+          const penaltyTeam = teams.find(t => t.id === teamId);
           if (!penaltyTeam) {
             return res.status(404).json({ error: 'الفريق غير موجود' });
           }
@@ -222,12 +227,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // تحديث بيانات اللعبة
-          await storage.updateGameTeams(gameId, gameData.teams);
+          await storage.updateGameTeams(gameId, teams);
           break;
           
         case 'swap':
           // عكس الدور للفريق التالي
-          const nextTeamIndex = (gameData.currentTeamIndex + 1) % gameData.teams.length;
+          const nextTeamIndex = (currentTeamIndex + 1) % teams.length;
           await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
           break;
           
