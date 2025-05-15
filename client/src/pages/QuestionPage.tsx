@@ -61,17 +61,39 @@ interface QuestionDetails {
   gameId: number;
 }
 
-// مكون زر المساعدة
-const HelpButton = ({ icon, label, tooltip }: { icon: React.ReactNode; label: string; tooltip: string }) => (
+// مكون زر المساعدة مع إضافة الدالة onClick
+const HelpButton = ({ 
+  icon, 
+  label, 
+  tooltip,
+  onClick,
+  disabled = false 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  tooltip: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/90 hover:bg-white">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={`h-8 w-8 rounded-full ${
+            disabled 
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+              : 'bg-white/90 hover:bg-white'
+          }`}
+          onClick={onClick}
+          disabled={disabled}
+        >
           {icon}
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <p>{tooltip}</p>
+        <p>{disabled ? 'تم استخدام هذه المساعدة' : tooltip}</p>
       </TooltipContent>
     </Tooltip>
   </TooltipProvider>
@@ -95,6 +117,17 @@ export default function QuestionPage() {
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
+  
+  // حالة استخدام وسائل المساعدة
+  const [helpUsed, setHelpUsed] = useState<{
+    discount: boolean; // خصم
+    swap: boolean;     // عكس
+    skip: boolean;     // تخطي
+  }>({
+    discount: false,
+    swap: false,
+    skip: false
+  });
   
   // جلب تفاصيل السؤال
   useEffect(() => {
@@ -356,7 +389,7 @@ export default function QuestionPage() {
       console.error('Error saving game state:', err);
       // على الرغم من الخطأ نعود للعبة مع رسالة تحذير
       toast({
-        variant: 'warning',
+        variant: 'destructive',
         title: 'تحذير',
         description: 'لم يتم حفظ حالة اللعبة، لكن يمكنك المتابعة.',
       });
@@ -398,7 +431,7 @@ export default function QuestionPage() {
   if (!questionData || notFoundError) {
     return (
       <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-white min-h-screen font-[Cairo]">
-        <Alert variant={notFoundError ? "destructive" : "warning"} className="max-w-xl mx-auto shadow-md">
+        <Alert variant={notFoundError ? "destructive" : "default"} className="max-w-xl mx-auto shadow-md">
           <AlertTriangle className="h-6 w-6 mr-2" />
           <AlertDescription className="text-lg">
             {notFoundError 
@@ -529,21 +562,106 @@ export default function QuestionPage() {
                   {questionData.teams.length === 2 && (
                     <div className="flex gap-1 justify-center">
                       <HelpButton 
-                        icon={<Hand className="h-3 w-3 text-sky-600" />}
-                        label="يد"
-                        tooltip="طلب مساعدة"
-                      />
-                      
-                      <HelpButton 
-                        icon={<Phone className="h-3 w-3 text-sky-600" />}
-                        label="اتصال"
-                        tooltip="اتصال بصديق"
+                        icon={<Minus className="h-3 w-3 text-sky-600" />}
+                        label="خصم"
+                        tooltip="خصم نقاط من الفريق"
+                        disabled={helpUsed.discount}
+                        onClick={() => {
+                          // تأكيد استخدام مساعدة "خصم"
+                          if (window.confirm('هل تريد خصم نقطة واحدة من الفريق الآخر؟')) {
+                            const oppositeTeamIndex = currentTeamIndex === 0 ? 1 : 0;
+                            const oppositeTeam = questionData.teams[oppositeTeamIndex];
+                            
+                            // تسجيل استخدام المساعدة
+                            apiRequest('POST', `/api/games/${gameId}/use-help`, {
+                              type: 'discount',
+                              teamId: oppositeTeam.id
+                            }).then(() => {
+                              setHelpUsed(prev => ({ ...prev, discount: true }));
+                              toast({
+                                title: 'تم استخدام المساعدة',
+                                description: `تم خصم نقطة واحدة من ${oppositeTeam.name}`
+                              });
+                            }).catch(err => {
+                              console.error('Error using help:', err);
+                              toast({
+                                variant: 'destructive',
+                                title: 'خطأ',
+                                description: 'حدث خطأ أثناء استخدام المساعدة'
+                              });
+                            });
+                          }
+                        }}
                       />
                       
                       <HelpButton 
                         icon={<RefreshCcw className="h-3 w-3 text-sky-600" />}
-                        label="تغيير"
-                        tooltip="تغيير السؤال"
+                        label="عكس"
+                        tooltip="عكس الدور إلى الفريق الآخر"
+                        disabled={helpUsed.swap}
+                        onClick={() => {
+                          // تأكيد استخدام مساعدة "عكس"
+                          if (window.confirm('هل تريد عكس الدور إلى الفريق الآخر؟')) {
+                            const oppositeTeamIndex = currentTeamIndex === 0 ? 1 : 0;
+                            
+                            // تسجيل استخدام المساعدة
+                            apiRequest('POST', `/api/games/${gameId}/use-help`, {
+                              type: 'swap'
+                            }).then(() => {
+                              setHelpUsed(prev => ({ ...prev, swap: true }));
+                              moveToNextTeam(); // تغيير الدور للفريق التالي
+                              toast({
+                                title: 'تم استخدام المساعدة',
+                                description: 'تم عكس الدور إلى الفريق الآخر'
+                              });
+                            }).catch(err => {
+                              console.error('Error using help:', err);
+                              toast({
+                                variant: 'destructive',
+                                title: 'خطأ',
+                                description: 'حدث خطأ أثناء استخدام المساعدة'
+                              });
+                            });
+                          }
+                        }}
+                      />
+                      
+                      <HelpButton 
+                        icon={<UserX className="h-3 w-3 text-sky-600" />}
+                        label="تخطي"
+                        tooltip="تخطي دور هذا الفريق"
+                        disabled={helpUsed.skip}
+                        onClick={() => {
+                          // تأكيد استخدام مساعدة "تخطي"
+                          if (window.confirm('هل تريد تخطي دور الفريق الحالي؟')) {
+                            
+                            // تسجيل استخدام المساعدة
+                            apiRequest('POST', `/api/games/${gameId}/use-help`, {
+                              type: 'skip'
+                            }).then(() => {
+                              setHelpUsed(prev => ({ ...prev, skip: true }));
+                              
+                              // العودة إلى صفحة اللعبة
+                              toast({
+                                title: 'تم استخدام المساعدة',
+                                description: 'تم تخطي السؤال الحالي'
+                              });
+                              
+                              // العودة للعبة بعد ثانية
+                              setTimeout(() => {
+                                returnToGame();
+                              }, 1000);
+                              
+                            }).catch(err => {
+                              console.error('Error using help:', err);
+                              toast({
+                                variant: 'destructive',
+                                title: 'خطأ',
+                                description: 'حدث خطأ أثناء استخدام المساعدة'
+                              });
+                            });
+                          }
+                        }}
                       />
                     </div>
                   )}
