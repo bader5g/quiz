@@ -36,6 +36,7 @@ export interface IStorage {
   getGameById(id: number): Promise<GameSession | undefined>;
   updateGameTeams(gameId: number, teams: any[]): Promise<void>;
   updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void>;
+  updateGameQuestions(gameId: number, questions: any[]): Promise<void>; // إضافة وظيفة تحديث حالة الأسئلة
   endGame(gameId: number, winnerIndex: number): Promise<void>;
   saveGameState(gameId: number): Promise<void>;
 }

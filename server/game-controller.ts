@@ -117,8 +117,20 @@ export async function submitAnswer(req: Request, res: Response) {
       };
     }
 
+    // تحديث حالة السؤال ليصبح مُجاب (تمت الإجابة عليه)
+    // البحث عن السؤال المناسب وتحديث حالته
+    const updatedQuestions = generateGameQuestions(game).map(q => {
+      if (q.questionId === questionId) {
+        return { ...q, isAnswered: true };
+      }
+      return q;
+    });
+
     // حفظ التحديثات للعبة
     await storage.updateGameTeams(gameId, updatedTeams);
+    
+    // حفظ حالة الأسئلة التي تم الإجابة عليها
+    await storage.updateGameQuestions(gameId, updatedQuestions);
 
     // تحديث الدور للفريق التالي
     const nextTeamIndex = (game.currentTeamIndex + 1) % game.teams.length;
