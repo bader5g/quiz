@@ -7,6 +7,37 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
+// مكون زر المساعدة القابل لإعادة الاستخدام
+interface HelpButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  tooltip: string;
+  onClick?: () => void;
+}
+
+function HelpButton({ icon, label, tooltip, onClick }: HelpButtonProps) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onClick}
+            className="text-xs h-7 px-2 rounded-md flex items-center gap-1 border-indigo-100 hover:bg-indigo-50"
+          >
+            {icon}
+            <span className="text-xs">{label}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 interface GameTeam {
   name: string;
   score: number;
@@ -70,7 +101,7 @@ export function GameScoreBoard({ teams, currentTeamIndex, onUpdateScore }: GameS
                     </TooltipProvider>
                     
                     <Badge 
-                      className="mx-2 px-5 py-1 text-lg" 
+                      className="mx-2 px-5 py-1 text-lg text-white min-w-[50px] text-center" 
                       style={{ backgroundColor: team.color }}
                     >
                       {team.score}
@@ -98,59 +129,23 @@ export function GameScoreBoard({ teams, currentTeamIndex, onUpdateScore }: GameS
                 
                 {/* 3. أزرار وسائل المساعدة */}
                 <div className="p-2 flex gap-1 justify-center">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-xs h-7 px-2 rounded-md flex items-center gap-1 border-indigo-100 hover:bg-indigo-50"
-                        >
-                          <Minus className="h-3 w-3 text-indigo-600" />
-                          <span className="text-xs">خصم</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>خصم نقاط من الفريق</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <HelpButton 
+                    icon={<Minus className="h-3 w-3 text-indigo-600" />}
+                    label="خصم"
+                    tooltip="خصم نقاط من الفريق"
+                  />
                   
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-xs h-7 px-2 rounded-md flex items-center gap-1 border-indigo-100 hover:bg-indigo-50"
-                        >
-                          <Repeat className="h-3 w-3 text-indigo-600" />
-                          <span className="text-xs">عكس</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>عكس الدور إلى الفريق الآخر</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <HelpButton 
+                    icon={<Repeat className="h-3 w-3 text-indigo-600" />}
+                    label="عكس"
+                    tooltip="عكس الدور إلى الفريق الآخر"
+                  />
                   
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-xs h-7 px-2 rounded-md flex items-center gap-1 border-indigo-100 hover:bg-indigo-50"
-                        >
-                          <UserX className="h-3 w-3 text-indigo-600" />
-                          <span className="text-xs">تخطي</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>تخطي دور هذا الفريق</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <HelpButton 
+                    icon={<UserX className="h-3 w-3 text-indigo-600" />}
+                    label="تخطي"
+                    tooltip="تخطي دور هذا الفريق"
+                  />
                 </div>
               </div>
             </Card>

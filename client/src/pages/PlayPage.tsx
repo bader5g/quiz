@@ -133,20 +133,23 @@ export default function PlayPage() {
   const handleUpdateScore = async (teamIndex: number, change: number) => {
     if (!game) return;
     
-    // لا نسمح بأن تقل النقاط عن صفر
-    if (game.teams[teamIndex].score + change < 0) {
+    // لا نسمح بأن تقل النقاط عن صفر - عدلنا للتحقق بطريقة مباشرة
+    const newScore = Math.max(0, game.teams[teamIndex].score + change);
+    
+    // إذا كان التغيير سيؤدي إلى نقاط سالبة، نوقف العملية ونعرض رسالة
+    if (newScore === 0 && change < 0) {
       toast({
         variant: 'destructive',
-        title: 'خطأ',
+        title: 'تنبيه',
         description: 'لا يمكن أن تقل النقاط عن صفر',
       });
-      return;
+      // نستمر بالتنفيذ ولكن مع تعيين القيمة إلى صفر بدلاً من إلغاء العملية
     }
     
     try {
-      // تحديث النقاط محليا أولا للاستجابة السريعة للمستخدم
+      // تحديث النقاط محليا أولا للاستجابة السريعة للمستخدم باستخدام Math.max
       const updatedTeams = [...game.teams];
-      updatedTeams[teamIndex].score += change;
+      updatedTeams[teamIndex].score = newScore;
       
       setGame({
         ...game,
