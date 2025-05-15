@@ -51,12 +51,29 @@ export async function getQuestionDetails(req: Request, res: Response) {
     // محاكاة جلب السؤال من قاعدة البيانات
     const question = {
       id: questionId,
-      text: `هذا هو السؤال رقم ${questionId} من الفئة X`,
-      answer: `هذه هي الإجابة للسؤال رقم ${questionId}`,
+      text: `من هو مؤلف كتاب "ألف ليلة وليلة"؟`,
+      answer: `مجموعة من المؤلفين على مدى قرون عديدة`,
       difficulty: Math.ceil(Math.random() * 3) as 1 | 2 | 3,
       categoryId: game.selectedCategories[0],
       categoryName: getCategoryName(game.selectedCategories[0]),
       categoryIcon: getCategoryIcon(game.selectedCategories[0]),
+      hints: [
+        {
+          text: "هذا العمل الأدبي تم تجميعه خلال العصر الذهبي للحضارة الإسلامية",
+          type: "historical",
+          pointReduction: 1
+        },
+        {
+          text: "يتكون من مجموعة قصص متداخلة مرتبطة بالراوية الرئيسية شهرزاد",
+          type: "cultural",
+          pointReduction: 1
+        },
+        {
+          text: "تمت ترجمته إلى العديد من اللغات وأثر في الأدب العالمي بشكل كبير",
+          type: "linguistic",
+          pointReduction: 2
+        }
+      ]
     };
 
     // إرجاع تفاصيل السؤال
