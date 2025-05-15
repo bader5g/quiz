@@ -15,6 +15,8 @@ import {
   HelpCircle,
   AlertTriangle,
   RotateCw,
+  Minus,
+  UserX
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';

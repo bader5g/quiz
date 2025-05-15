@@ -189,6 +189,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save game state
   app.post('/api/games/:gameId/save', saveGameState);
   
+  // Use help tools (مساعدة) in game
+  app.post('/api/games/:gameId/use-help', async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.gameId, 10);
+      if (isNaN(gameId)) {
+        return res.status(400).json({ error: 'معرف اللعبة غير صالح' });
+      }
+      
+      const gameData = await storage.getGameById(gameId);
+      if (!gameData) {
+        return res.status(404).json({ error: 'اللعبة غير موجودة' });
+      }
+      
+      const { type, teamId } = req.body;
+      
+      switch (type) {
+        case 'discount':
+          // خصم نقطة من الفريق المعطى
+          if (!teamId) {
+            return res.status(400).json({ error: 'معرف الفريق مطلوب للخصم' });
+          }
+          
+          const penaltyTeam = gameData.teams.find((t: any) => t.id === teamId);
+          if (!penaltyTeam) {
+            return res.status(404).json({ error: 'الفريق غير موجود' });
+          }
+          
+          // خصم نقطة واحدة بشرط ألا يكون الرصيد سالباً
+          if (penaltyTeam.score > 0) {
+            penaltyTeam.score -= 1;
+          }
+          
+          // تحديث بيانات اللعبة
+          await storage.updateGameTeams(gameId, gameData.teams);
+          break;
+          
+        case 'swap':
+          // عكس الدور للفريق التالي
+          const nextTeamIndex = (gameData.currentTeamIndex + 1) % gameData.teams.length;
+          await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
+          break;
+          
+        case 'skip':
+          // تخطي السؤال الحالي (لا يوجد إجراء آخر مطلوب)
+          break;
+          
+        default:
+          return res.status(400).json({ error: 'نوع المساعدة غير مدعوم' });
+      }
+      
+      res.json({ success: true, message: 'تم استخدام المساعدة بنجاح' });
+    } catch (error) {
+      console.error('Error using help tool:', error);
+      res.status(500).json({ error: 'فشل في استخدام أداة المساعدة' });
+    }
+  });
+  
   // Get game results
   app.get('/api/games/:gameId/result', getGameResults);
   
