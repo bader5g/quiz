@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
+// تم إزالة استيراد toast حسب المتطلبات
 import { 
   Loader2, 
   ClockIcon, 
@@ -104,7 +104,6 @@ const HelpButton = ({
 export default function QuestionPage() {
   const { gameId, questionId } = useParams();
   const [, navigate] = useLocation();
-  const { toast } = useToast();
   const { getModalClass } = useSite();
   
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(null);
@@ -317,11 +316,7 @@ export default function QuestionPage() {
       
       // التحقق من وجود فريق محدد إذا كانت الإجابة صحيحة
       if (isCorrect && selectedTeam === null) {
-        toast({
-          variant: 'destructive',
-          title: 'خطأ',
-          description: 'الرجاء تحديد الفريق أولاً',
-        });
+        // لا نعرض رسائل توست بعد الآن
         return;
       }
 
@@ -335,12 +330,6 @@ export default function QuestionPage() {
         teamId: selectedTeam !== null ? questionData?.teams[selectedTeam].id : null,
         isCorrect,
         points: isCorrect ? points : 0
-      });
-      
-      // إظهار رسالة نجاح
-      toast({
-        title: 'تم تسجيل الإجابة',
-        description: isCorrect ? 'إجابة صحيحة! تم إضافة النقاط.' : 'تم تسجيل عدم الإجابة.',
       });
       
       // بعد ثانيتين نعود إلى صفحة اللعبة
