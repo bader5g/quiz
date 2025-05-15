@@ -228,25 +228,9 @@ export default function QuestionPage() {
   }, [gameId, questionId]);
 
   // تحويل الدور للفريق التالي وضبط الوقت المخصص له
-  const moveToNextTeam = async (showNotAnsweredMessage = false) => {
+  const moveToNextTeam = async () => {
     try {
-      // إذا كان مطلوب إظهار رسالة "لم يجب"
-      if (showNotAnsweredMessage) {
-        const currentTeam = questionData!.teams[currentTeamIndex];
-        
-        // إنشاء عنصر تنبيه في React بدلاً من استخدام DOM مباشرة
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'fixed top-0 left-0 right-0 bg-amber-100 text-amber-800 p-2 text-center z-50 transition-all';
-        alertDiv.textContent = `انتهى الوقت! الفريق "${currentTeam.name}" لم يجب.`;
-        document.body.appendChild(alertDiv);
-        
-        // إزالة التنبيه بعد 3 ثواني
-        setTimeout(() => {
-          if (alertDiv.parentNode) {
-            alertDiv.parentNode.removeChild(alertDiv);
-          }
-        }, 3000);
-      }
+      // تم إزالة كود عرض التنبيهات عند انتهاء الوقت
       
       // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
       const nextTeamIndex = (currentTeamIndex + 1) % questionData!.teams.length;
@@ -308,8 +292,8 @@ export default function QuestionPage() {
           clearInterval(interval);
           setTimerRunning(false);
           
-          // تحويل الدور تلقائيًا عند انتهاء الوقت
-          moveToNextTeam(true); // مع رسالة "لم يجب الفريق"
+          // تحويل الدور تلقائيًا عند انتهاء الوقت بدون عرض تنبيه
+          moveToNextTeam();
           return 0;
         }
         return prevTime - 1;
@@ -318,12 +302,13 @@ export default function QuestionPage() {
     setTimer(interval);
   };
   
-  // بدء المؤقت - فقط عندما تظهر الإجابة ونكون في وضع الإجابة
+  // بدء المؤقت تلقائيًا عند تحميل السؤال
   useEffect(() => {
-    if (questionData && !timerRunning && !showTeamSelection && showAnswer) {
+    if (questionData && !timerRunning && !showTeamSelection) {
+      // تمكين تشغيل المؤقت تلقائيًا عند تحميل الصفحة
       startTimer();
     }
-  }, [questionData, timerRunning, showTeamSelection, showAnswer]);
+  }, [questionData, timerRunning, showTeamSelection]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
@@ -525,8 +510,26 @@ export default function QuestionPage() {
             size="icon" 
             onClick={resetTimer}
             className="h-12 w-12 rounded-full"
+            title="تجديد الوقت"
           >
             <RotateCw className="h-5 w-5" />
+          </Button>
+          
+          {/* زر تبديل الدور */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => {
+              moveToNextTeam();
+              // بعد تبديل الدور نعيد تشغيل المؤقت للفريق الجديد
+              setTimeout(() => {
+                startTimer();
+              }, 100);
+            }}
+            className="h-12 w-12 rounded-full bg-amber-50 border-amber-200 hover:bg-amber-100"
+            title="تبديل الدور"
+          >
+            ➡️
           </Button>
         </div>
       </div>
