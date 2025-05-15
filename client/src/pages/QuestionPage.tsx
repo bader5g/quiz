@@ -133,9 +133,11 @@ export default function QuestionPage() {
   const [, navigate] = useLocation();
   const { getModalClass } = useSite();
   
-  // استخراج رقم السؤال من query parameters
+  // استخراج معلومات مستوى الصعوبة من query parameters
   const searchParams = new URLSearchParams(window.location.search);
   const questionNumber = searchParams.get("number") || "؟";
+  // نحصل على مستوى الصعوبة، وفي حالة عدم وجوده نستخدم القيمة 1 (سهل) كإفتراضي
+  const requestedDifficulty = parseInt(searchParams.get("difficulty") || "1");
   
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -166,7 +168,8 @@ export default function QuestionPage() {
     const fetchQuestionDetails = async () => {
       try {
         setLoading(true);
-        const response = await apiRequest('GET', `/api/games/${gameId}/questions/${questionId}`);
+        // إضافة مستوى الصعوبة إلى طلب الحصول على السؤال
+        const response = await apiRequest('GET', `/api/games/${gameId}/questions/${questionId}?difficulty=${requestedDifficulty}`);
         
         // التحقق من الاستجابة إذا كانت 404 (غير موجود)
         if (response.status === 404) {
@@ -176,6 +179,12 @@ export default function QuestionPage() {
         }
         
         const data = await response.json();
+        
+        // التحقق من أن السؤال المُسترجع يطابق مستوى الصعوبة المطلوب
+        if (data.question.difficulty !== requestedDifficulty) {
+          console.warn(`تم طلب سؤال بمستوى صعوبة ${requestedDifficulty} ولكن تم جلب سؤال بمستوى ${data.question.difficulty}`);
+        }
+        
         setQuestionData(data);
         setTimeLeft(data.firstAnswerTime);
         
@@ -327,7 +336,8 @@ export default function QuestionPage() {
       // تمكين حالة الإرسال
       setIsSubmitting(true);
       
-      const points = questionData?.question.difficulty || 0;
+      // استخدام مستوى الصعوبة المطلوب للنقاط (1 أو 2 أو 3)
+      const points = requestedDifficulty;
       
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
         questionId: parseInt(questionId as string),
@@ -538,9 +548,14 @@ export default function QuestionPage() {
                 <h2 className="text-lg font-semibold">
                   {questionData.question.categoryName}
                 </h2>
-                <Badge variant="secondary" className="ml-2 bg-indigo-100 text-indigo-700 px-2">
-                  سؤال رقم {questionNumber}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="ml-2 bg-indigo-100 text-indigo-700 px-2">
+                    سؤال رقم {requestedDifficulty}
+                  </Badge>
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-700 px-2">
+                    النقاط: {requestedDifficulty}
+                  </Badge>
+                </div>
               </div>
               <Badge variant="outline" className="text-xs">
                 {questionData.question.difficulty === 1 ? 'سهل' 

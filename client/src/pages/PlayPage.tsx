@@ -120,8 +120,8 @@ export default function PlayPage() {
   };
 
   // اختيار سؤال
-  const handleSelectQuestion = (questionId: number, indexInCategory: number) => {
-    navigate(`/play/${gameId}/question/${questionId}?number=${indexInCategory}`);
+  const handleSelectQuestion = (questionId: number, difficulty: number) => {
+    navigate(`/play/${gameId}/question/${questionId}?difficulty=${difficulty}`);
   };
 
   // العودة إلى صفحة ألعابي
