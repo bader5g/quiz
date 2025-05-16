@@ -249,10 +249,8 @@ export default function QuestionPage() {
 
       // تحقق إذا كان هذا هو آخر فريق (أكملنا دورة كاملة)
       // إذا كان الفريق التالي هو الأول، فهذا يعني أننا أكملنا دورة
-      const isLastTeam = nextTeamIndex === 0;
-
-      if (isLastTeam) {
-        // إذا كان هذا هو آخر فريق، لا نقوم بتشغيل المؤقت مرة أخرى
+      if (nextTeamIndex === 0) {
+        // لا تعيد تشغيل المؤقت، انتهى الدور لجميع الفرق
         setTimeLeft(0);
         setTimerRunning(false);
         if (timer) clearInterval(timer);
@@ -353,6 +351,12 @@ export default function QuestionPage() {
         difficulty: requestedDifficulty, // إضافة مستوى الصعوبة
         isCorrect,
         points: isCorrect ? points : 0
+      });
+      
+      // تحديث الفريق الحالي في قاعدة البيانات قبل الانتقال
+      const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
+      await apiRequest('POST', `/api/games/${gameId}/update-team`, {
+        teamIndex: nextTeamIndex
       });
 
       // بعد ثانيتين نعود إلى صفحة اللعبة
