@@ -332,6 +332,12 @@ function getCategoryIcon(categoryId: number): string {
     12: '🍔',
     13: '🎬',
     14: '🎵',
+    // إضافة أيقونات للفئات الجديدة
+    21: '📜',
+    22: '🌍',
+    23: '🐘',
+    24: '🍔',
+    33: '🔬',
   };
   
   return categoryIcons[categoryId] || '📋';
