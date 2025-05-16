@@ -247,6 +247,19 @@ export default function QuestionPage() {
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(nextTeamIndex);
 
+      // تحقق إذا كان هذا هو آخر فريق (أكملنا دورة كاملة)
+      // إذا كان الفريق التالي هو الأول، فهذا يعني أننا أكملنا دورة
+      const isLastTeam = nextTeamIndex === 0;
+
+      if (isLastTeam) {
+        // إذا كان هذا هو آخر فريق، لا نقوم بتشغيل المؤقت مرة أخرى
+        setTimeLeft(0);
+        setTimerRunning(false);
+        if (timer) clearInterval(timer);
+        setTimer(null);
+        return;
+      }
+
       // ضبط الوقت المناسب حسب الفريق باستخدام الطريقة الموحدة
       const newTime = (nextTeamIndex === 0) 
         ? questionData.firstAnswerTime 
@@ -623,8 +636,8 @@ export default function QuestionPage() {
               </Card>
             )}
 
-            {/* أزرار وسائل المساعدة - تظهر فقط إذا كان هناك فريقين بالضبط */}
-            {questionData.teams.length === 2 && (
+            {/* أزرار وسائل المساعدة - تظهر فقط إذا كان هناك فريقين بالضبط وبعد عرض الإجابة */}
+            {questionData.teams.length === 2 && showAnswer && (
               <div className="mt-6 flex justify-center gap-3 bg-gray-50 p-3 rounded-lg">
                 <HelpButton 
                   icon={<Minus className="h-4 w-4" />}
