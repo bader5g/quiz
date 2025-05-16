@@ -249,38 +249,8 @@ export default function QuestionPage() {
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(nextTeamIndex);
 
-      // تحقق إذا كان هذا هو آخر فريق (أكملنا دورة كاملة)
-      // إذا كان الفريق التالي هو الأول، فهذا يعني أننا أكملنا دورة
-      if (nextTeamIndex === 0) {
-        console.log("تم اكتمال دورة كاملة، إيقاف المؤقت");
-        
-        // إعادة الفريق إلى آخر فريق (الفريق قبل الأول)
-        const lastTeamIndex = questionData.teams.length - 1;
-        setCurrentTeamIndex(lastTeamIndex);
-        
-        // تحديث قاعدة البيانات بآخر فريق
-        await apiRequest('POST', `/api/games/${gameId}/update-team`, {
-          teamIndex: lastTeamIndex
-        });
-        
-        // إيقاف المؤقت وتعيينه على صفر
-        setTimeLeft(0);
-        setTimerRunning(false);
-        
-        // إيقاف المؤقت تماماً
-        if (timer) {
-          clearInterval(timer);
-          setTimer(null);
-        }
-        
-        // وضع تنبيه للمستخدم
-        toast({
-          title: "انتهت الدورة",
-          description: "تم الانتهاء من دور جميع الفرق. استخدم زر تجديد الوقت لبدء دورة جديدة.",
-        });
-        
-        return;
-      }
+      // دوران الفريق بشكل دائري، حتى لو وصل إلى الفريق الأول يستمر الدوران
+      // لا تعديل خاص للفريق الأول
 
       // ضبط الوقت المناسب حسب الفريق باستخدام الطريقة الموحدة
       const newTime = (nextTeamIndex === 0) 
