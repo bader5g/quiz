@@ -554,10 +554,7 @@ export default function QuestionPage() {
             size="icon" 
             onClick={() => {
               moveToNextTeam();
-              // بعد تبديل الدور نعيد تشغيل المؤقت للفريق الجديد
-              setTimeout(() => {
-                startTimer();
-              }, 100);
+              // لا نقوم بتشغيل المؤقت تلقائياً، ننتظر المستخدم ليضغط على زر تجديد الوقت
             }}
             className="h-12 w-12 rounded-full bg-amber-50 border-amber-200 hover:bg-amber-100"
             title="تبديل الدور"
@@ -689,12 +686,7 @@ export default function QuestionPage() {
                 <Button
                   onClick={() => {
                     setShowAnswer(true);
-                    // بعد إظهار الإجابة، نبدأ المؤقت
-                    setTimeout(() => {
-                      if (!timerRunning) {
-                        startTimer();
-                      }
-                    }, 100);
+                    // لا نقوم بتشغيل المؤقت تلقائياً، ننتظر المستخدم ليضغط على زر تجديد الوقت
                   }}
                   className="px-8 py-6 h-auto text-xl bg-green-600 hover:bg-green-700 shadow-md rounded-full"
                 >
