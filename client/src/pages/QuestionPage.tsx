@@ -250,11 +250,24 @@ export default function QuestionPage() {
       // تحقق إذا كان هذا هو آخر فريق (أكملنا دورة كاملة)
       // إذا كان الفريق التالي هو الأول، فهذا يعني أننا أكملنا دورة
       if (nextTeamIndex === 0) {
+        console.log("تم اكتمال دورة كاملة، إيقاف المؤقت");
+        
         // لا تعيد تشغيل المؤقت، انتهى الدور لجميع الفرق
         setTimeLeft(0);
         setTimerRunning(false);
-        if (timer) clearInterval(timer);
-        setTimer(null);
+        
+        // إيقاف المؤقت تماماً
+        if (timer) {
+          clearInterval(timer);
+          setTimer(null);
+        }
+        
+        // وضع تنبيه للمستخدم
+        toast({
+          title: "انتهت الدورة",
+          description: "تم الانتهاء من دور جميع الفرق. استخدم زر تجديد الوقت لبدء دورة جديدة.",
+        });
+        
         return;
       }
 
