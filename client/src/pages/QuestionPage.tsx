@@ -260,10 +260,38 @@ export default function QuestionPage() {
       // ضبط المؤقت بالوقت المناسب
       setTimeLeft(newTime);
       
-      // لا تشغل المؤقت تلقائيًا، انتظر حتى يقوم المستخدم بالضغط على زر تجديد الوقت
-      setTimerRunning(false);
+      // تشغيل المؤقت تلقائيًا عند الانتقال للفريق التالي
+      setTimerRunning(true);
+      
+      // إعادة تشغيل المؤقت مباشرة
       if (timer) clearInterval(timer);
-      setTimer(null);
+      const newTimer = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          if (prevTime <= 1) {
+            clearInterval(newTimer);
+            setTimerRunning(false);
+            
+            // التحقق ما إذا كان يجب الانتقال للفريق التالي عند انتهاء الوقت
+            if (nextTeamIndex === 0) {
+              toast({
+                title: "انتهى وقت الفريق الأول",
+                description: "ننتقل تلقائياً إلى الفريق التالي.",
+              });
+              
+              moveToNextTeam();
+            } else {
+              toast({
+                title: "انتهى الوقت",
+                description: "انتهى وقت هذا الفريق، يمكنك تبديل الدور أو تجديد الوقت.",
+              });
+            }
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+      
+      setTimer(newTimer);
 
     } catch (err) {
       console.error('Error changing team turn:', err);
@@ -587,13 +615,6 @@ export default function QuestionPage() {
           <div className="bg-white p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${
-                  questionData.question.difficulty === 1 ? 'bg-green-100 text-green-600' 
-                  : questionData.question.difficulty === 2 ? 'bg-yellow-100 text-yellow-600' 
-                  : 'bg-red-100 text-red-600'
-                }`}>
-                  {questionData.question.difficulty}
-                </span>
                 <h2 className="text-lg font-semibold">
                   {questionData.question.categoryName}
                 </h2>
