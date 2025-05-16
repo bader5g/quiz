@@ -21,6 +21,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Dialog, 
   DialogContent, 
@@ -132,6 +133,7 @@ export default function QuestionPage() {
   const { gameId, questionId } = useParams();
   const [, navigate] = useLocation();
   const { getModalClass } = useSite();
+  const { toast } = useToast();
 
   // استخراج معلومات مستوى الصعوبة من query parameters
   const searchParams = new URLSearchParams(window.location.search);
@@ -252,7 +254,16 @@ export default function QuestionPage() {
       if (nextTeamIndex === 0) {
         console.log("تم اكتمال دورة كاملة، إيقاف المؤقت");
         
-        // لا تعيد تشغيل المؤقت، انتهى الدور لجميع الفرق
+        // إعادة الفريق إلى آخر فريق (الفريق قبل الأول)
+        const lastTeamIndex = questionData.teams.length - 1;
+        setCurrentTeamIndex(lastTeamIndex);
+        
+        // تحديث قاعدة البيانات بآخر فريق
+        await apiRequest('POST', `/api/games/${gameId}/update-team`, {
+          teamIndex: lastTeamIndex
+        });
+        
+        // إيقاف المؤقت وتعيينه على صفر
         setTimeLeft(0);
         setTimerRunning(false);
         
