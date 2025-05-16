@@ -173,7 +173,9 @@ export default function QuestionPage() {
       try {
         setLoading(true);
         // إضافة مستوى الصعوبة إلى طلب الحصول على السؤال
-        const response = await apiRequest('GET', `/api/games/${gameId}/questions/${questionId}?difficulty=${requestedDifficulty}`);
+        // إضافة معرف الفئة إلى طلب الحصول على السؤال إذا كان متوفراً
+        const categoryParam = requestedCategoryId ? `&categoryId=${requestedCategoryId}` : '';
+        const response = await apiRequest('GET', `/api/games/${gameId}/questions/${questionId}?difficulty=${requestedDifficulty}${categoryParam}`);
 
         // التحقق من الاستجابة إذا كانت 404 (غير موجود)
         if (response.status === 404) {
