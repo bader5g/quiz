@@ -303,8 +303,12 @@ export default function QuestionPage() {
           clearInterval(interval);
           setTimerRunning(false);
 
-          // تحويل الدور تلقائيًا عند انتهاء الوقت بدون عرض تنبيه
-          moveToNextTeam();
+          // انتهى الوقت، لا نقوم بتبديل الدور تلقائيًا
+          // بدلاً من ذلك، نعرض رسالة للمستخدم
+          toast({
+            title: "انتهى الوقت",
+            description: "انتهى وقت الفريق الحالي، يمكنك تبديل الدور أو تجديد الوقت.",
+          });
           return 0;
         }
         return prevTime - 1;
