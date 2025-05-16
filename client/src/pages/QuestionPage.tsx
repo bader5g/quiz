@@ -265,9 +265,11 @@ export default function QuestionPage() {
 
       // ضبط المؤقت بالوقت المناسب
       setTimeLeft(newTime);
-
-      // بدء المؤقت من جديد للفريق الجديد
-      startTimer();
+      
+      // لا تشغل المؤقت تلقائيًا، انتظر حتى يقوم المستخدم بالضغط على زر تجديد الوقت
+      setTimerRunning(false);
+      if (timer) clearInterval(timer);
+      setTimer(null);
 
     } catch (err) {
       console.error('Error changing team turn:', err);
@@ -317,13 +319,16 @@ export default function QuestionPage() {
     setTimer(interval);
   };
 
-  // بدء المؤقت تلقائيًا عند تحميل السؤال
+  // ضبط المؤقت عند تحميل السؤال (بدون تشغيله تلقائياً)
   useEffect(() => {
     if (questionData && !timerRunning && !showTeamSelection) {
-      // تمكين تشغيل المؤقت تلقائيًا عند تحميل الصفحة
-      startTimer();
+      // تعيين وقت المؤقت فقط بدون تشغيله تلقائياً
+      const newTime = (currentTeamIndex === 0) 
+        ? questionData.firstAnswerTime 
+        : questionData.secondAnswerTime;
+      setTimeLeft(newTime);
     }
-  }, [questionData, timerRunning, showTeamSelection]);
+  }, [questionData, timerRunning, showTeamSelection, currentTeamIndex]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
