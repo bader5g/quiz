@@ -303,6 +303,12 @@ function getCategoryName(categoryId: number): string {
     12: 'طعام',
     13: 'سينما',
     14: 'موسيقى',
+    // إضافة معرفات الفئات الجديدة
+    21: 'تاريخ',
+    22: 'جغرافيا',
+    23: 'حيوانات',
+    24: 'طعام',
+    33: 'علوم',
   };
   
   return categoryNames[categoryId] || `فئة ${categoryId}`;
