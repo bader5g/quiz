@@ -135,11 +135,13 @@ export default function QuestionPage() {
   const { getModalClass } = useSite();
   const { toast } = useToast();
 
-  // استخراج معلومات مستوى الصعوبة من query parameters
+  // استخراج معلومات مستوى الصعوبة والفئة من query parameters
   const searchParams = new URLSearchParams(window.location.search);
   const questionNumber = searchParams.get("number") || "؟";
   // نحصل على مستوى الصعوبة، وفي حالة عدم وجوده نستخدم القيمة 1 (سهل) كإفتراضي
   const requestedDifficulty = parseInt(searchParams.get("difficulty") || "1");
+  // نحصل على معرف الفئة إذا كان موجوداً
+  const requestedCategoryId = searchParams.get("categoryId");
 
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(null);
   const [loading, setLoading] = useState(true);

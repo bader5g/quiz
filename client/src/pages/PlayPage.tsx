@@ -181,7 +181,13 @@ export default function PlayPage() {
 
   // اختيار سؤال
   const handleSelectQuestion = (questionId: number, difficulty: number) => {
-    navigate(`/play/${gameId}/question/${questionId}?difficulty=${difficulty}`);
+    // العثور على السؤال في قائمة الأسئلة للحصول على معرف الفئة
+    const question = game?.questions.find(q => q.id === questionId);
+    if (question) {
+      navigate(`/play/${gameId}/question/${questionId}?difficulty=${difficulty}&categoryId=${question.categoryId}`);
+    } else {
+      navigate(`/play/${gameId}/question/${questionId}?difficulty=${difficulty}`);
+    }
   };
 
   // العودة إلى صفحة ألعابي
