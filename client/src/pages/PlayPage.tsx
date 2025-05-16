@@ -113,10 +113,33 @@ export default function PlayPage() {
       document.removeEventListener('visibilitychange', checkPageVisibility);
     };
   }, [gameId]);
+  
+  // التحقق إذا كانت جميع الأسئلة قد تمت الإجابة عليها
+  useEffect(() => {
+    if (game && game.questions.length > 0) {
+      const allQuestionsAnswered = game.questions.every(q => q.isAnswered);
+      
+      if (allQuestionsAnswered) {
+        // عرض رسالة تنبيه ثم الانتقال إلى صفحة النتائج
+        toast({
+          title: "تمت الإجابة على جميع الأسئلة",
+          description: "انتهت اللعبة! سيتم الانتقال إلى صفحة النتائج.",
+        });
+        
+        // ننتظر قليلاً قبل الانتقال للسماح للمستخدم برؤية الرسالة
+        setTimeout(() => {
+          handleEndGame();
+        }, 3000);
+      }
+    }
+  }, [game]);
 
   // إنهاء اللعبة
   const handleEndGame = async () => {
-    if (!window.confirm('هل أنت متأكد من رغبتك في إنهاء اللعبة؟ سيتم احتساب النقاط الحالية واختيار الفائز.')) {
+    // إذا تم استدعاء الدالة من التحقق التلقائي للأسئلة المنتهية، لا نعرض التأكيد
+    const isCalledFromAutoCheck = new Error().stack?.includes('setTimeout');
+    
+    if (!isCalledFromAutoCheck && !window.confirm('هل أنت متأكد من رغبتك في إنهاء اللعبة؟ سيتم احتساب النقاط الحالية واختيار الفائز.')) {
       return;
     }
 

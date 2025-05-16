@@ -98,13 +98,33 @@ export function GameCategories({
           </CardHeader>
 
           <CardContent className="p-4">
-            {allQuestionsAnsweredInCategory[category.id] && (
-              <Alert className="mb-3 bg-indigo-50 text-indigo-800 border-indigo-200">
-                <AlertDescription className="text-center text-sm">
-                  تمت الإجابة على جميع أسئلة هذه الفئة
-                </AlertDescription>
-              </Alert>
-            )}
+            {/* عرض إحصائية حالة الأسئلة في الفئة */}
+            {(() => {
+              const categoryQuestions = questions.filter(q => q.categoryId === category.id);
+              const answeredQuestions = categoryQuestions.filter(q => q.isAnswered);
+              const totalQuestions = categoryQuestions.length;
+              const remainingQuestions = totalQuestions - answeredQuestions.length;
+              
+              if (allQuestionsAnsweredInCategory[category.id]) {
+                return (
+                  <Alert className="mb-3 bg-indigo-50 text-indigo-800 border-indigo-200">
+                    <AlertDescription className="text-center text-sm">
+                      تمت الإجابة على جميع أسئلة هذه الفئة
+                    </AlertDescription>
+                  </Alert>
+                );
+              } else if (remainingQuestions > 0) {
+                return (
+                  <Alert className="mb-3 bg-blue-50 text-blue-800 border-blue-200">
+                    <AlertDescription className="text-center text-sm">
+                      تبقى {remainingQuestions} {remainingQuestions === 1 ? 'سؤال' : 'أسئلة'} غير مجابة
+                    </AlertDescription>
+                  </Alert>
+                );
+              }
+              
+              return null;
+            })()}
 
             <div
               className="grid"
