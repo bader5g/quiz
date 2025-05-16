@@ -319,16 +319,22 @@ export default function QuestionPage() {
     setTimer(interval);
   };
 
-  // ضبط المؤقت عند تحميل السؤال (بدون تشغيله تلقائياً)
+  // تشغيل المؤقت عند تحميل السؤال لأول مرة فقط
   useEffect(() => {
     if (questionData && !timerRunning && !showTeamSelection) {
-      // تعيين وقت المؤقت فقط بدون تشغيله تلقائياً
+      // تعيين وقت المؤقت
       const newTime = (currentTeamIndex === 0) 
         ? questionData.firstAnswerTime 
         : questionData.secondAnswerTime;
       setTimeLeft(newTime);
+      
+      // تشغيل المؤقت تلقائياً عند التحميل الأولي فقط
+      const isInitialLoad = !timer && loading === false;
+      if (isInitialLoad) {
+        startTimer();
+      }
     }
-  }, [questionData, timerRunning, showTeamSelection, currentTeamIndex]);
+  }, [questionData, timerRunning, showTeamSelection, currentTeamIndex, loading, timer]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
