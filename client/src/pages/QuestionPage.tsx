@@ -586,19 +586,11 @@ export default function QuestionPage() {
                   {questionData.question.categoryName}
                 </h2>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="ml-2 bg-indigo-100 text-indigo-700 px-2">
-                    سؤال رقم {requestedDifficulty}
-                  </Badge>
                   <Badge variant="secondary" className="bg-amber-100 text-amber-700 px-2">
                     النقاط: {requestedDifficulty}
                   </Badge>
                 </div>
               </div>
-              <Badge variant="outline" className="text-xs">
-                {questionData.question.difficulty === 1 ? 'سهل' 
-                : questionData.question.difficulty === 2 ? 'متوسط' 
-                : 'صعب'}
-              </Badge>
             </div>
 
             <div className="bg-sky-50 p-4 rounded-lg mb-4">
