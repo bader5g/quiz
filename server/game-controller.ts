@@ -93,6 +93,41 @@ export async function getQuestionDetails(req: Request, res: Response) {
   }
 }
 
+// وظيفة جديدة لتعيين السؤال كـ "تم عرضه" بمجرد فتحه
+export async function markQuestionViewed(req: Request, res: Response) {
+  try {
+    const gameId = parseInt(req.params.gameId);
+    const { questionId, categoryId, difficulty } = req.body;
+
+    const game = await storage.getGameById(gameId);
+    if (!game) {
+      return res.status(404).json({ error: "اللعبة غير موجودة" });
+    }
+
+    // إنشاء مفتاح فريد للسؤال بناءً على المعرفات (بدون الفريق، لأننا نريد تعطيل السؤال لجميع الفرق)
+    const questionKey = `${categoryId}-${difficulty}-*-${questionId}`;
+    const answeredQuestions = new Set(game.answeredQuestions || []);
+    answeredQuestions.add(questionKey);
+
+    // تحديث الأسئلة المجاب عليها في قاعدة البيانات
+    const updatedGame = {
+      ...game,
+      answeredQuestions: Array.from(answeredQuestions),
+    };
+
+    // تحديث الأسئلة ليظهر السؤال كمجاب عليه في واجهة المستخدم
+    await storage.updateGameQuestions(
+      gameId,
+      generateGameQuestions(updatedGame),
+    );
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error marking question as viewed:", error);
+    res.status(500).json({ error: "حدث خطأ أثناء تحديث حالة السؤال" });
+  }
+}
+
 export async function submitAnswer(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
@@ -111,7 +146,7 @@ export async function submitAnswer(req: Request, res: Response) {
       };
     }
 
-    // Formato correcto: categoría-dificultad-equipo-questionId
+    // الحفاظ على تنسيق المفتاح الخاص بالإجابة
     const questionKey = `${categoryId}-${difficulty}-${teamId}-${questionId}`;
     const answeredQuestions = new Set(game.answeredQuestions || []);
     answeredQuestions.add(questionKey);

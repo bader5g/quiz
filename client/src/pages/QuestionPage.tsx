@@ -205,6 +205,14 @@ export default function QuestionPage() {
             return;
           }
 
+          // تحديث حالة السؤال ليكون "تم فتحه" بمجرد عرضه
+          // هذا سيجعل السؤال غير قابل للاختيار مرة أخرى
+          await apiRequest('POST', `/api/games/${gameId}/mark-question-viewed`, {
+            questionId: parseInt(questionId as string),
+            categoryId: data.question.categoryId,
+            difficulty: requestedDifficulty
+          });
+
           const gameData = await gameResponse.json();
           setCurrentTeamIndex(gameData.currentTeamIndex || 0);
         } catch (gameErr) {

@@ -14,7 +14,8 @@ import {
   submitAnswer,
   endGame,
   saveGameState,
-  getGameResults
+  getGameResults,
+  markQuestionViewed
 } from './game-controller';
 import { z } from "zod";
 
