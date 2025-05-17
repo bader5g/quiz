@@ -184,6 +184,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Submit answer
   app.post('/api/games/:gameId/answer', submitAnswer);
   
+  // Mark question as viewed (disable it immediately when opened)
+  app.post('/api/games/:gameId/mark-question-viewed', markQuestionViewed);
+  
   // End game
   app.post('/api/games/:gameId/end', endGame);
   
