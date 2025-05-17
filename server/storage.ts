@@ -37,6 +37,7 @@ export interface IStorage {
   updateGameTeams(gameId: number, teams: any[]): Promise<void>;
   updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void>;
   updateGameQuestions(gameId: number, questions: any[]): Promise<void>; // إضافة وظيفة تحديث حالة الأسئلة
+  updateGameViewedQuestions(gameId: number, viewedQuestionIds: any[]): Promise<void>; // إضافة وظيفة تحديث الأسئلة المعروضة
   endGame(gameId: number, winnerIndex: number): Promise<void>;
   saveGameState(gameId: number): Promise<void>;
 }
@@ -235,6 +236,18 @@ export class MemStorage implements IStorage {
     const game = await this.getGameSession(gameId);
     if (game) {
       const updatedGame = { ...game, currentTeamIndex: teamIndex };
+      this.gameSessions.set(gameId, updatedGame);
+    }
+  }
+
+  async updateGameViewedQuestions(gameId: number, viewedQuestionIds: any[]): Promise<void> {
+    const game = await this.getGameSession(gameId);
+    if (game) {
+      // تحديث قائمة الأسئلة التي تم عرضها
+      const updatedGame = { 
+        ...game, 
+        viewedQuestionIds 
+      };
       this.gameSessions.set(gameId, updatedGame);
     }
   }

@@ -104,41 +104,38 @@ export async function markQuestionViewed(req: Request, res: Response) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
-    // نضيف مفاتيح لجميع الفرق لضمان تعطيل السؤال للجميع
+    // نضيف معرف السؤال إلى قائمة الأسئلة التي تم عرضها 
+    // (طريقة جديدة أبسط وأكثر فعالية)
+    const viewedQuestionIds = new Set(game.viewedQuestionIds || []);
+    viewedQuestionIds.add(questionId.toString());
+    
+    // نضيف أيضًا المفاتيح التقليدية للتوافق مع النظام القديم
     const answeredQuestions = new Set(game.answeredQuestions || []);
     
-    // تحديد السؤال المحدد بناءً على معرف السؤال فقط
-    const teamCount = game.teams.length || 2;
+    // نضيف مفاتيح بجميع الأشكال الممكنة
+    answeredQuestions.add(`${categoryId}-${difficulty}-*-${questionId}`);
     
-    // لكل فريق، نضيف مفتاح مخصص
-    for (let teamIndex = 0; teamIndex < teamCount; teamIndex++) {
-      // مفتاح مع فريق محدد
-      const questionKey = `${categoryId}-${difficulty}-${teamIndex}-${questionId}`;
-      answeredQuestions.add(questionKey);
-      
-      // مفتاح جامع (wildcard) للتأكد من التعطيل لجميع الفئات
-      const wildcardKey = `${categoryId}-${difficulty}-${teamIndex}-*`;
-      answeredQuestions.add(wildcardKey);
-    }
-    
-    // مفتاح عام لجميع الفرق والفئات
-    const globalKey = `${categoryId}-${difficulty}-*-${questionId}`;
-    answeredQuestions.add(globalKey);
-
-    // تحديث الأسئلة المجاب عليها في قاعدة البيانات
+    // تحديث الألعاب مع القيم الجديدة
     const updatedGame = {
       ...game,
+      viewedQuestionIds: Array.from(viewedQuestionIds),
       answeredQuestions: Array.from(answeredQuestions),
     };
 
-    // تحديث الأسئلة ليظهر السؤال كمجاب عليه في واجهة المستخدم
+    // تحديث الأسئلة في قاعدة البيانات
     await storage.updateGameQuestions(
       gameId,
-      generateGameQuestions(updatedGame),
+      generateGameQuestions(updatedGame)
+    );
+    
+    // حفظ حالة الألعاب المحدثة في قاعدة البيانات
+    await storage.updateGameViewedQuestions(
+      gameId,
+      Array.from(viewedQuestionIds)
     );
 
     // طباعة لتتبع عملية التعطيل
-    console.log(`تم تعطيل السؤال رقم ${questionId} من الفئة ${categoryId} بصعوبة ${difficulty}`);
+    console.log(`تم تعطيل السؤال رقم ${questionId} من الفئة ${categoryId} بصعوبة ${difficulty} - الأسئلة المعروضة: ${Array.from(viewedQuestionIds).join(',')}`);
 
     res.status(200).json({ success: true });
   } catch (error) {
@@ -278,7 +275,8 @@ export async function saveGameState(req: Request, res: Response) {
 
 function generateGameQuestions(game: any) {
   const questions = [];
-  const answeredQuestions = game.answeredQuestions || [];
+  const answeredQuestions = new Set(game.answeredQuestions || []);
+  const viewedQuestionIds = new Set(game.viewedQuestionIds || []);
   let idCounter = 1;
 
   for (const categoryId of game.selectedCategories) {
@@ -286,20 +284,25 @@ function generateGameQuestions(game: any) {
       for (let difficulty = 1; difficulty <= 3; difficulty++) {
         const currentId = idCounter;
         
-        // Verificar si este tipo de pregunta ya ha sido respondida
-        // Comprobamos todos los formatos posibles de las claves
-        const isAnswered = answeredQuestions.some(key => {
-          // Nueva forma (con questionId)
+        // تحقق مما إذا كان السؤال قد تمت الإجابة عليه بالفعل
+        const isAnsweredByKey = Array.from(answeredQuestions).some((key: string) => {
+          // المفتاح الجديد (مع معرف السؤال)
           const matchesNewFormat = key === `${categoryId}-${difficulty}-${teamIndex}-${currentId}`;
           
-          // Formato antiguo (sin questionId)
+          // المفتاح القديم (بدون معرف السؤال)
           const matchesOldFormat = key === `${categoryId}-${difficulty}-${teamIndex}`;
           
-          // Formato que coincide con categoría, dificultad y equipo, independiente del ID de pregunta
-          const matchesPartial = key.startsWith(`${categoryId}-${difficulty}-${teamIndex}-`);
+          // مفتاح عام لجميع مستويات الصعوبة
+          const matchesWildcard = key === `${categoryId}-*-${teamIndex}-${currentId}`;
           
-          return matchesNewFormat || matchesOldFormat || matchesPartial;
+          // أي سؤال من هذه الفئة والصعوبة والفريق (بغض النظر عن الرقم)
+          const matchesPartial = key.startsWith(`${categoryId}-${difficulty}-${teamIndex}`);
+          
+          return matchesNewFormat || matchesOldFormat || matchesWildcard || matchesPartial;
         });
+        
+        // أيضًا تحقق مما إذا كان هذا السؤال قد تم عرضه
+        const isViewedQuestion = viewedQuestionIds.has(currentId.toString());
         
         questions.push({
           id: idCounter++,
@@ -307,7 +310,8 @@ function generateGameQuestions(game: any) {
           categoryId,
           teamIndex,
           difficulty,
-          isAnswered: isAnswered
+          // السؤال معطل إذا تمت الإجابة عليه أو عرضه
+          isAnswered: isAnsweredByKey || isViewedQuestion
         });
       }
     }
