@@ -46,31 +46,8 @@ export function GameCategories({
   currentTeamIndex,
   onSelectQuestion,
 }: GameCategoriesProps) {
-  const questionsByCategory = useMemo(() => {
-    const result: Record<number, Record<number, GameQuestion[]>> = {};
-
-    categories.forEach((category) => {
-      result[category.id] = {};
-      [1, 2, 3].forEach((difficultyLevel) => {
-        result[category.id][difficultyLevel] = [];
-      });
-    });
-
-    questions.forEach((question) => {
-      if (
-        result[question.categoryId] &&
-        result[question.categoryId][question.difficulty]
-      ) {
-        result[question.categoryId][question.difficulty].push(question);
-      }
-    });
-
-    return result;
-  }, [categories, questions]);
-
   const allQuestionsAnsweredInCategory = useMemo(() => {
     const result: Record<number, boolean> = {};
-
     categories.forEach((category) => {
       const categoryQuestions = questions.filter(
         (q) => q.categoryId === category.id,
@@ -79,7 +56,6 @@ export function GameCategories({
         categoryQuestions.length > 0 &&
         categoryQuestions.every((q) => q.isAnswered);
     });
-
     return result;
   }, [categories, questions]);
 
@@ -88,7 +64,7 @@ export function GameCategories({
       {categories.map((category) => (
         <Card
           key={category.id}
-          className="shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden bg-white rounded-xl"
+          className="shadow-md bg-white rounded-xl overflow-hidden"
         >
           <CardHeader className="pb-2 bg-gradient-to-r from-sky-50 to-indigo-50 border-b border-indigo-100">
             <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold text-indigo-800">
@@ -98,33 +74,14 @@ export function GameCategories({
           </CardHeader>
 
           <CardContent className="p-4">
-            {/* عرض إحصائية حالة الأسئلة في الفئة */}
-            {(() => {
-              const categoryQuestions = questions.filter(q => q.categoryId === category.id);
-              const answeredQuestions = categoryQuestions.filter(q => q.isAnswered);
-              const totalQuestions = categoryQuestions.length;
-              const remainingQuestions = totalQuestions - answeredQuestions.length;
-              
-              if (allQuestionsAnsweredInCategory[category.id]) {
-                return (
-                  <Alert className="mb-3 bg-indigo-50 text-indigo-800 border-indigo-200">
-                    <AlertDescription className="text-center text-sm">
-                      تمت الإجابة على جميع أسئلة هذه الفئة
-                    </AlertDescription>
-                  </Alert>
-                );
-              } else if (remainingQuestions > 0) {
-                return (
-                  <Alert className="mb-3 bg-blue-50 text-blue-800 border-blue-200">
-                    <AlertDescription className="text-center text-sm">
-                      تبقى {remainingQuestions} {remainingQuestions === 1 ? 'سؤال' : 'أسئلة'} غير مجابة
-                    </AlertDescription>
-                  </Alert>
-                );
-              }
-              
-              return null;
-            })()}
+            {/* تنبيه حالة الفئة */}
+            {allQuestionsAnsweredInCategory[category.id] ? (
+              <Alert className="mb-3 bg-indigo-50 text-indigo-800 border-indigo-200">
+                <AlertDescription className="text-center text-sm">
+                  تمت الإجابة على جميع أسئلة هذه الفئة
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
             <div
               className="grid"
@@ -132,7 +89,7 @@ export function GameCategories({
             >
               {teams.map((_, teamIndex) => (
                 <div
-                  key={`team-${teamIndex}`}
+                  key={teamIndex}
                   className="flex flex-col items-center gap-2"
                 >
                   {[1, 2, 3].map((difficulty) => {
@@ -142,11 +99,10 @@ export function GameCategories({
                         q.teamIndex === teamIndex &&
                         q.difficulty === difficulty,
                     );
-
                     if (!question)
                       return (
                         <div
-                          key={`empty-${teamIndex}-${difficulty}`}
+                          key={difficulty}
                           className="w-10 h-10 md:w-12 md:h-12"
                         />
                       );
@@ -154,49 +110,36 @@ export function GameCategories({
                     const isCurrentTeam = teamIndex === currentTeamIndex;
 
                     return (
-                      <TooltipProvider key={`q-${teamIndex}-${difficulty}`}>
+                      <TooltipProvider key={question.id}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant={
-                                question.isAnswered ? "outline" : "default"
+                              disabled={question.isAnswered}
+                              onClick={() =>
+                                !question.isAnswered &&
+                                onSelectQuestion(question.id, difficulty)
                               }
                               className={cn(
-                                "w-10 h-10 md:w-12 md:h-12 rounded-full shadow-md flex items-center justify-center relative",
+                                "w-10 h-10 md:w-12 md:h-12 rounded-full text-sm font-bold flex items-center justify-center shadow-md transition",
                                 question.isAnswered
-                                  ? "opacity-50 bg-gray-300 text-gray-600 cursor-not-allowed hover:bg-gray-300 border-2 border-gray-400"
-                                  : "bg-sky-500 hover:bg-sky-600 text-white",
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-400"
+                                  : "bg-blue-600 text-white hover:bg-blue-700",
                                 isCurrentTeam && !question.isAnswered
                                   ? "ring-2 ring-yellow-400"
                                   : "",
                               )}
-                              disabled={question.isAnswered}
-                              aria-disabled={question.isAnswered}
-                              onClick={() => {
-                                if (!question.isAnswered) {
-                                  onSelectQuestion(question.id, difficulty);
-                                }
-                              }}
                             >
-                              <span className="relative">
-                                {difficulty}
-                                <span className="absolute -top-1 -right-2 text-[8px] font-bold bg-yellow-300 text-black rounded-full w-3 h-3 flex items-center justify-center">
-                                  {difficulty}
-                                </span>
-                              </span>
+                              {difficulty}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="bottom">
                             {!question.isAnswered ? (
-                              <>سؤال {category.name} رقم {difficulty}</>
+                              <>
+                                سؤال {category.name} رقم {difficulty}
+                              </>
                             ) : (
-                              <span className="flex items-center gap-1 text-rose-600 font-bold">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <circle cx="12" cy="12" r="10" />
-                                  <line x1="15" y1="9" x2="9" y2="15" />
-                                  <line x1="9" y1="9" x2="15" y2="15" />
-                                </svg>
-                                تمت الإجابة على هذا السؤال
+                              <span className="text-red-600 font-medium">
+                                تمت الإجابة
                               </span>
                             )}
                           </TooltipContent>
