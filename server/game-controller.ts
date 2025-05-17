@@ -104,10 +104,26 @@ export async function markQuestionViewed(req: Request, res: Response) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
-    // إنشاء مفتاح فريد للسؤال بناءً على المعرفات (بدون الفريق، لأننا نريد تعطيل السؤال لجميع الفرق)
-    const questionKey = `${categoryId}-${difficulty}-*-${questionId}`;
+    // نضيف مفاتيح لجميع الفرق لضمان تعطيل السؤال للجميع
     const answeredQuestions = new Set(game.answeredQuestions || []);
-    answeredQuestions.add(questionKey);
+    
+    // تحديد السؤال المحدد بناءً على معرف السؤال فقط
+    const teamCount = game.teams.length || 2;
+    
+    // لكل فريق، نضيف مفتاح مخصص
+    for (let teamIndex = 0; teamIndex < teamCount; teamIndex++) {
+      // مفتاح مع فريق محدد
+      const questionKey = `${categoryId}-${difficulty}-${teamIndex}-${questionId}`;
+      answeredQuestions.add(questionKey);
+      
+      // مفتاح جامع (wildcard) للتأكد من التعطيل لجميع الفئات
+      const wildcardKey = `${categoryId}-${difficulty}-${teamIndex}-*`;
+      answeredQuestions.add(wildcardKey);
+    }
+    
+    // مفتاح عام لجميع الفرق والفئات
+    const globalKey = `${categoryId}-${difficulty}-*-${questionId}`;
+    answeredQuestions.add(globalKey);
 
     // تحديث الأسئلة المجاب عليها في قاعدة البيانات
     const updatedGame = {
@@ -120,6 +136,9 @@ export async function markQuestionViewed(req: Request, res: Response) {
       gameId,
       generateGameQuestions(updatedGame),
     );
+
+    // طباعة لتتبع عملية التعطيل
+    console.log(`تم تعطيل السؤال رقم ${questionId} من الفئة ${categoryId} بصعوبة ${difficulty}`);
 
     res.status(200).json({ success: true });
   } catch (error) {
