@@ -96,7 +96,7 @@ export async function getQuestionDetails(req: Request, res: Response) {
 export async function submitAnswer(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
-    const { teamId, categoryId, difficulty, isCorrect, points } = req.body;
+    const { questionId, teamId, categoryId, difficulty, isCorrect, points } = req.body;
 
     const game = await storage.getGameById(gameId);
     if (!game) {
@@ -224,19 +224,36 @@ export async function saveGameState(req: Request, res: Response) {
 
 function generateGameQuestions(game: any) {
   const questions = [];
-  const answeredSet = new Set(game.answeredQuestions || []);
+  const answeredQuestions = game.answeredQuestions || [];
   let idCounter = 1;
 
   for (const categoryId of game.selectedCategories) {
     for (let teamIndex = 0; teamIndex < game.teams.length; teamIndex++) {
       for (let difficulty = 1; difficulty <= 3; difficulty++) {
-        const key = `${categoryId}-${difficulty}-${teamIndex}`;
+        const currentId = idCounter;
+        
+        // Verificar si este tipo de pregunta ya ha sido respondida
+        // Comprobamos todos los formatos posibles de las claves
+        const isAnswered = answeredQuestions.some(key => {
+          // Nueva forma (con questionId)
+          const matchesNewFormat = key === `${categoryId}-${difficulty}-${teamIndex}-${currentId}`;
+          
+          // Formato antiguo (sin questionId)
+          const matchesOldFormat = key === `${categoryId}-${difficulty}-${teamIndex}`;
+          
+          // Formato que coincide con categoría, dificultad y equipo, independiente del ID de pregunta
+          const matchesPartial = key.startsWith(`${categoryId}-${difficulty}-${teamIndex}-`);
+          
+          return matchesNewFormat || matchesOldFormat || matchesPartial;
+        });
+        
         questions.push({
           id: idCounter++,
+          questionId: currentId,
           categoryId,
           teamIndex,
           difficulty,
-          isAnswered: answeredSet.has(key),
+          isAnswered: isAnswered
         });
       }
     }
