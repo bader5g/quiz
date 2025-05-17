@@ -183,6 +183,17 @@ export default function PlayPage() {
   const handleSelectQuestion = (questionId: number, difficulty: number) => {
     // العثور على السؤال في قائمة الأسئلة للحصول على معرف الفئة
     const question = game?.questions.find(q => q.id === questionId);
+    
+    // إذا كان السؤال موجودًا وتمت الإجابة عليه بالفعل، نمنع الانتقال
+    if (question && question.isAnswered) {
+      toast({
+        title: "تنبيه",
+        description: "تمت الإجابة على هذا السؤال بالفعل",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (question) {
       navigate(`/play/${gameId}/question/${questionId}?difficulty=${difficulty}&categoryId=${question.categoryId}`);
     } else {
