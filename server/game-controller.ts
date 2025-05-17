@@ -117,19 +117,29 @@ export async function submitAnswer(req: Request, res: Response) {
       };
     }
 
-    // تحديث حالة السؤال ليصبح مُجاب (تمت الإجابة عليه)
-    // البحث عن السؤال المناسب وتحديث حالته
-    const updatedQuestions = generateGameQuestions(game).map(q => {
-      if (q.questionId === questionId && q.categoryId === categoryId && q.teamIndex === teamId && q.difficulty === difficulty) {
-        return { ...q, isAnswered: true };
-      }
-      return q;
-    });
-
+    // إضافة السؤال إلى قائمة الأسئلة المُجاب عليها
+    // إنشاء مفتاح فريد للسؤال
+    const questionKey = `${categoryId}-${difficulty}-${teamId}-${questionId}`;
+    
+    // إنشاء أو تحديث قائمة الأسئلة التي تم الإجابة عليها
+    const answeredQuestions = game.answeredQuestions || [];
+    if (!answeredQuestions.includes(questionKey)) {
+      answeredQuestions.push(questionKey);
+    }
+    
+    // تحديث حالة الأسئلة في اللعبة
+    const updatedGame = {
+      ...game,
+      answeredQuestions,
+      teams: updatedTeams
+    };
+    
     // حفظ التحديثات للعبة
     await storage.updateGameTeams(gameId, updatedTeams);
     
-    // حفظ حالة الأسئلة التي تم الإجابة عليها
+    // حفظ قائمة الأسئلة المُجاب عليها في اللعبة
+    // تمرير القائمة الكاملة بدلاً من الأسئلة المحدثة فقط
+    const updatedQuestions = generateGameQuestions(updatedGame);
     await storage.updateGameQuestions(gameId, updatedQuestions);
 
     // تحديث الدور للفريق التالي
