@@ -14,6 +14,7 @@ import PlayPage from "@/pages/PlayPage";
 import QuestionPage from "@/pages/QuestionPage";
 import GameResultPage from "@/pages/GameResultPage";
 import TestDialogPage from "@/pages/TestDialogPage";
+import AdminDashboard from "@/pages/admin/Dashboard";
 import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
 import LoginButton from "@/components/auth/LoginButton";
