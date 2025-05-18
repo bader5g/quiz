@@ -17,7 +17,7 @@ import {
   Minus,
   UserX
 } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { ModalDialogContent } from '@/components/ui/modal-dialog';
 import { useSite } from '@/context/SiteContext';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useQuery } from '@tanstack/react-query';
 
 interface Question {
   id: number;
@@ -143,6 +144,29 @@ export default function QuestionPage() {
   // نحصل على معرف الفئة إذا كان موجوداً
   const requestedCategoryId = searchParams.get("categoryId");
 
+  // استيراد نوع GameSettings من مخطط البيانات المشترك
+  interface GameSettingsType {
+    id: number;
+    minCategories: number;
+    maxCategories: number;
+    minTeams: number;
+    maxTeams: number;
+    maxGameNameLength: number;
+    maxTeamNameLength: number;
+    defaultFirstAnswerTime: number;
+    defaultSecondAnswerTime: number;
+    allowedFirstAnswerTimes: number[];
+    allowedSecondAnswerTimes: number[];
+    modalTitle: string;
+    pageDescription: string;
+  }
+
+  // جلب إعدادات اللعبة من API لاستخدام الوقت الافتراضي منها
+  const { data: gameSettings, isLoading: isLoadingSettings } = useQuery<GameSettingsType>({
+    queryKey: ["/api/game-settings"],
+    staleTime: 60000, // تحديث كل دقيقة
+  });
+
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -191,8 +215,19 @@ export default function QuestionPage() {
           console.warn(`تم طلب سؤال بمستوى صعوبة ${requestedDifficulty} ولكن تم جلب سؤال بمستوى ${data.question.difficulty}`);
         }
 
-        setQuestionData(data);
-        setTimeLeft(data.firstAnswerTime);
+        // استخدام إعدادات اللعبة من API إذا كانت متوفرة، أو استخدام القيم من الخادم
+        const firstTime = gameSettings?.defaultFirstAnswerTime || data.firstAnswerTime;
+        const secondTime = gameSettings?.defaultSecondAnswerTime || data.secondAnswerTime;
+        
+        // تحديث بيانات السؤال مع الأوقات المحدثة
+        const updatedData = {
+          ...data,
+          firstAnswerTime: firstTime,
+          secondAnswerTime: secondTime
+        };
+        
+        setQuestionData(updatedData);
+        setTimeLeft(firstTime);
 
         // تعيين الفريق الحالي
         try {
@@ -310,7 +345,7 @@ export default function QuestionPage() {
     }
   };
 
-  // تجديد المؤقت
+  // تجديد المؤقت - استخدام الوقت من إعدادات اللعبة في لوحة التحكم
   const resetTimer = () => {
     if (questionData) {
       // ضبط الوقت حسب الفريق الحالي
@@ -320,6 +355,7 @@ export default function QuestionPage() {
         ? questionData.firstAnswerTime 
         : questionData.secondAnswerTime;
 
+      console.log(`استخدام وقت الإجابة من لوحة التحكم: ${timeToSet} ثانية`);
       setTimeLeft(timeToSet);
 
       // إذا كان المؤقت متوقفاً، نعيد تشغيله
