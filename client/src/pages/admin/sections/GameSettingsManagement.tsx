@@ -263,25 +263,8 @@ export default function GameSettingsManagement() {
         return;
       }
 
-      // تحديد قيم أوقات الإجابة للتأكد من أنها معرفة بشكل صحيح
-      const answerTimeOptions = {
-        first: {
-          default: Number(form.getValues('answerTimeOptions.first.default')) || 30,
-          options: form.getValues('answerTimeOptions.first.options') || [10, 20, 30, 45, 60, 90]
-        },
-        second: {
-          default: Number(form.getValues('answerTimeOptions.second.default')) || 15,
-          options: form.getValues('answerTimeOptions.second.options') || [5, 10, 15, 20, 30]
-        },
-        third: {
-          default: Number(form.getValues('answerTimeOptions.third.default')) || 10,
-          options: form.getValues('answerTimeOptions.third.options') || [5, 10, 15, 20]
-        },
-        fourth: {
-          default: Number(form.getValues('answerTimeOptions.fourth.default')) || 5,
-          options: form.getValues('answerTimeOptions.fourth.options') || [5, 10, 15]
-        }
-      };
+      // الحصول على خيارات أوقات الإجابة من القيم الموجودة
+      const answerTimeOptions = values.answerTimeOptions;
       
       console.log('أوقات الإجابة للإرسال:', answerTimeOptions);
 
