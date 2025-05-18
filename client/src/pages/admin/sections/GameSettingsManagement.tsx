@@ -266,40 +266,40 @@ export default function GameSettingsManagement() {
       // تحديد قيم أوقات الإجابة للتأكد من أنها معرفة بشكل صحيح
       const answerTimeOptions = {
         first: {
-          default: form.getValues('answerTimeOptions.first.default') || 30,
+          default: Number(form.getValues('answerTimeOptions.first.default')) || 30,
           options: form.getValues('answerTimeOptions.first.options') || [10, 20, 30, 45, 60, 90]
         },
         second: {
-          default: form.getValues('answerTimeOptions.second.default') || 15,
+          default: Number(form.getValues('answerTimeOptions.second.default')) || 15,
           options: form.getValues('answerTimeOptions.second.options') || [5, 10, 15, 20, 30]
         },
         third: {
-          default: form.getValues('answerTimeOptions.third.default') || 10,
+          default: Number(form.getValues('answerTimeOptions.third.default')) || 10,
           options: form.getValues('answerTimeOptions.third.options') || [5, 10, 15, 20]
         },
         fourth: {
-          default: form.getValues('answerTimeOptions.fourth.default') || 5,
+          default: Number(form.getValues('answerTimeOptions.fourth.default')) || 5,
           options: form.getValues('answerTimeOptions.fourth.options') || [5, 10, 15]
         }
       };
       
       console.log('أوقات الإجابة للإرسال:', answerTimeOptions);
 
-      // إعداد البيانات للإرسال مع التأكد من تضمين كل البيانات
+      // إعداد البيانات للإرسال مع التأكد من تحويل أنواع البيانات بشكل صحيح
       const gameSettingsData = {
-        minCategories: values.minCategories,
-        maxCategories: values.maxCategories,
-        minTeams: values.minTeams,
-        maxTeams: values.maxTeams,
-        maxGameNameLength: values.maxGameNameLength,
-        maxTeamNameLength: values.maxTeamNameLength,
-        defaultFirstAnswerTime: values.defaultFirstAnswerTime,
-        defaultSecondAnswerTime: values.defaultSecondAnswerTime,
-        modalTitle: values.modalTitle,
-        pageDescription: values.pageDescription,
-        timerEnabled: values.timerEnabled,
-        helpToolsEnabled: values.helpToolsEnabled,
-        minQuestionsPerCategory: values.minQuestionsPerCategory,
+        minCategories: Number(values.minCategories),
+        maxCategories: Number(values.maxCategories),
+        minTeams: Number(values.minTeams),
+        maxTeams: Number(values.maxTeams),
+        maxGameNameLength: Number(values.maxGameNameLength),
+        maxTeamNameLength: Number(values.maxTeamNameLength),
+        defaultFirstAnswerTime: Number(values.defaultFirstAnswerTime),
+        defaultSecondAnswerTime: Number(values.defaultSecondAnswerTime),
+        modalTitle: String(values.modalTitle || ''),
+        pageDescription: String(values.pageDescription || ''),
+        timerEnabled: Boolean(values.timerEnabled),
+        helpToolsEnabled: Boolean(values.helpToolsEnabled),
+        minQuestionsPerCategory: values.minQuestionsPerCategory ? Number(values.minQuestionsPerCategory) : undefined,
         answerTimeOptions: answerTimeOptions
       };
 
@@ -801,7 +801,7 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            value={newTimeForFirst}
+                            value={newTimeForFirst || ''}
                             onChange={(e) => setNewTimeForFirst(e.target.value)}
                             min={5}
                             max={120}
@@ -904,7 +904,7 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            value={newTimeForSecond}
+                            value={newTimeForSecond || ''}
                             onChange={(e) => setNewTimeForSecond(e.target.value)}
                             min={5}
                             max={120}
@@ -1007,7 +1007,7 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            value={newTimeForThird}
+                            value={newTimeForThird || ''}
                             onChange={(e) => setNewTimeForThird(e.target.value)}
                             min={5}
                             max={120}
@@ -1660,9 +1660,10 @@ export default function GameSettingsManagement() {
                         <FormItem>
                           <FormLabel>مدة الاحتفاظ بالسجل (بالأيام)</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              {...field} 
+                            <ControlledNumberInput 
+                              field={field} 
+                              min={1}
+                              max={365}
                               disabled={!form.watch('saveGameHistory')}
                             />
                           </FormControl>
