@@ -305,12 +305,20 @@ export default function GameSettingsManagement() {
       console.log('إرسال البيانات للخادم...', gameSettingsData);
       
       // إرسال البيانات إلى الخادم
-      await apiRequest('PATCH', '/api/game-settings', gameSettingsData);
+      const response = await apiRequest('PATCH', '/api/game-settings', gameSettingsData);
       
-      toast({
-        title: 'تم الحفظ بنجاح',
-        description: 'تم تحديث إعدادات اللعبة بنجاح',
-      });
+      if (response.ok) {
+        toast({
+          title: 'تم الحفظ بنجاح',
+          description: 'تم تحديث إعدادات اللعبة بنجاح',
+        });
+        
+        // تحديث البيانات في واجهة المستخدم
+        queryClient.invalidateQueries({ queryKey: ['/api/game-settings'] });
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'حدث خطأ أثناء حفظ الإعدادات' }));
+        throw new Error(errorData.message || 'حدث خطأ أثناء حفظ الإعدادات');
+      }
     } catch (error) {
       console.error('Error saving game settings:', error);
       toast({
@@ -849,8 +857,8 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            value={newTimeForSecond || ''}
-                            onChange={(e) => setNewTimeForSecond(e.target.value)}
+                            value={newTimeForSecond === '' ? '' : newTimeForSecond}
+                            onChange={(e) => setNewTimeForSecond(e.target.value === '' ? '' : e.target.value)}
                             min={5}
                             max={120}
                             disabled={!form.watch('timerEnabled')}
@@ -859,10 +867,15 @@ export default function GameSettingsManagement() {
                             type="button"
                             onClick={() => {
                               // التحقق من القيمة
-                              const newTime = parseInt(newTimeForSecond);
+                              const newTime = parseInt(String(newTimeForSecond));
                               
                               if (isNaN(newTime) || newTime < 5 || newTime > 120) {
                                 console.log('القيمة المدخلة غير صالحة');
+                                toast({
+                                  variant: 'destructive',
+                                  title: 'قيمة غير صالحة',
+                                  description: 'يرجى إدخال قيمة بين 5 و 120 ثانية'
+                                });
                                 return;
                               }
                               
