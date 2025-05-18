@@ -628,7 +628,7 @@ export default function QuestionPage() {
       {/* رأس الصفحة */}
       <header className="bg-white shadow-sm py-2 px-4">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -637,7 +637,20 @@ export default function QuestionPage() {
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
-            <span>سؤال #{questionNumber}</span>
+            
+            {/* شعار الموقع */}
+            {questionData?.logoUrl && (
+              <img 
+                src={questionData.logoUrl} 
+                alt="شعار الموقع" 
+                className="h-8 object-contain"
+              />
+            )}
+          </div>
+          
+          {/* اسم اللعبة في المنتصف */}
+          <div className="text-center font-semibold text-lg">
+            {questionData?.gameName || 'جاوب'}
           </div>
           
           <Badge 
