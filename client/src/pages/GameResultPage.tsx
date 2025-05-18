@@ -101,15 +101,16 @@ export default function GameResultPage() {
     navigate('/');
   };
 
-  // تنسيق التاريخ
+  // تنسيق التاريخ بالميلادي
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ar-SA', {
+    return new Intl.DateTimeFormat('ar', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      calendar: 'gregory'
     }).format(date);
   };
 
@@ -259,56 +260,7 @@ export default function GameResultPage() {
           </CardContent>
         </Card>
 
-        {/* تفاصيل الأسئلة */}
-        <Card className="mb-8 shadow">
-          <CardHeader>
-            <CardTitle>تفاصيل الإجابات</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {gameResult.categories.map((category) => (
-                <div key={category.id}>
-                  <h3 className="font-semibold flex items-center gap-2 mb-3">
-                    <span>{category.icon}</span>
-                    <span>{category.name}</span>
-                  </h3>
-                  
-                  <div className="space-y-3 pl-6">
-                    {gameResult.questions
-                      .filter(q => q.categoryId === category.id)
-                      .map((question, qIndex) => (
-                        <div key={qIndex} className="text-sm">
-                          <div className="flex gap-2 items-start mb-1">
-                            <Badge 
-                              variant={question.isCorrect ? "default" : "destructive"}
-                              className="mt-1"
-                            >
-                              {question.teamName}
-                            </Badge>
-                            <div>
-                              <p className="font-medium">{question.question}</p>
-                              <p className="text-muted-foreground">الإجابة: {question.answer}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>المستوى: {
-                              question.difficulty === 1 ? 'سهل' : 
-                              question.difficulty === 2 ? 'متوسط' : 'صعب'
-                            }</span>
-                            <span>النقاط: {question.points}</span>
-                          </div>
-                          
-                          <Separator className="my-2" />
-                        </div>
-                      ))
-                    }
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* أزرار التنقل */}
         <div className="flex justify-center gap-4 mt-8">
