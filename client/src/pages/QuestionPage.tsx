@@ -241,7 +241,7 @@ export default function QuestionPage() {
         setQuestionData(updatedData);
         setTimeLeft(firstTime);
 
-        // تعيين الفريق الحالي
+        // تعيين الفريق الحالي - تأكد من استخدام currentTeamIndex من قاعدة البيانات
         try {
           const gameResponse = await apiRequest('GET', `/api/games/${gameId}`);
 
@@ -251,6 +251,12 @@ export default function QuestionPage() {
             setError('اللعبة المطلوبة غير موجودة.');
             return;
           }
+          
+          // استخراج الفريق الحالي من بيانات اللعبة
+          const gameData = await gameResponse.json();
+          setCurrentTeamIndex(gameData.currentTeamIndex || 0);
+          console.log(`تعيين الفريق الحالي: ${gameData.currentTeamIndex} (${gameData.teams[gameData.currentTeamIndex].name})`);
+          
 
           // تحديث حالة السؤال ليكون "تم فتحه" بمجرد عرضه
           // هذا سيجعل السؤال غير قابل للاختيار مرة أخرى

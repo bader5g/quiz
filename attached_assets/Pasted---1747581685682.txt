@@ -1,0 +1,111 @@
+🧩 المشكلة الحالية:
+يتم عرض الفريق الثاني مباشرة بدل الفريق الذي عليه الدور.
+
+المؤقت لا يبدأ تلقائيًا عند فتح السؤال.
+
+الدور لا ينتقل تلقائيًا وفق المنطق.
+
+لا يوجد زر يدوي لتبديل الدور.
+
+✅ الحلول المقترحة (برمجية مباشرة):
+✅ 1. عند فتح السؤال، يجب تحميل الفريق الحالي من game.currentTeamIndex وتثبيته بشكل صحيح
+tsx
+Copy
+Edit
+useEffect(() => {
+  if (questionData && !timerRunning && !showTeamSelection) {
+    // حدد الوقت المناسب للفريق الحالي
+    const newTime = (currentTeamIndex === 0)
+      ? questionData.firstAnswerTime
+      : questionData.secondAnswerTime;
+
+    setTimeLeft(newTime);
+
+    // تشغيل المؤقت عند تحميل الصفحة فقط للفريق الأول
+    if (timeLeft === 0) {
+      startTimer();
+    }
+  }
+}, [questionData, currentTeamIndex, timerRunning, showTeamSelection]);
+✅ تأكد أن currentTeamIndex يتم جلبه من قاعدة البيانات بعد تحميل questionData.
+
+✅ 2. تعديل منطق moveToNextTeam() بحيث لا يتجاوز الفريق الأخير
+ts
+Copy
+Edit
+const moveToNextTeam = async () => {
+  if (!questionData) return;
+
+  const nextTeamIndex = currentTeamIndex + 1;
+
+  if (nextTeamIndex >= questionData.teams.length) {
+    // وصلنا للفريق الأخير، لا ننتقل بعده
+    setTimerRunning(false);
+    return;
+  }
+
+  await apiRequest('POST', `/api/games/${gameId}/update-team`, {
+    teamIndex: nextTeamIndex
+  });
+
+  setCurrentTeamIndex(nextTeamIndex);
+
+  const newTime = nextTeamIndex === 0
+    ? questionData.firstAnswerTime
+    : questionData.secondAnswerTime;
+
+  setTimeLeft(newTime);
+  startTimer();
+};
+✅ 3. إضافة زر يدوي لتبديل الدور في واجهة التحكم:
+tsx
+Copy
+Edit
+<Button 
+  onClick={moveToNextTeam}
+  className="bg-yellow-100 border border-yellow-400 text-yellow-700 hover:bg-yellow-200"
+>
+  تبديل الدور يدوياً
+</Button>
+ضعه تحت المؤقت، ليكون في متناول اليد.
+
+✅ 4. عند فتح السؤال الجديد، يجب أن يتم الاعتماد على game.currentTeamIndex وليس بدء الدور من الفريق 2 خطأً.
+في داخل fetchQuestionDetails:
+
+ts
+Copy
+Edit
+const gameResponse = await apiRequest('GET', `/api/games/${gameId}`);
+const gameData = await gameResponse.json();
+setCurrentTeamIndex(gameData.currentTeamIndex || 0);
+✅ 5. تأكد من أن startTimer() لا يتم تشغيله أكثر من مرة (تجنب التكرار):
+ts
+Copy
+Edit
+const startTimer = () => {
+  if (timerRunning || timeLeft <= 0) return;
+
+  setTimerRunning(true);
+
+  if (timer) clearInterval(timer);
+  const interval = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        clearInterval(interval);
+        setTimerRunning(false);
+        moveToNextTeam();
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+  setTimer(interval);
+};
+✅ النتيجة النهائية:
+العملية	المنطق المطلوب
+عند فتح السؤال	يعرض الفريق الحالي من game.currentTeamIndex
+المؤقت	يبدأ تلقائيًا من firstAnswerTime ثم secondAnswerTime
+بعد انتهاء الوقت	ينتقل للفريق التالي (حتى الفريق الأخير فقط)
+عند اختيار سؤال جديد	يبقى currentTeamIndex محفوظًا ويبدأ من نفس الدور
+زر تبديل يدوي	موجود ويفعل نفس منطق التبديل
+
