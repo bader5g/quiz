@@ -409,15 +409,17 @@ export default function QuestionPage() {
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(targetIndex);
       
-      // الحصول على أوقات الإجابة من بيانات اللعبة الخاصة بالسؤال
-      let firstAnswerTime = questionData.firstAnswerTime || 30; // وقت افتراضي إذا لم تكن القيمة موجودة
-      let secondAnswerTime = questionData.secondAnswerTime || 15; // وقت افتراضي إذا لم تكن القيمة موجودة
+      // الحصول على أوقات الإجابة من إعدادات اللعبة
+      let firstAnswerTime = 30; // وقت افتراضي
+      let secondAnswerTime = 15; // وقت افتراضي
       
-      // طباعة الإعدادات للتأكد من استخدام القيم الصحيحة
-      console.log(`⚙️ إعدادات الوقت: الأول = ${firstAnswerTime}، الثاني = ${secondAnswerTime}`);
+      // استخدام إعدادات اللعبة إذا كانت متوفرة
+      if (gameSettings) {
+        firstAnswerTime = gameSettings.defaultFirstAnswerTime;
+        secondAnswerTime = gameSettings.defaultSecondAnswerTime;
+      }
       
       // تحديد الوقت المناسب للفريق الحالي
-      // الفريق الأول دائماً يأخذ وقت الإجابة الأولى، وباقي الفرق تأخذ وقت الإجابة الثانية
       const newTime = targetIndex === 0 ? firstAnswerTime : secondAnswerTime;
       
       console.log(`⏱️ تعيين وقت جديد: ${newTime} ثانية للفريق ${questionData.teams[targetIndex].name}`);
