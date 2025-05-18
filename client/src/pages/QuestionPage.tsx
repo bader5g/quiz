@@ -340,15 +340,25 @@ export default function QuestionPage() {
       // حساب الفريق التالي (الفريق الحالي + 1)
       const nextTeamIndex = currentTeamIndex + 1;
 
-      // إذا وصلنا للفريق الأخير، نعود للصفحة الرئيسية
+      // إذا وصلنا للفريق الأخير، نعود للفريق الأول (دورة كاملة)
       if (nextTeamIndex >= questionData.teams.length) {
-        toast({
-          title: "انتهت جميع الأدوار",
-          description: "سيتم العودة إلى صفحة اللعب.",
+        const resetTeamIndex = 0; // نعود للفريق الأول
+        console.log(`🔄 تم الوصول لآخر فريق. العودة للفريق الأول.`);
+        
+        // تحديث الفريق الحالي في قاعدة البيانات
+        await apiRequest('POST', `/api/games/${gameId}/update-team`, {
+          teamIndex: resetTeamIndex
         });
         
-        // العودة لصفحة اللعب
-        navigate(`/play/${gameId}`);
+        // تحديث الفريق في الواجهة
+        setCurrentTeamIndex(resetTeamIndex);
+        
+        // إظهار رسالة توضيحية
+        toast({
+          title: "تمت دورة كاملة",
+          description: `تم الانتقال للفريق: ${questionData.teams[resetTeamIndex].name}`,
+        });
+        
         return;
       }
 
