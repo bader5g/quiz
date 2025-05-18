@@ -14,7 +14,7 @@ import PlayPage from "@/pages/PlayPage";
 import QuestionPage from "@/pages/QuestionPage";
 import GameResultPage from "@/pages/GameResultPage";
 import TestDialogPage from "@/pages/TestDialogPage";
-import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminPage from "@/pages/admin/AdminPage";
 import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
 import LoginButton from "@/components/auth/LoginButton";
@@ -50,9 +50,8 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/buy-cards" component={BuyCardsPage} />
       <Route path="/level" component={LevelPage} />
-      {/* لوحة تحكم المدير */}
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
+      {/* لوحة تحكم المدير - تتضمن جميع المسارات الفرعية */}
+      <Route path="/admin/:rest*" component={AdminPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
