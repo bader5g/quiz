@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ControlledNumberInput, ControlledTextInput } from '@/components/controlled-inputs';
+import { ControllableNumberInput, ControllableTextInput } from '@/components/ControllableInput';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useForm } from 'react-hook-form';
@@ -210,8 +210,31 @@ export default function GameSettingsManagement() {
         const response = await apiRequest('GET', '/api/game-settings');
         const data = await response.json();
         
-        // تحديث النموذج بالبيانات المستلمة
-        form.reset(data);
+        // تحديث النموذج بالبيانات المستلمة وضمان أن جميع الحقول لها قيم أولية
+        console.log("البيانات المستلمة من الخادم:", data);
+        form.reset({
+          ...data,
+          // ضمان أن جميع الحقول لها قيم افتراضية لتجنب تحويلها من غير متحكم بها إلى متحكم بها
+          minCategories: data.minCategories || 4,
+          maxCategories: data.maxCategories || 8,
+          minTeams: data.minTeams || 2,
+          maxTeams: data.maxTeams || 4,
+          maxGameNameLength: data.maxGameNameLength || 50,
+          maxTeamNameLength: data.maxTeamNameLength || 30,
+          defaultFirstAnswerTime: data.defaultFirstAnswerTime || 30,
+          defaultSecondAnswerTime: data.defaultSecondAnswerTime || 20,
+          minQuestionsPerCategory: data.minQuestionsPerCategory || 5,
+          modalTitle: data.modalTitle || '',
+          pageDescription: data.pageDescription || '',
+          timerEnabled: data.timerEnabled !== undefined ? data.timerEnabled : true,
+          helpToolsEnabled: data.helpToolsEnabled !== undefined ? data.helpToolsEnabled : true,
+          answerTimeOptions: data.answerTimeOptions || {
+            first: { default: 30, options: [10, 20, 30, 45, 60, 90] },
+            second: { default: 20, options: [5, 10, 15, 20, 30] },
+            third: { default: 15, options: [5, 10, 15, 20, 30] },
+            fourth: { default: 10, options: [5, 10, 15, 20] }
+          }
+        });
       } catch (error) {
         console.error('Error fetching game settings:', error);
         toast({
