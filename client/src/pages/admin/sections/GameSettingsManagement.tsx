@@ -692,7 +692,8 @@ export default function GameSettingsManagement() {
                       <div className="rounded-md border p-4">
                         <h4 className="font-medium mb-3">وقت الإجابة الأول</h4>
                         <div className="flex flex-wrap gap-3 mb-3">
-                          {form.watch('answerTimeOptions.first.options')?.map((time, index) => (
+                          {Array.isArray(form.watch('answerTimeOptions.first.options')) && 
+                            form.watch('answerTimeOptions.first.options').map((time, index) => (
                             <div 
                               key={`first-${index}`} 
                               className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
@@ -721,13 +722,16 @@ export default function GameSettingsManagement() {
                                   size="icon"
                                   className="h-5 w-5 rounded-full hover:bg-red-100"
                                   onClick={() => {
-                                    const currentOptions = [...form.watch('answerTimeOptions.first.options')];
-                                    // لا تسمح بحذف الوقت الافتراضي
-                                    if (form.watch('answerTimeOptions.first.default') === currentOptions[index]) {
-                                      return;
+                                    const options = form.watch('answerTimeOptions.first.options');
+                                    if (Array.isArray(options)) {
+                                      const currentOptions = [...options];
+                                      // لا تسمح بحذف الوقت الافتراضي
+                                      if (form.watch('answerTimeOptions.first.default') === currentOptions[index]) {
+                                        return;
+                                      }
+                                      currentOptions.splice(index, 1);
+                                      form.setValue('answerTimeOptions.first.options', currentOptions);
                                     }
-                                    currentOptions.splice(index, 1);
-                                    form.setValue('answerTimeOptions.first.options', currentOptions);
                                   }}
                                   disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.first.default') === time}
                                 >
@@ -754,10 +758,13 @@ export default function GameSettingsManagement() {
                               const input = document.getElementById('newTimeForFirst') as HTMLInputElement;
                               const newTime = parseInt(input.value);
                               if (newTime && newTime >= 5 && newTime <= 120) {
-                                const currentOptions = [...form.watch('answerTimeOptions.first.options')];
-                                if (!currentOptions.includes(newTime)) {
-                                  form.setValue('answerTimeOptions.first.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                  input.value = '';
+                                const options = form.watch('answerTimeOptions.first.options');
+                                if (Array.isArray(options)) {
+                                  const currentOptions = [...options];
+                                  if (!currentOptions.includes(newTime)) {
+                                    form.setValue('answerTimeOptions.first.options', [...currentOptions, newTime].sort((a, b) => a - b));
+                                    input.value = '';
+                                  }
                                 }
                               }
                             }}
@@ -772,7 +779,8 @@ export default function GameSettingsManagement() {
                       <div className="rounded-md border p-4">
                         <h4 className="font-medium mb-3">وقت الإجابة الثاني</h4>
                         <div className="flex flex-wrap gap-3 mb-3">
-                          {form.watch('answerTimeOptions.second.options')?.map((time, index) => (
+                          {Array.isArray(form.watch('answerTimeOptions.second.options')) && 
+                            form.watch('answerTimeOptions.second.options').map((time, index) => (
                             <div 
                               key={`second-${index}`} 
                               className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
@@ -801,12 +809,15 @@ export default function GameSettingsManagement() {
                                   size="icon"
                                   className="h-5 w-5 rounded-full hover:bg-red-100"
                                   onClick={() => {
-                                    const currentOptions = [...form.watch('answerTimeOptions.second.options')];
-                                    if (form.watch('answerTimeOptions.second.default') === currentOptions[index]) {
-                                      return;
+                                    const options = form.watch('answerTimeOptions.second.options');
+                                    if (Array.isArray(options)) {
+                                      const currentOptions = [...options];
+                                      if (form.watch('answerTimeOptions.second.default') === currentOptions[index]) {
+                                        return;
+                                      }
+                                      currentOptions.splice(index, 1);
+                                      form.setValue('answerTimeOptions.second.options', currentOptions);
                                     }
-                                    currentOptions.splice(index, 1);
-                                    form.setValue('answerTimeOptions.second.options', currentOptions);
                                   }}
                                   disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.second.default') === time}
                                 >
@@ -833,10 +844,13 @@ export default function GameSettingsManagement() {
                               const input = document.getElementById('newTimeForSecond') as HTMLInputElement;
                               const newTime = parseInt(input.value);
                               if (newTime && newTime >= 5 && newTime <= 120) {
-                                const currentOptions = [...form.watch('answerTimeOptions.second.options')];
-                                if (!currentOptions.includes(newTime)) {
-                                  form.setValue('answerTimeOptions.second.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                  input.value = '';
+                                const options = form.watch('answerTimeOptions.second.options');
+                                if (Array.isArray(options)) {
+                                  const currentOptions = [...options];
+                                  if (!currentOptions.includes(newTime)) {
+                                    form.setValue('answerTimeOptions.second.options', [...currentOptions, newTime].sort((a, b) => a - b));
+                                    input.value = '';
+                                  }
                                 }
                               }
                             }}
@@ -851,7 +865,8 @@ export default function GameSettingsManagement() {
                       <div className="rounded-md border p-4">
                         <h4 className="font-medium mb-3">وقت الإجابة الثالث</h4>
                         <div className="flex flex-wrap gap-3 mb-3">
-                          {form.watch('answerTimeOptions.third.options')?.map((time, index) => (
+                          {Array.isArray(form.watch('answerTimeOptions.third.options')) && 
+                            form.watch('answerTimeOptions.third.options').map((time, index) => (
                             <div 
                               key={`third-${index}`} 
                               className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
@@ -880,12 +895,15 @@ export default function GameSettingsManagement() {
                                   size="icon"
                                   className="h-5 w-5 rounded-full hover:bg-red-100"
                                   onClick={() => {
-                                    const currentOptions = [...form.watch('answerTimeOptions.third.options')];
-                                    if (form.watch('answerTimeOptions.third.default') === currentOptions[index]) {
-                                      return;
+                                    const options = form.watch('answerTimeOptions.third.options');
+                                    if (Array.isArray(options)) {
+                                      const currentOptions = [...options];
+                                      if (form.watch('answerTimeOptions.third.default') === currentOptions[index]) {
+                                        return;
+                                      }
+                                      currentOptions.splice(index, 1);
+                                      form.setValue('answerTimeOptions.third.options', currentOptions);
                                     }
-                                    currentOptions.splice(index, 1);
-                                    form.setValue('answerTimeOptions.third.options', currentOptions);
                                   }}
                                   disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.third.default') === time}
                                 >
@@ -912,10 +930,13 @@ export default function GameSettingsManagement() {
                               const input = document.getElementById('newTimeForThird') as HTMLInputElement;
                               const newTime = parseInt(input.value);
                               if (newTime && newTime >= 5 && newTime <= 120) {
-                                const currentOptions = [...form.watch('answerTimeOptions.third.options')];
-                                if (!currentOptions.includes(newTime)) {
-                                  form.setValue('answerTimeOptions.third.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                  input.value = '';
+                                const options = form.watch('answerTimeOptions.third.options');
+                                if (Array.isArray(options)) {
+                                  const currentOptions = [...options];
+                                  if (!currentOptions.includes(newTime)) {
+                                    form.setValue('answerTimeOptions.third.options', [...currentOptions, newTime].sort((a, b) => a - b));
+                                    input.value = '';
+                                  }
                                 }
                               }
                             }}
@@ -930,7 +951,8 @@ export default function GameSettingsManagement() {
                       <div className="rounded-md border p-4">
                         <h4 className="font-medium mb-3">وقت الإجابة الرابع</h4>
                         <div className="flex flex-wrap gap-3 mb-3">
-                          {form.watch('answerTimeOptions.fourth.options')?.map((time, index) => (
+                          {Array.isArray(form.watch('answerTimeOptions.fourth.options')) && 
+                            form.watch('answerTimeOptions.fourth.options').map((time, index) => (
                             <div 
                               key={`fourth-${index}`} 
                               className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
@@ -959,12 +981,15 @@ export default function GameSettingsManagement() {
                                   size="icon"
                                   className="h-5 w-5 rounded-full hover:bg-red-100"
                                   onClick={() => {
-                                    const currentOptions = [...form.watch('answerTimeOptions.fourth.options')];
-                                    if (form.watch('answerTimeOptions.fourth.default') === currentOptions[index]) {
-                                      return;
+                                    const options = form.watch('answerTimeOptions.fourth.options');
+                                    if (Array.isArray(options)) {
+                                      const currentOptions = [...options];
+                                      if (form.watch('answerTimeOptions.fourth.default') === currentOptions[index]) {
+                                        return;
+                                      }
+                                      currentOptions.splice(index, 1);
+                                      form.setValue('answerTimeOptions.fourth.options', currentOptions);
                                     }
-                                    currentOptions.splice(index, 1);
-                                    form.setValue('answerTimeOptions.fourth.options', currentOptions);
                                   }}
                                   disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.fourth.default') === time}
                                 >
@@ -991,10 +1016,13 @@ export default function GameSettingsManagement() {
                               const input = document.getElementById('newTimeForFourth') as HTMLInputElement;
                               const newTime = parseInt(input.value);
                               if (newTime && newTime >= 5 && newTime <= 120) {
-                                const currentOptions = [...form.watch('answerTimeOptions.fourth.options')];
-                                if (!currentOptions.includes(newTime)) {
-                                  form.setValue('answerTimeOptions.fourth.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                  input.value = '';
+                                const options = form.watch('answerTimeOptions.fourth.options');
+                                if (Array.isArray(options)) {
+                                  const currentOptions = [...options];
+                                  if (!currentOptions.includes(newTime)) {
+                                    form.setValue('answerTimeOptions.fourth.options', [...currentOptions, newTime].sort((a, b) => a - b));
+                                    input.value = '';
+                                  }
                                 }
                               }
                             }}
