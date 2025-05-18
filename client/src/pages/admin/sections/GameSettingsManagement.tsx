@@ -235,7 +235,7 @@ export default function GameSettingsManagement() {
         return;
       }
 
-      // إعداد البيانات للإرسال - مع التركيز على الحقول الأساسية المهمة فقط
+      // إعداد البيانات للإرسال - مع كل البيانات المطلوبة
       const gameSettingsData = {
         minCategories: values.minCategories,
         maxCategories: values.maxCategories,
@@ -246,7 +246,11 @@ export default function GameSettingsManagement() {
         defaultFirstAnswerTime: values.defaultFirstAnswerTime,
         defaultSecondAnswerTime: values.defaultSecondAnswerTime,
         modalTitle: values.modalTitle,
-        pageDescription: values.pageDescription
+        pageDescription: values.pageDescription,
+        timerEnabled: values.timerEnabled,
+        helpToolsEnabled: values.helpToolsEnabled,
+        minQuestionsPerCategory: values.minQuestionsPerCategory,
+        answerTimeOptions: values.answerTimeOptions
       };
 
       console.log('إرسال البيانات للخادم...', gameSettingsData);
