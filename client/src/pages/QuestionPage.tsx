@@ -159,20 +159,15 @@ export default function QuestionPage() {
   const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const [showTeamSelection, setShowTeamSelection] = useState(false);
-  // تم إزالة selectedTeam لأنها غير ضرورية الآن
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
   // استخدام إعدادات وسائل المساعدة
-  // ملاحظة: حالياً نستخدم قيم افتراضية، لاحقاً سنضيف هذه الحقول إلى مخطط البيانات
   const helpSettings = {
-    // تفعيل وسائل المساعدة افتراضياً
     helpToolsEnabled: true,
-    // فقط لفريقين
     onlyEnabledForTwoTeams: true,
-    // تفعيل وسائل المساعدة الفردية
     skipQuestionEnabled: true,
     pointDeductionEnabled: true,
     turnReverseEnabled: true,
@@ -239,7 +234,6 @@ export default function QuestionPage() {
         };
         
         setQuestionData(updatedData);
-        setTimeLeft(firstTime);
 
         // تعيين الفريق الحالي - تأكد من استخدام currentTeamIndex من قاعدة البيانات
         try {
@@ -253,11 +247,10 @@ export default function QuestionPage() {
           }
           
           // استخراج الفريق الحالي من بيانات اللعبة
-          const currentGameData = await gameResponse.json();
-          setCurrentTeamIndex(currentGameData.currentTeamIndex || 0);
-          console.log(`تعيين الفريق الحالي: ${currentGameData.currentTeamIndex} (${currentGameData.teams[currentGameData.currentTeamIndex].name})`);
+          const gameData = await gameResponse.json();
+          setCurrentTeamIndex(gameData.currentTeamIndex || 0);
+          console.log(`تعيين الفريق الحالي: ${gameData.currentTeamIndex} (${gameData.teams[gameData.currentTeamIndex].name})`);
           
-
           // تحديث حالة السؤال ليكون "تم فتحه" بمجرد عرضه
           // هذا سيجعل السؤال غير قابل للاختيار مرة أخرى
           await apiRequest('POST', `/api/games/${gameId}/mark-question-viewed`, {
@@ -265,9 +258,10 @@ export default function QuestionPage() {
             categoryId: data.question.categoryId,
             difficulty: requestedDifficulty
           });
-
-          const gameData = await gameResponse.json();
-          setCurrentTeamIndex(gameData.currentTeamIndex || 0);
+          
+          // تعيين الوقت بناءً على الفريق الحالي
+          const currentTime = gameData.currentTeamIndex === 0 ? firstTime : secondTime;
+          setTimeLeft(currentTime);
         } catch (gameErr) {
           console.error('Error fetching game details:', gameErr);
           setError('تعذر تحميل بيانات اللعبة. يرجى المحاولة مرة أخرى.');
@@ -294,7 +288,39 @@ export default function QuestionPage() {
     };
   }, [gameId, questionId]);
 
-  // تحويل الدور للفريق التالي وضبط الوقت المخصص له
+  // وظيفة بدء المؤقت
+  const startTimer = () => {
+    // تحقق إن كان المؤقت يعمل مسبقًا أو الوقت صفر أو عدم وجود بيانات السؤال
+    if (timerRunning || timeLeft <= 0 || !questionData) return;
+    
+    console.log(`⏱️ بدء المؤقت للفريق: ${questionData.teams[currentTeamIndex]?.name} بوقت ${timeLeft} ثانية`);
+    
+    setTimerRunning(true);
+    if (timer) clearInterval(timer);
+
+    const interval = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          clearInterval(interval);
+          setTimerRunning(false);
+          console.log("⏱️ انتهى الوقت!");
+          
+          // انتهى الوقت، نعرض إشعار
+          toast({
+            title: "انتهى الوقت",
+            description: "انتهى وقت هذا الفريق، يمكنك تبديل الدور أو تجديد الوقت.",
+          });
+          
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+    
+    setTimer(interval);
+  };
+
+  // تحويل الدور للفريق التالي
   const moveToNextTeam = async () => {
     try {
       // تحقق من وجود بيانات السؤال
@@ -313,13 +339,15 @@ export default function QuestionPage() {
       // حساب الفريق التالي (الفريق الحالي + 1)
       const nextTeamIndex = currentTeamIndex + 1;
 
-      // إذا وصلنا للفريق الأخير، لا ننتقل بعده
+      // إذا وصلنا للفريق الأخير، نعود للصفحة الرئيسية
       if (nextTeamIndex >= questionData.teams.length) {
-        // وصلنا للفريق الأخير، نعرض تنبيه
         toast({
           title: "انتهت جميع الأدوار",
-          description: "وصلنا للفريق الأخير، يمكنك الرجوع لصفحة اللعب."
+          description: "سيتم العودة إلى صفحة اللعب.",
         });
+        
+        // العودة لصفحة اللعب
+        navigate(`/play/${gameId}`);
         return;
       }
 
@@ -349,21 +377,8 @@ export default function QuestionPage() {
         description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`
       });
       
-      // بدء المؤقت الجديد
-      const newTimer = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime <= 1) {
-            clearInterval(newTimer);
-            setTimerRunning(false);
-            console.log("⏱️ انتهى الوقت!");
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-      
-      setTimer(newTimer);
-      setTimerRunning(true);
+      // بدء المؤقت للفريق الجديد تلقائياً
+      startTimer();
     } catch (error) {
       console.error("خطأ في تبديل الدور:", error);
       toast({
@@ -372,139 +387,52 @@ export default function QuestionPage() {
         variant: "destructive",
       });
     }
-            setTimerRunning(false);
-            
-            // التحقق ما إذا كان يجب الانتقال للفريق التالي عند انتهاء الوقت
-            if (nextTeamIndex === 0) {
-              toast({
-                title: "انتهى وقت الفريق الأول",
-                description: "ننتقل تلقائياً إلى الفريق التالي.",
-              });
-              
-              moveToNextTeam();
-            } else {
-              toast({
-                title: "انتهى الوقت",
-                description: "انتهى وقت هذا الفريق، يمكنك تبديل الدور أو تجديد الوقت.",
-              });
-            }
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-      
-      setTimer(newTimer);
-
-    } catch (err) {
-      console.error('Error changing team turn:', err);
-    }
   };
 
-  // تجديد المؤقت - استخدام الوقت من إعدادات اللعبة في لوحة التحكم
+  // تجديد المؤقت
   const resetTimer = () => {
     if (questionData) {
       // ضبط الوقت حسب الفريق الحالي
-      // إذا كان هذا هو الفريق الأول (index = 0)، نستخدم الوقت الأول
-      // وإلا نستخدم الوقت الثاني للفرق اللاحقة
       const timeToSet = currentTeamIndex === 0 
         ? questionData.firstAnswerTime 
         : questionData.secondAnswerTime;
 
-      console.log(`استخدام وقت الإجابة من لوحة التحكم: ${timeToSet} ثانية`);
-      setTimeLeft(timeToSet);
-
-      // إذا كان المؤقت متوقفاً، نعيد تشغيله
-      if (!timerRunning) {
-        startTimer();
+      console.log(`⏱️ تجديد الوقت: ${timeToSet} ثانية للفريق ${questionData.teams[currentTeamIndex].name}`);
+      
+      // إيقاف المؤقت الحالي إن وجد
+      if (timer) {
+        clearInterval(timer);
+        setTimer(null);
       }
-    }
-  };
-
-  // وظيفة بدء المؤقت (تم نقلها لوظيفة منفصلة) - مع حماية إضافية
-  const startTimer = () => {
-    // تحقق إن كان المؤقت يعمل مسبقًا أو الوقت صفر أو عدم وجود بيانات السؤال
-    if (timerRunning || timeLeft <= 0 || !questionData) return;
-    
-    console.log("📌 الفريق الحالي عند بداية السؤال:", currentTeamIndex, questionData.teams[currentTeamIndex]?.name);
-    setTimerRunning(true);
-    if (timer) clearInterval(timer);
-
-    const interval = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(interval);
-          setTimerRunning(false);
-
-          // انتهى الوقت، نقوم بتبديل الدور تلقائيًا للفريق التالي
-          // ونبدأ المؤقت للفريق التالي (فقط إذا كان الفريق الحالي هو الفريق الأول)
-          if (currentTeamIndex === 0) {
-            // عرض رسالة تنبيه
-            toast({
-              title: "انتهى وقت الفريق الأول",
-              description: "ننتقل تلقائياً إلى الفريق التالي.",
-            });
-            
-            // تبديل الدور تلقائياً
-            moveToNextTeam();
-          } else {
-            // الفريق الثاني أو ما بعده، نعرض رسالة فقط
-            toast({
-              title: "انتهى الوقت",
-              description: "انتهى وقت هذا الفريق، يمكنك تبديل الدور أو تجديد الوقت.",
-            });
-          }
-          return 0;
-        }
-        return prevTime - 1;
+      setTimerRunning(false);
+      
+      // ضبط الوقت الجديد
+      setTimeLeft(timeToSet);
+      
+      // بدء المؤقت من جديد
+      startTimer();
+      
+      // عرض رسالة تأكيد
+      toast({
+        title: "تم تجديد الوقت",
+        description: `تم إعادة ضبط المؤقت للفريق: ${questionData.teams[currentTeamIndex].name}`
       });
-    }, 1000);
-    setTimer(interval);
+    }
   };
 
   // تشغيل المؤقت عند تحميل السؤال بطريقة مباشرة
   useEffect(() => {
-    // تأكد من وجود بيانات السؤال والفريق
-    if (questionData && !showTeamSelection && !loading) {
-      // طباعة معلومات عن الفريق الحالي للتشخيص
-      console.log(`⚠️ تحديث المؤقت - الفريق الحالي: ${currentTeamIndex} (${questionData.teams[currentTeamIndex]?.name})`);
+    // تأكد من وجود بيانات السؤال والفريق وأن التحميل اكتمل
+    if (questionData && !loading && timeLeft > 0 && !timerRunning) {
+      // تأخير قصير قبل بدء المؤقت للتأكد من تحديث واجهة المستخدم
+      const timerId = setTimeout(() => {
+        startTimer();
+      }, 500);
       
-      // ضبط الوقت باستخدام الفريق الحالي
-      const currentTime = currentTeamIndex === 0
-        ? questionData.firstAnswerTime
-        : questionData.secondAnswerTime;
-
-      // ضبط الوقت دائمًا عند تحميل بيانات السؤال، حتى لو كان المؤقت يعمل
-      // هذا سيضمن انتقال الوقت للفريق التالي
-      setTimeLeft(currentTime);
-      console.log(`⏰ تعيين المؤقت: ${currentTime} ثانية للفريق: ${questionData.teams[currentTeamIndex]?.name}`);
-      
-      // بدء المؤقت مباشرة إذا لم يكن قيد التشغيل
-      if (!timerRunning) {
-        console.log("▶️ تشغيل المؤقت تلقائيًا");
-        // بدء المؤقت مباشرة بدون تأخير
-        setTimerRunning(true);
-        
-        // مسح أي مؤقت سابق
-        if (timer) clearInterval(timer);
-        
-        // إنشاء مؤقت جديد
-        const newTimer = setInterval(() => {
-          setTimeLeft((prevTime) => {
-            if (prevTime <= 1) {
-              clearInterval(newTimer);
-              setTimerRunning(false);
-              console.log("⏱️ انتهى الوقت!");
-              return 0;
-            }
-            return prevTime - 1;
-          });
-        }, 1000);
-        
-        setTimer(newTimer);
-      }
+      // تنظيف المؤقت عند إلغاء التركيب
+      return () => clearTimeout(timerId);
     }
-  }, [questionData, currentTeamIndex, loading]);
+  }, [questionData, loading, timeLeft, timerRunning]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
@@ -520,428 +448,419 @@ export default function QuestionPage() {
       // استخدام مستوى الصعوبة المطلوب للنقاط (1 أو 2 أو 3)
       const points = requestedDifficulty;
 
-      // التحقق من وجود بيانات السؤال
-      if (!questionData) {
-        throw new Error("بيانات السؤال غير متوفرة");
-      }
+      // استخدام مؤشر الفريق المحدد، أو الفريق الحالي إذا لم يتم تمرير أي مؤشر
+      const selectedTeamIndex = typeof teamIndex === 'number' ? teamIndex : currentTeamIndex;
+      const selectedTeam = questionData?.teams[selectedTeamIndex];
 
+      // تحديث النتيجة في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/answer`, {
         questionId: parseInt(questionId as string),
-        teamId: teamIndex !== undefined ? teamIndex : null, // نرسل الindوقيل رقم الفريق
-        categoryId: questionData.question.categoryId, // إضافة معرف التصنيف
-        difficulty: requestedDifficulty, // إضافة مستوى الصعوبة
-        isCorrect,
-        points: isCorrect ? points : 0
-      });
-      
-      // تحديث الفريق الحالي في قاعدة البيانات قبل الانتقال
-      const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
-      
-      // تحديث الفريق الحالي في قاعدة البيانات
-      await apiRequest('POST', `/api/games/${gameId}/update-team`, {
-        teamIndex: nextTeamIndex
-      });
-      
-      // تحديث الفريق الحالي في واجهة المستخدم
-      setCurrentTeamIndex(nextTeamIndex);
-      toast({
-        title: `تم تبديل الدور تلقائيًا`,
-        description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`,
+        difficulty: requestedDifficulty,
+        teamIndex: selectedTeamIndex,
+        isCorrect: isCorrect
       });
 
-      // عرض رسالة توضح تبديل الدور والانتقال
+      // إيقاف المؤقت بعد تقديم الإجابة
+      if (timer) {
+        clearInterval(timer);
+        setTimer(null);
+      }
+      setTimerRunning(false);
+
+      // بعد الإجابة بواسطة الفريق الحالي، ننتقل إلى صفحة اللعب
       toast({
-        title: `تم تبديل الدور بنجاح`,
-        description: `سيتم الانتقال إلى صفحة اللعب مع تبديل الدور للفريق: ${questionData.teams[nextTeamIndex].name}`,
+        title: isCorrect ? "إجابة صحيحة!" : "إجابة خاطئة",
+        description: isCorrect 
+          ? `تم إضافة ${points} نقطة لفريق ${selectedTeam?.name}. سيتم العودة إلى صفحة اللعب.` 
+          : `لم يحصل فريق ${selectedTeam?.name} على نقاط. سيتم العودة إلى صفحة اللعب.`
       });
-      
-      // تأخير قصير ثم العودة لصفحة اللعب
+
+      // الانتقال مباشرة إلى صفحة اللعب بعد تسجيل الإجابة
+      // تأخير قصير للسماح للمستخدم برؤية رسالة النجاح/الفشل
       setTimeout(() => {
         navigate(`/play/${gameId}`);
       }, 1500);
-
     } catch (err) {
       console.error('Error submitting answer:', err);
-
-      // إعادة تعيين حالة الإرسال في حالة الخطأ
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حفظ الإجابة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      // إلغاء تفعيل حالة الإرسال
       setIsSubmitting(false);
     }
   };
 
-  // تسجيل إجابة - فتح نافذة الاختيار
-  const handleRecordAnswer = () => {
-    // إيقاف المؤقت إذا كان يعمل
+  // إغلاق السؤال والعودة للخلف
+  const closeQuestion = () => {
+    // إيقاف المؤقت إذا كان قيد التشغيل
     if (timer) {
       clearInterval(timer);
-      setTimerRunning(false);
+      setTimer(null);
     }
-    setShowTeamSelection(true);
+    setTimerRunning(false);
+    
+    // التأكد من عدم عرض حوار اختيار الفريق عند العودة
+    setShowTeamSelection(false);
+    
+    // العودة إلى صفحة اللعب
+    navigate(`/play/${gameId}`);
   };
 
-  // إنهاء اللعبة
-  const endGame = async () => {
-    try {
-      await apiRequest('POST', `/api/games/${gameId}/end`);
-      navigate('/my-games');
-    } catch (err) {
-      console.error('Error ending game:', err);
-    }
+  // معالجة تقديم النتيجة الإيجابية (إجابة صحيحة)
+  const handleCorrectAnswer = () => {
+    submitAnswer(true);
   };
 
-  // العودة إلى صفحة اللعبة مع حفظ حالة اللعبة أولاً
-  const returnToGame = async () => {
-    try {
-      // حفظ حالة اللعبة قبل العودة (لضمان عدم فقدان التقدم)
-      await apiRequest('POST', `/api/games/${gameId}/save-state`);
-
-      // العودة إلى صفحة اللعبة
-      navigate(`/play/${gameId}`);
-    } catch (err) {
-      console.error('Error saving game state:', err);
-      // على الرغم من الخطأ نعود للعبة
-      navigate(`/play/${gameId}`);
-    }
+  // معالجة تقديم النتيجة السلبية (إجابة خاطئة)
+  const handleWrongAnswer = () => {
+    submitAnswer(false);
   };
 
-  // تنسيق الوقت
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // محتوى الصفحة الرئيسي
+  // عرض شاشة التحميل
   if (loading) {
     return (
-      <div dir="rtl" className="flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-50 to-white">
-        <Loader2 className="h-12 w-12 animate-spin text-sky-500" />
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <h2 className="text-xl font-semibold text-center mb-2">جاري تحميل السؤال...</h2>
+        <p className="text-gray-500 text-center">يرجى الانتظار قليلًا</p>
       </div>
     );
   }
 
+  // عرض رسالة الخطأ إذا حدث خطأ
   if (error) {
     return (
-      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-white min-h-screen">
-        <Alert variant="destructive" className="max-w-xl mx-auto shadow-md">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <div className="mt-4 flex justify-center">
-          <Button onClick={() => navigate(`/play/${gameId}`)} className="shadow-md">
-            العودة إلى اللعبة
-          </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
+        <AlertTriangle className="w-12 h-12 text-destructive mb-4" />
+        <h2 className="text-xl font-semibold text-center mb-2">حدث خطأ</h2>
+        <p className="text-gray-500 text-center">{error}</p>
+        <Button 
+          className="mt-4" 
+          onClick={() => navigate(notFoundError ? "/" : `/play/${gameId}`)}
+        >
+          {notFoundError ? "العودة للرئيسية" : "العودة للعبة"}
+        </Button>
       </div>
     );
   }
 
-  if (!questionData || notFoundError) {
+  // التأكد من أن بيانات السؤال متوفرة
+  if (!questionData) {
     return (
-      <div dir="rtl" className="p-8 bg-gradient-to-b from-sky-50 to-white min-h-screen font-[Cairo]">
-        <Alert variant={notFoundError ? "destructive" : "default"} className="max-w-xl mx-auto shadow-md">
-          <AlertTriangle className="h-6 w-6 mr-2" />
-          <AlertDescription className="text-lg">
-            {notFoundError 
-              ? `${error || 'السؤال المطلوب غير موجود.'}`
-              : 'لم يتم العثور على بيانات السؤال.'}
-          </AlertDescription>
-        </Alert>
-        <div className="mt-4 flex justify-center">
-          <Button onClick={() => navigate(`/play/${gameId}`)} className="shadow-md px-6 py-2 h-auto">
-            العودة إلى اللعبة
-          </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
+        <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
+        <h2 className="text-xl font-semibold text-center mb-2">البيانات غير متوفرة</h2>
+        <p className="text-gray-500 text-center">لم يتم العثور على بيانات السؤال. يرجى المحاولة مرة أخرى.</p>
+        <Button 
+          className="mt-4" 
+          onClick={() => navigate(`/play/${gameId}`)}
+        >
+          العودة للعبة
+        </Button>
       </div>
     );
   }
 
+  // احصل على الفريق الحالي من البيانات
   const currentTeam = questionData.teams[currentTeamIndex];
 
+  // الرجوع للواجهة الرئيسية
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
-      {/* شريط الهيدر */}
-      <header className="bg-white shadow-md py-3 px-4">
+    <div className="flex flex-col min-h-screen bg-gradient-to-tr from-gray-50 to-amber-50">
+      {/* رأس الصفحة */}
+      <header className="bg-white shadow-sm py-2 px-4">
         <div className="container mx-auto flex justify-between items-center">
-          {/* شعار الموقع (يمين) */}
-          <div className="flex items-center">
-            <img src="/assets/jaweb-logo.png" alt="جاوب" className="h-10" />
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={closeQuestion}
+              className="rounded-full"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+            <span>سؤال #{questionNumber}</span>
           </div>
-
-          {/* اسم الفريق الذي عليه الدور (وسط) مع تأثير نبض وإبراز اللون */}
-          <div 
-            className="text-lg font-bold px-4 py-2 rounded-full shadow-md animate-pulse flex items-center gap-2" 
-            style={{ 
-              backgroundColor: currentTeam?.color || '#e2e8f0',
-              color: '#1e293b',
-              borderWidth: '2px',
-              borderStyle: 'solid',
-              borderColor: '#1e293b'
-            }}
+          
+          <Badge 
+            variant="outline" 
+            className="bg-white flex items-center gap-1 py-2 border-2"
+            style={{ borderColor: currentTeam?.color || '#ccc' }}
           >
-            <LogOut className="h-5 w-5" />
-            <span>دور: {currentTeam?.name || 'الفريق الأول'}</span>
-          </div>
-
-          {/* أزرار التحكم (يسار) */}
-          <div className="flex gap-2">
-
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={returnToGame} 
-                    className="border-sky-200 hover:bg-sky-50">
-                    <ChevronRight className="h-4 w-4 text-sky-700" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>الرجوع للعبة</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={endGame}
-                    className="border-rose-200 hover:bg-rose-50">
-                    <XCircleIcon className="h-4 w-4 text-rose-700" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>إنهاء اللعبة</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={() => navigate('/')}
-                    className="border-slate-200 hover:bg-slate-50">
-                    <LogOut className="h-4 w-4 text-slate-700" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>الخروج من اللعبة</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+            <div 
+              className="w-3 h-3 rounded-full animate-pulse"
+              style={{ backgroundColor: currentTeam?.color || '#ccc' }}
+            />
+            <span>الدور: {currentTeam?.name || 'غير محدد'}</span>
+          </Badge>
         </div>
       </header>
-
-      {/* مؤقت العد التنازلي - منعزل في المنتصف */}
-      <div className="flex justify-center mt-4 mb-4">
-        <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-2 text-xl font-bold px-6 py-3 rounded-full ${
-            timeLeft <= 10 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-          }`}>
-            <ClockIcon className="h-5 w-5" />
-            <span className="min-w-[60px] text-center">{formatTime(timeLeft)}</span>
+      
+      {/* محتوى السؤال */}
+      <div className="container mx-auto py-4 px-4 flex-grow">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          {/* معلومات السؤال */}
+          <div className="md:col-span-9">
+            <Card className="overflow-hidden">
+              <div 
+                className="h-12 flex items-center justify-between px-4" 
+                style={{ backgroundColor: `${currentTeam?.color || '#ddd'}22` }}
+              >
+                <Badge variant="outline" className="gap-1">
+                  <span className={questionData.question.categoryIcon}></span>
+                  <span>{questionData.question.categoryName}</span>
+                </Badge>
+                
+                <Badge 
+                  variant="outline" 
+                  className="px-3 py-1"
+                  style={{ 
+                    backgroundColor: 
+                      requestedDifficulty === 1 ? '#4caf5022' : 
+                      requestedDifficulty === 2 ? '#ff980022' : '#f4433622' 
+                  }}
+                >
+                  {requestedDifficulty === 1 ? 'سهل' : 
+                   requestedDifficulty === 2 ? 'متوسط' : 'صعب'}
+                </Badge>
+              </div>
+              
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-semibold text-center mb-4">{questionData.question.text}</h2>
+                
+                {/* إذا كان هناك صورة، اعرضها */}
+                {questionData.question.imageUrl && (
+                  <div className="my-4 flex justify-center">
+                    <img 
+                      src={questionData.question.imageUrl} 
+                      alt="صورة السؤال" 
+                      className="max-w-full max-h-96 rounded-lg shadow-md"
+                    />
+                  </div>
+                )}
+                
+                {/* إذا كان هناك فيديو، اعرضه */}
+                {questionData.question.videoUrl && (
+                  <div className="my-4 flex justify-center">
+                    <video 
+                      src={questionData.question.videoUrl} 
+                      controls 
+                      className="max-w-full max-h-96 rounded-lg shadow-md"
+                    />
+                  </div>
+                )}
+                
+                {/* عرض الإجابة عند الضغط على زر "عرض الإجابة" */}
+                {showAnswer && (
+                  <Alert className="mt-6 bg-green-50 border-green-500">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="font-bold text-green-600">
+                      الإجابة الصحيحة: {questionData.question.answer}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
           </div>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={resetTimer}
-            className="h-12 w-12 rounded-full"
-            title="تجديد الوقت"
-          >
-            <RotateCw className="h-5 w-5" />
-          </Button>
-
-          {/* زر تبديل الدور - تحسين المظهر وجعله أكثر وضوحاً */}
-          <Button 
-            onClick={() => {
-              moveToNextTeam();
-            }}
-            className="bg-yellow-100 border border-yellow-400 text-yellow-700 hover:bg-yellow-200 h-12 shadow-md px-4 flex items-center gap-2"
-          >
-            <RotateCw className="h-5 w-5" />
-            <span className="font-bold">تبديل الدور يدوياً</span>
-          </Button>
+          
+          {/* لوحة التحكم بالمؤقت والإجابة */}
+          <div className="md:col-span-3">
+            <Card>
+              <CardContent className="p-4">
+                {/* المؤقت */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="relative mb-2">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span 
+                        className={`text-3xl font-semibold ${
+                          timeLeft <= 5 && timerRunning ? 'text-red-600 animate-pulse' : ''
+                        }`}
+                      >
+                        {timeLeft}
+                      </span>
+                    </div>
+                    <svg 
+                      className="transform -rotate-90 w-28 h-28"
+                      viewBox="0 0 120 120"
+                    >
+                      <circle
+                        className="text-gray-100"
+                        strokeWidth="8"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="50"
+                        cx="60"
+                        cy="60"
+                      />
+                      <circle
+                        className="text-blue-500"
+                        strokeWidth="8"
+                        strokeDasharray={`${2 * Math.PI * 50}`}
+                        strokeDashoffset={`${2 * Math.PI * 50 * (1 - timeLeft / (currentTeamIndex === 0 ? questionData.firstAnswerTime : questionData.secondAnswerTime))}`}
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="50"
+                        cx="60"
+                        cy="60"
+                      />
+                    </svg>
+                  </div>
+                  
+                  {/* أزرار التحكم بالمؤقت */}
+                  <div className="flex gap-2 mt-2">
+                    {!timerRunning ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        onClick={startTimer}
+                        disabled={timeLeft <= 0}
+                      >
+                        <Loader2 className="h-4 w-4" />
+                        <span>تشغيل</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        onClick={() => {
+                          if (timer) clearInterval(timer);
+                          setTimerRunning(false);
+                        }}
+                      >
+                        <Minus className="h-4 w-4" />
+                        <span>إيقاف</span>
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1"
+                      onClick={resetTimer}
+                    >
+                      <RefreshCcw className="h-4 w-4" />
+                      <span>تجديد</span>
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* أزرار الإجابة */}
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleCorrectAnswer}
+                    className="w-full h-12 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600"
+                    disabled={isSubmitting}
+                  >
+                    <CheckCircle className="h-5 w-5" />
+                    <span>إجابة صحيحة</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={handleWrongAnswer}
+                    variant="destructive"
+                    className="w-full h-12 flex items-center justify-center gap-2"
+                    disabled={isSubmitting}
+                  >
+                    <XCircle className="h-5 w-5" />
+                    <span>إجابة خاطئة</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setShowAnswer(prev => !prev)}
+                    variant="ghost"
+                    className="w-full h-12 flex items-center justify-center gap-2 border border-dashed"
+                  >
+                    {showAnswer ? (
+                      <>
+                        <XCircleIcon className="h-5 w-5" />
+                        <span>إخفاء الإجابة</span>
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle className="h-5 w-5" />
+                        <span>عرض الإجابة</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {/* تبديل الدور للفريق التالي */}
+                <div className="mt-4 pt-4 border-t border-dashed">
+                  <Button
+                    onClick={moveToNextTeam}
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    disabled={currentTeamIndex >= questionData.teams.length - 1 || isSubmitting}
+                  >
+                    <RotateCw className="h-5 w-5" />
+                    <span>تبديل الدور للفريق التالي</span>
+                  </Button>
+                </div>
+                
+                {/* وسائل المساعدة */}
+                {isHelpEnabled && (
+                  <div className="mt-4 pt-4 border-t border-dashed">
+                    <h3 className="text-sm text-gray-500 mb-2">وسائل المساعدة:</h3>
+                    <div className="flex justify-around">
+                      {helpSettings.skipQuestionEnabled && (
+                        <HelpButton
+                          icon={<UserX size={16} />}
+                          label="تخطي السؤال"
+                          tooltip="تخطي هذا السؤال والعودة لصفحة اللعب"
+                          onClick={() => {
+                            setHelpUsed(prev => ({ ...prev, skip: true }));
+                            toast({
+                              title: "تم استخدام المساعدة",
+                              description: "تم تخطي السؤال، سيتم العودة إلى صفحة اللعب."
+                            });
+                            setTimeout(() => navigate(`/play/${gameId}`), 1000);
+                          }}
+                          disabled={helpUsed.skip}
+                        />
+                      )}
+                      
+                      {helpSettings.pointDeductionEnabled && (
+                        <HelpButton
+                          icon={<Minus size={16} />}
+                          label="خصم نقطة"
+                          tooltip="خصم نقطة للحصول على مساعدة"
+                          onClick={() => {
+                            setHelpUsed(prev => ({ ...prev, discount: true }));
+                            toast({
+                              title: "تلميح",
+                              description: "تحت التطوير - سيتم إضافة تلميح هنا"
+                            });
+                          }}
+                          disabled={helpUsed.discount}
+                        />
+                      )}
+                      
+                      {helpSettings.turnReverseEnabled && (
+                        <HelpButton
+                          icon={<RotateCw size={16} />}
+                          label="تغيير الدور"
+                          tooltip="تبديل الدور مع الفريق الآخر"
+                          onClick={() => {
+                            setHelpUsed(prev => ({ ...prev, swap: true }));
+                            moveToNextTeam();
+                          }}
+                          disabled={helpUsed.swap || currentTeamIndex >= questionData.teams.length - 1}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-
-      <main className="container mx-auto p-4">
-        {/* بطاقة السؤال */}
-        <div className="max-w-4xl mx-auto shadow-lg overflow-hidden rounded-xl">
-          {/* معلومات السؤال */}
-          <div className="bg-white p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">
-                  {questionData.question.categoryName}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-700 px-2">
-                    النقاط: {requestedDifficulty}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-sky-50 p-4 rounded-lg mb-4">
-              <h3 className="text-xl font-bold mb-4 text-sky-900">
-                السؤال:
-              </h3>
-              <p className="text-lg text-gray-800">
-                {questionData.question.text}
-              </p>
-            </div>
-
-            {/* وسائط السؤال - في حالة وجودها */}
-            {questionData.question.mediaType && (
-              <div className="my-4 rounded-lg overflow-hidden flex justify-center">
-                {questionData.question.mediaType === 'image' && questionData.question.imageUrl && (
-                  <img 
-                    src={questionData.question.imageUrl} 
-                    alt="صورة للسؤال" 
-                    className="max-h-[300px] w-auto object-contain rounded-md"
-                  />
-                )}
-
-                {questionData.question.mediaType === 'video' && questionData.question.videoUrl && (
-                  <video 
-                    src={questionData.question.videoUrl} 
-                    controls 
-                    className="max-h-[300px] w-auto rounded-md"
-                  />
-                )}
-              </div>
-            )}
-
-            {/* الإجابة - تظهر فقط بعد الضغط على زر عرض الإجابة */}
-            {showAnswer && (
-              <Card className="mt-6 bg-green-50 border-green-200">
-                <CardContent className="p-4">
-                  <h3 className="text-xl font-bold mb-2 text-green-900 flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2" /> 
-                    الإجابة الصحيحة:
-                  </h3>
-                  <p className="text-lg text-gray-800">
-                    {questionData.question.answer}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* أزرار وسائل المساعدة - تظهر بناءً على إعدادات لوحة التحكم وبعد عرض الإجابة */}
-            {isHelpEnabled && showAnswer && (
-              <div className="mt-6 flex justify-center gap-3 bg-gray-50 p-3 rounded-lg">
-                {/* خصم النقاط */}
-                {helpSettings.pointDeductionEnabled && (
-                  <HelpButton 
-                    icon={<Minus className="h-4 w-4" />}
-                    label="خصم"
-                    tooltip="خصم الإجابة الخاطئة"
-                    onClick={() => {
-                      console.log('استخدام وسيلة مساعدة: خصم النقاط');
-                      setHelpUsed(prev => ({ ...prev, discount: true }));
-                    }}
-                    disabled={helpUsed.discount}
-                  />
-                )}
-
-                {/* عكس الدور */}
-                {helpSettings.turnReverseEnabled && (
-                  <HelpButton 
-                    icon={<Phone className="h-4 w-4" />}
-                    label="عكس"
-                    tooltip="تبديل الدور"
-                    onClick={() => {
-                      console.log('استخدام وسيلة مساعدة: عكس الدور');
-                      setHelpUsed(prev => ({ ...prev, swap: true }));
-                      moveToNextTeam();
-                    }}
-                    disabled={helpUsed.swap}
-                  />
-                )}
-
-                {/* تخطي السؤال */}
-                {helpSettings.skipQuestionEnabled && (
-                  <HelpButton 
-                    icon={<UserX className="h-4 w-4" />}
-                    label="تخطي"
-                    tooltip="تخطي السؤال"
-                    onClick={() => {
-                      console.log('استخدام وسيلة مساعدة: تخطي السؤال');
-                      setHelpUsed(prev => ({ ...prev, skip: true }));
-                      navigate(`/play/${gameId}`);
-                    }}
-                    disabled={helpUsed.skip}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* أزرار التحكم */}
-            <div className="mt-6 flex justify-center gap-4">
-              {!showAnswer ? (
-                // عرض زر "عرض الإجابة" فقط إذا لم تُعرض الإجابة بعد
-                <Button
-                  onClick={() => {
-                    setShowAnswer(true);
-                    // لا نقوم بتشغيل المؤقت تلقائياً، ننتظر المستخدم ليضغط على زر تجديد الوقت
-                  }}
-                  className="px-8 py-6 h-auto text-xl bg-green-600 hover:bg-green-700 shadow-md rounded-full"
-                >
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  عرض الإجابة
-                </Button>
-              ) : (
-                // عرض زر "منو جاوب؟" فقط بعد عرض الإجابة
-                <Button
-                  onClick={handleRecordAnswer}
-                  className="px-8 py-6 h-auto text-xl bg-sky-600 hover:bg-sky-700 shadow-md rounded-full"
-                >
-                  <HelpCircle className="h-5 w-5 mr-2" />
-                  منو جاوب؟
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* مربع حوار اختيار الفريق */}
-      <Dialog
-        open={showTeamSelection}
-        onOpenChange={(open) => setShowTeamSelection(open)}
-      >
-        <ModalDialogContent className={getModalClass()}>
-          <DialogHeader>
-            <DialogTitle className="text-xl">من أجاب على السؤال؟</DialogTitle>
-            <DialogDescription>اختر الفريق الذي أجاب أو اختر "لم يُجب أحد"</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              {questionData.teams.map((team, index) => (
-                <AnswerTeamButton
-                  key={team.id}
-                  team={team}
-                  index={index}
-                  onClick={(teamIndex) => {
-                    submitAnswer(true, teamIndex); // تسجيل إجابة صحيحة مع تمرير رقم الفريق
-                    setShowTeamSelection(false);
-                  }}
-                  disabled={isSubmitting}
-                />
-              ))}
-              <Button
-                variant="outline"
-                className="h-16 text-lg col-span-full shadow-md flex items-center gap-2 justify-center"
-                onClick={() => {
-                  submitAnswer(false); // تسجيل لم يُجب أحد
-                  setShowTeamSelection(false);
-                }}
-                disabled={isSubmitting}
-              >
-                👁‍🗨 لم يُجب أحد
-              </Button>
-            </div>
-          </div>
-        </ModalDialogContent>
-      </Dialog>
     </div>
   );
 }
