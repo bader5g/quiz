@@ -79,52 +79,76 @@ export default function PlayPage() {
     }
   }, [gameId]);
   
-  // استخدام التأثير للتحديث عند العودة للصفحة
+  // آلية محسنة للتحديث عند العودة للصفحة
   useEffect(() => {
-    // تحديث البيانات عند العودة للصفحة (focus)
-    const handleFocus = () => {
-      if (gameId) {
-        console.log("تحديث بيانات اللعبة عند العودة للصفحة");
-        fetchGameDetails();
-      }
-    };
+    // التأكد من تنفيذ تحديث واحد فقط
+    let updateRequested = false;
     
-    // إضافة مستمع الحدث عند تثبيت المكون
-    window.addEventListener('focus', handleFocus);
-    
-    // تحديث البيانات عند الانتقال من صفحة السؤال
-    // هذا سيحدث عند رسم المكون وعند كل تحديث للواجهة
-    const checkPageVisibility = () => {
-      if (document.visibilityState === 'visible' && gameId) {
-        console.log("تحديث بيانات اللعبة عند العودة من صفحة أخرى");
-        // استدعاء وظيفة جلب البيانات فوراً
-        fetchGameDetails();
+    // دالة جلب البيانات مع التحقق من عدم التكرار
+    const updateGameData = () => {
+      if (!updateRequested && gameId) {
+        updateRequested = true;
+        console.log("تحديث بيانات اللعبة...");
         
-        // إجراء تحديث إضافي بعد تأخير لضمان جلب أحدث البيانات
-        setTimeout(() => {
-          fetchGameDetails();
-          console.log("تحديث إضافي لبيانات اللعبة");
-        }, 800);
+        // استخدام كائن AbortController لإلغاء الطلبات المتكررة
+        const controller = new AbortController();
+        
+        // جلب بيانات اللعبة وتحديث الحالة - إصلاح عدد المعاملات
+        fetch(`/api/games/${gameId}`, { 
+          method: 'GET',
+          signal: controller.signal
+        })
+          .then(response => response.json())
+          .then(gameData => {
+            setGame(gameData);
+            console.log(`تم تحديث الفريق الحالي: الدور للفريق ${gameData.teams[gameData.currentTeamIndex].name}`);
+            setError(null);
+          })
+          .catch(err => {
+            if (err.name !== 'AbortError') {
+              console.error('خطأ في تحديث بيانات اللعبة:', err);
+            }
+          })
+          .finally(() => {
+            updateRequested = false;
+          });
       }
     };
     
-    document.addEventListener('visibilitychange', checkPageVisibility);
+    // استدعاء عند تحميل الصفحة لأول مرة
+    updateGameData();
     
-    // تحديث فوري عند تركيب المكون (بعد الانتقال من صفحة أخرى)
-    if (document.visibilityState === 'visible' && gameId) {
-      fetchGameDetails();
-      
-      // إضافة تحديث إضافي بعد تأخير عند تثبيت المكون
-      setTimeout(() => {
-        fetchGameDetails();
-        console.log("تحديث ثانوي لبيانات اللعبة");
-      }, 1000);
-    }
+    // تحديث البيانات عند العودة للصفحة
+    const handleFocus = () => {
+      if (document.hasFocus() && gameId) {
+        updateGameData();
+      }
+    };
+    
+    // تحديث البيانات عند عودة النافذة للمقدمة
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && gameId) {
+        updateGameData();
+      }
+    };
+    
+    // تحديث البيانات عند العودة من صفحة أخرى (popstate)
+    const handleRouteChange = () => {
+      if (gameId) {
+        updateGameData();
+      }
+    };
+    
+    // إضافة مستمعات الأحداث
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('popstate', handleRouteChange);
     
     // إزالة مستمعات الأحداث عند إزالة المكون
     return () => {
       window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', checkPageVisibility);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('popstate', handleRouteChange);
     };
   }, [gameId]);
   
