@@ -477,19 +477,16 @@ export default function QuestionPage() {
         description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`,
       });
 
-      // إضافة تأخير قبل العودة لضمان تطبيق التغييرات
+      // عرض رسالة توضح تبديل الدور والانتقال
       toast({
-        title: `الانتقال إلى صفحة اللعب`,
-        description: `سيتم الانتقال خلال ثانيتين...`,
+        title: `تم تبديل الدور بنجاح`,
+        description: `سيتم الانتقال إلى صفحة اللعب مع تبديل الدور للفريق: ${questionData.teams[nextTeamIndex].name}`,
       });
       
-      // زيادة التأخير قبل العودة إلى صفحة اللعبة لضمان حفظ التغييرات
+      // تأخير قصير ثم العودة لصفحة اللعب
       setTimeout(() => {
-        // تنفيذ طلب إضافي للتأكد من تحديث البيانات
-        apiRequest('GET', `/api/games/${gameId}`).then(() => {
-          navigate(`/play/${gameId}`);
-        });
-      }, 2000);
+        navigate(`/play/${gameId}`);
+      }, 1500);
 
     } catch (err) {
       console.error('Error submitting answer:', err);

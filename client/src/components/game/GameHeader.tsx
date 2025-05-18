@@ -39,16 +39,18 @@ export function GameHeader({
           </div>
         )}
         
-        {/* الدور الحالي */}
+        {/* الدور الحالي - تمييز واضح أكثر */}
         <Badge 
-          className="text-lg py-2 px-4 rounded-md shadow-md flex items-center gap-2 transition-all text-black border-2 animate-pulse" 
+          className="text-lg py-3 px-6 rounded-full shadow-lg flex items-center gap-3 transition-all text-black border-2 animate-pulse" 
           style={{ 
             backgroundColor: currentTeam.color || 'white',
             borderColor: 'black',
+            fontSize: '1.1rem',
+            fontWeight: 'bold'
           }}
         >
-          <Trophy className="h-5 w-5 text-gray-800" />
-          <span className="text-sm font-bold">الدور الحالي: {currentTeam.name}</span>
+          <Trophy className="h-6 w-6 text-gray-800" />
+          <span className="font-extrabold">الدور الحالي: {currentTeam.name}</span>
         </Badge>
       </div>
 

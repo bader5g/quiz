@@ -121,19 +121,10 @@ export default function PlayPage() {
       }, 1000);
     }
     
-    // تحديث دوري كل 3 ثواني
-    const intervalId = setInterval(() => {
-      if (document.visibilityState === 'visible' && gameId) {
-        fetchGameDetails();
-        console.log("تحديث دوري لبيانات اللعبة");
-      }
-    }, 3000);
-    
     // إزالة مستمعات الأحداث عند إزالة المكون
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', checkPageVisibility);
-      clearInterval(intervalId);
     };
   }, [gameId]);
   
