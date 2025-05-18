@@ -774,6 +774,8 @@ export default function GameSettingsManagement() {
                             id="newTimeForFirst"
                             min={5}
                             max={120}
+                            defaultValue=""
+                            key="newTimeForFirst"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
@@ -883,6 +885,8 @@ export default function GameSettingsManagement() {
                             id="newTimeForSecond"
                             min={5}
                             max={120}
+                            defaultValue=""
+                            key="newTimeForSecond"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
@@ -992,6 +996,8 @@ export default function GameSettingsManagement() {
                             id="newTimeForThird"
                             min={5}
                             max={120}
+                            defaultValue=""
+                            key="newTimeForThird"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
@@ -1101,6 +1107,8 @@ export default function GameSettingsManagement() {
                             id="newTimeForFourth"
                             min={5}
                             max={120}
+                            defaultValue=""
+                            key="newTimeForFourth"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
