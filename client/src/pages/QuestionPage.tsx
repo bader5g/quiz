@@ -164,16 +164,14 @@ export default function QuestionPage() {
   const [notFoundError, setNotFoundError] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
-  // إعدادات وسائل المساعدة من لوحة التحكم
-  const helpSettings = gameSettings ? {
-    helpToolsEnabled: gameSettings.helpToolsEnabled ?? true,
-    onlyEnabledForTwoTeams: gameSettings.onlyEnabledForTwoTeams ?? true,
-    skipQuestionEnabled: gameSettings.skipQuestionEnabled ?? true,
-    pointDeductionEnabled: gameSettings.pointDeductionEnabled ?? true,
-    turnReverseEnabled: gameSettings.turnReverseEnabled ?? true,
-  } : {
+  // استخدام إعدادات وسائل المساعدة
+  // ملاحظة: حالياً نستخدم قيم افتراضية، لاحقاً سنضيف هذه الحقول إلى مخطط البيانات
+  const helpSettings = {
+    // تفعيل وسائل المساعدة افتراضياً
     helpToolsEnabled: true,
+    // فقط لفريقين
     onlyEnabledForTwoTeams: true,
+    // تفعيل وسائل المساعدة الفردية
     skipQuestionEnabled: true,
     pointDeductionEnabled: true,
     turnReverseEnabled: true,
