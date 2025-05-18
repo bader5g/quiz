@@ -195,6 +195,37 @@ export default function PlayPage() {
     navigate("/my-games");
   };
 
+  // وظيفة جديدة للتبديل اليدوي للدور إلى الفريق التالي
+  const handleSwitchTeam = async () => {
+    if (!game) return;
+    
+    // حساب مؤشر الفريق التالي بشكل دوري
+    const nextTeamIndex = (game.currentTeamIndex + 1) % game.teams.length;
+    
+    try {
+      // تحديث واجهة المستخدم فوراً
+      setGame({ ...game, currentTeamIndex: nextTeamIndex });
+      
+      // إرسال التحديث للخادم
+      await apiRequest(
+        "POST",
+        `/api/games/${gameId}/update-team`,
+        { teamIndex: nextTeamIndex }
+      );
+      
+      console.log(`🔄 تم تبديل الدور يدوياً من الفريق ${game.currentTeamIndex} إلى الفريق ${nextTeamIndex}`);
+      
+      // تنبيه المستخدم
+      toast({
+        title: "تم تبديل الدور",
+        description: `الدور الآن للفريق: ${game.teams[nextTeamIndex].name}`,
+      });
+    } catch (err) {
+      console.error("خطأ في تبديل الدور:", err);
+      fetchGameDetails(); // استرجاع حالة اللعبة في حالة الخطأ
+    }
+  };
+  
   const handleUpdateScore = async (teamIndex: number, change: number) => {
     if (!game) return;
     const newScore = Math.max(0, game.teams[teamIndex].score + change);
@@ -238,6 +269,7 @@ export default function PlayPage() {
           currentTeam={game.teams[game.currentTeamIndex]}
           onSaveAndExit={handleSaveAndExit}
           onEndGame={handleEndGame}
+          onSwitchTeam={handleSwitchTeam}
         />
 
         <GameCategories

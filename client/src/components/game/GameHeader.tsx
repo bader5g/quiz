@@ -15,6 +15,7 @@ interface GameHeaderProps {
   };
   onSaveAndExit: () => void;
   onEndGame: () => void;
+  onSwitchTeam?: () => void; // وظيفة جديدة لتبديل الدور
 }
 
 export function GameHeader({ 
@@ -23,7 +24,8 @@ export function GameHeader({
   gameName, 
   currentTeam, 
   onSaveAndExit, 
-  onEndGame 
+  onEndGame,
+  onSwitchTeam
 }: GameHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-white p-4 rounded-xl shadow-md">
@@ -39,28 +41,35 @@ export function GameHeader({
           </div>
         )}
         
-        {/* الدور الحالي - تمييز واضح مع تحسينات مرئية */}
+        {/* الدور الحالي - بتصميم جديد مع زر تبديل الدور */}
         <div className="relative">
           <Badge 
-            className="text-lg py-3 px-6 rounded-full shadow-xl flex items-center gap-3 transition-colors duration-300 text-black border-2 animate-pulse" 
+            className="text-lg py-3 px-6 rounded-md shadow-md flex items-center gap-3 transition-colors duration-300 text-black border" 
             style={{ 
-              backgroundColor: `${currentTeam.color}dd` || 'white',
-              borderColor: 'black',
+              backgroundColor: 'white',
+              borderColor: currentTeam.color,
+              borderWidth: '2px',
               fontSize: '1.1rem',
-              fontWeight: 'bold',
-              boxShadow: `0 0 15px ${currentTeam.color}`
+              fontWeight: 'bold'
             }}
           >
             <Trophy className="h-6 w-6 text-gray-800" />
             <span className="font-extrabold">الدور الحالي: {currentTeam.name}</span>
+            
+            {/* زر تبديل الدور */}
+            {onSwitchTeam && (
+              <button 
+                onClick={onSwitchTeam} 
+                className="mr-2 p-1.5 rounded-full bg-white hover:bg-gray-100 transition-colors border border-gray-300 flex items-center justify-center"
+                title="تبديل الدور للفريق التالي"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                </svg>
+              </button>
+            )}
           </Badge>
-          <div 
-            className="absolute inset-0 rounded-full opacity-30 animate-ping" 
-            style={{ 
-              backgroundColor: currentTeam.color,
-              animationDuration: '1.5s'
-            }}
-          />
         </div>
       </div>
 
