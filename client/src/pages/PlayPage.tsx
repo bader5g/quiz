@@ -39,6 +39,7 @@ interface GameDetails {
   categories: GameCategory[];
   questions: GameQuestion[];
   currentTeamIndex: number;
+  viewedQuestionIds?: number[]; // قائمة معرفات الأسئلة التي تم عرضها
 }
 
 export default function PlayPage() {
@@ -114,22 +115,28 @@ export default function PlayPage() {
     };
   }, [gameId]);
   
-  // التحقق إذا كانت جميع الأسئلة قد تمت الإجابة عليها
+  // التحقق إذا كانت جميع الأسئلة قد تمت مشاهدتها أو الإجابة عليها
   useEffect(() => {
     if (game && game.questions.length > 0) {
-      const allQuestionsAnswered = game.questions.every(q => q.isAnswered);
+      // التحقق من الأسئلة التي تم عرضها باستخدام خاصية viewedQuestionIds
+      const viewedQuestionIds = game.viewedQuestionIds || [];
+      const totalQuestions = game.questions.length;
+      const questionIds = game.questions.map(q => q.id);
       
-      if (allQuestionsAnswered) {
+      // هل جميع أسئلة اللعبة موجودة في قائمة الأسئلة التي تم عرضها
+      const allQuestionsViewed = questionIds.every(id => viewedQuestionIds.includes(id));
+      
+      if (allQuestionsViewed || game.questions.every(q => q.isAnswered)) {
         // عرض رسالة تنبيه ثم الانتقال إلى صفحة النتائج
         toast({
-          title: "تمت الإجابة على جميع الأسئلة",
-          description: "انتهت اللعبة! سيتم الانتقال إلى صفحة النتائج.",
+          title: "انتهت جميع الأسئلة",
+          description: "انتهت اللعبة! سيتم الانتقال إلى صفحة النتائج النهائية.",
         });
         
         // ننتظر قليلاً قبل الانتقال للسماح للمستخدم برؤية الرسالة
         setTimeout(() => {
           handleEndGame();
-        }, 3000);
+        }, 2000);
       }
     }
   }, [game]);
