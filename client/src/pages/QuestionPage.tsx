@@ -186,7 +186,7 @@ export default function QuestionPage() {
     swap: false,
     skip: false
   });
-  
+
   // التحقق من إتاحة وسائل المساعدة (بناءً على عدد الفرق والإعدادات)
   const isHelpEnabled = helpSettings.helpToolsEnabled && 
     (!helpSettings.onlyEnabledForTwoTeams || (questionData?.teams.length === 2));
@@ -218,7 +218,7 @@ export default function QuestionPage() {
         // استخدام إعدادات اللعبة من API إذا كانت متوفرة، أو استخدام القيم من الخادم
         let firstTime = data.firstAnswerTime;
         let secondTime = data.secondAnswerTime;
-        
+
         // تحديث الأوقات فقط إذا كانت إعدادات اللعبة متوفرة من لوحة التحكم
         if (gameSettings) {
           console.log('استخدام أوقات الإجابة من إعدادات لوحة التحكم:', 
@@ -228,14 +228,14 @@ export default function QuestionPage() {
           firstTime = gameSettings.defaultFirstAnswerTime;
           secondTime = gameSettings.defaultSecondAnswerTime;
         }
-        
+
         // تحديث بيانات السؤال مع الأوقات المحدثة
         const updatedData = {
           ...data,
           firstAnswerTime: firstTime,
           secondAnswerTime: secondTime
         };
-        
+
         setQuestionData(updatedData);
 
         // تعيين الفريق الحالي - تأكد من استخدام currentTeamIndex من قاعدة البيانات
@@ -248,12 +248,12 @@ export default function QuestionPage() {
             setError('اللعبة المطلوبة غير موجودة.');
             return;
           }
-          
+
           // استخراج الفريق الحالي من بيانات اللعبة
           const gameData = await gameResponse.json();
           setCurrentTeamIndex(gameData.currentTeamIndex || 0);
           console.log(`تعيين الفريق الحالي: ${gameData.currentTeamIndex} (${gameData.teams[gameData.currentTeamIndex].name})`);
-          
+
           // تحديث حالة السؤال ليكون "تم فتحه" بمجرد عرضه
           // هذا سيجعل السؤال غير قابل للاختيار مرة أخرى
           await apiRequest('POST', `/api/games/${gameId}/mark-question-viewed`, {
@@ -261,7 +261,7 @@ export default function QuestionPage() {
             categoryId: data.question.categoryId,
             difficulty: requestedDifficulty
           });
-          
+
           // تعيين الوقت بناءً على الفريق الحالي
           const currentTime = gameData.currentTeamIndex === 0 ? firstTime : secondTime;
           setTimeLeft(currentTime);
@@ -298,35 +298,35 @@ export default function QuestionPage() {
       console.log(`⚠️ المؤقت يعمل بالفعل - تم إلغاء تشغيل مؤقت جديد`);
       return;
     }
-    
+
     // تحقق من وجود وقت صالح للمؤقت
     if (!timeLeft || timeLeft <= 0) {
       console.log(`⚠️ لا يمكن بدء المؤقت: الوقت ${timeLeft} غير صالح`);
       return;
     }
-    
+
     // تحقق من وجود بيانات السؤال
     if (!questionData) {
       console.log(`⚠️ لا يمكن بدء المؤقت: بيانات السؤال غير متوفرة`);
       return;
     }
-    
+
     // إعداد الفريق الحالي
     const currentTeam = questionData.teams[currentTeamIndex];
     if (!currentTeam) {
       console.error('⛔ لا يوجد فريق حالي محدد');
       return;
     }
-    
+
     console.log(`⏱️ بدء المؤقت للفريق: ${currentTeam.name} بوقت ${timeLeft} ثانية`);
-    
+
     // إيقاف أي مؤقت سابق
     if (timer) {
       console.log('⏸️ إيقاف المؤقت السابق');
       clearInterval(timer);
       setTimer(null);
     }
-    
+
     // تفعيل حالة تشغيل المؤقت
     setTimerRunning(true);
 
@@ -339,20 +339,20 @@ export default function QuestionPage() {
           clearInterval(interval);
           setTimerRunning(false);
           console.log("⏱️ انتهى الوقت للفريق!", questionData.teams[currentTeamIndex]?.name);
-          
+
           // تبديل الدور تلقائياً بعد ثانية
           setTimeout(() => {
             // تشغيل وظيفة تبديل الدور
             moveToNextTeam();
           }, 1000);
-          
+
           return 0;
         }
         // خفض الوقت بمقدار ثانية واحدة
         return prevTime - 1;
       });
     }, 1000);
-    
+
     setTimer(interval);
   };
 
@@ -364,10 +364,10 @@ export default function QuestionPage() {
         console.log('⛔ جاري تبديل الدور بالفعل - تم إلغاء الطلب الإضافي');
         return;
       }
-      
+
       // تعيين حالة جاري التبديل
       setIsChangingTeam(true);
-      
+
       // تحقق من وجود بيانات السؤال
       if (!questionData) {
         console.error('لا يمكن تبديل الدور: بيانات السؤال غير متوفرة');
@@ -382,7 +382,7 @@ export default function QuestionPage() {
         setTimer(null);
         setTimerRunning(false);
       }
-      
+
       // حساب الفريق التالي
       const nextTeamIndex = currentTeamIndex + 1;
       let targetIndex = nextTeamIndex;
@@ -391,7 +391,7 @@ export default function QuestionPage() {
       if (nextTeamIndex >= questionData.teams.length) {
         targetIndex = 0; // العودة للفريق الأول
         console.log(`🔄 تم الوصول لآخر فريق. العودة للفريق الأول`);
-        
+
         // إظهار رسالة توضيحية
         toast({
           title: "تمت دورة كاملة",
@@ -400,7 +400,7 @@ export default function QuestionPage() {
       } else {
         console.log(`🔄 تبديل الدور من الفريق ${currentTeamIndex} إلى الفريق ${targetIndex}`);
       }
-      
+
       // تحديث الفريق الحالي في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/update-team`, {
         teamIndex: targetIndex
@@ -408,27 +408,27 @@ export default function QuestionPage() {
 
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(targetIndex);
-      
+
       // استخدام أوقات الإجابة المحددة في بيانات السؤال
       const firstAnswerTime = questionData.firstAnswerTime;
       const secondAnswerTime = questionData.secondAnswerTime;
-      
+
       console.log(`🕒 أوقات الإجابة: الأول=${firstAnswerTime}، الثاني=${secondAnswerTime}`);
-      
+
       // تحديد الوقت المناسب للفريق الحالي
       const newTime = targetIndex === 0 ? firstAnswerTime : secondAnswerTime;
-      
+
       console.log(`⏱️ تعيين وقت جديد: ${newTime} ثانية للفريق ${questionData.teams[targetIndex].name}`);
-      
+
       // تطبيق الوقت الجديد
       setTimeLeft(newTime);
-      
+
       // عرض رسالة تأكيد
       toast({
         title: "تم تبديل الدور",
         description: `الدور الآن للفريق: ${questionData.teams[targetIndex].name}`
       });
-      
+
       // تأخير قصير قبل بدء المؤقت الجديد
       setTimeout(() => {
         startTimer();
@@ -452,39 +452,39 @@ export default function QuestionPage() {
       console.log('⚠️ لا يمكن تجديد المؤقت: بيانات السؤال غير متوفرة');
       return;
     }
-    
+
     // الحصول على أوقات الإجابة من إعدادات اللعبة
     let firstAnswerTime = 30; // وقت افتراضي
     let secondAnswerTime = 15; // وقت افتراضي
-    
+
     // استخدام إعدادات اللعبة إذا كانت متوفرة
     if (gameSettings) {
       firstAnswerTime = gameSettings.defaultFirstAnswerTime;
       secondAnswerTime = gameSettings.defaultSecondAnswerTime;
     }
-    
+
     // تحديد الوقت المناسب للفريق الحالي
     const timeToSet = currentTeamIndex === 0 ? firstAnswerTime : secondAnswerTime;
 
     console.log(`⏱️ تجديد الوقت: ${timeToSet} ثانية للفريق ${questionData.teams[currentTeamIndex].name}`);
-    
+
     // إيقاف المؤقت الحالي إن وجد
     if (timer) {
       clearInterval(timer);
       setTimer(null);
     }
-    
+
     // إعادة ضبط حالة المؤقت
     setTimerRunning(false);
-    
+
     // ضبط الوقت الجديد
     setTimeLeft(timeToSet);
-    
+
     // بدء المؤقت تلقائياً
     setTimeout(() => {
       startTimer();
     }, 100);
-    
+
     // عرض رسالة تأكيد
     toast({
         title: "تم تجديد الوقت",
@@ -499,53 +499,53 @@ export default function QuestionPage() {
     if (questionData && !loading) {
       // الفريق الذي تم اختياره للسؤال يحصل على وقت الإجابة الأول
       // والفرق الأخرى تحصل على وقت الإجابة الثاني
-      
+
       // نستخدم قيم افتراضية إذا كانت القيم غير موجودة
       const firstTeamTime = questionData.firstAnswerTime || 30;
       const secondTeamTime = questionData.secondAnswerTime || 15;
-      
+
       // دائماً الفريق الأول الذي يظهر له السؤال يحصل على وقت الإجابة الأولى
       // بغض النظر عن رقم الفريق (سواء كان الأول أو الثاني أو الثالث أو الرابع)
-      
+
       // نتحقق إذا كان هذا أول تحميل للسؤال
       const isFirstTimeLoading = !sessionStorage.getItem(`question_${questionId}_loaded`);
-      
+
       // إذا كان أول تحميل للسؤال، نستخدم وقت الإجابة الأولى ونضع علامة أن السؤال تم تحميله
       if (isFirstTimeLoading) {
         console.log("هذا أول ظهور للسؤال - استخدام وقت الإجابة الأولى");
         sessionStorage.setItem(`question_${questionId}_loaded`, "true");
         sessionStorage.setItem(`question_${questionId}_first_team`, currentTeamIndex.toString());
       }
-      
+
       // نتحقق من الفريق الذي حصل على السؤال أولاً
       const firstTeamForQuestion = sessionStorage.getItem(`question_${questionId}_first_team`);
       const isFirstTeamForQuestion = firstTeamForQuestion !== null && 
                                      parseInt(firstTeamForQuestion) === currentTeamIndex;
-      
+
       // اختيار الوقت المناسب
       const currentTime = isFirstTimeLoading || isFirstTeamForQuestion
         ? firstTeamTime 
         : secondTeamTime;
-        
+
       console.log(`⚡ تشغيل تلقائي للمؤقت - الفريق: ${questionData.teams[currentTeamIndex]?.name}، الوقت: ${currentTime}`);
-      
+
       // إيقاف أي مؤقت سابق
       if (timer) {
         clearInterval(timer);
         setTimer(null);
       }
-      
+
       // إعادة ضبط حالة المؤقت
       setTimerRunning(false);
-      
+
       // ضبط الوقت للفريق الحالي
       setTimeLeft(currentTime);
-      
+
       // تشغيل المؤقت تلقائياً بعد تأخير قصير
       const timerId = setTimeout(() => {
         startTimer();
       }, 500);
-      
+
       // تنظيف المؤقت عند إلغاء التركيب
       return () => clearTimeout(timerId);
     }
@@ -595,14 +595,14 @@ export default function QuestionPage() {
       // تبديل الدور تلقائياً للفريق التالي قبل العودة لصفحة اللعب
       const currentGameIndex = currentTeamIndex;
       const nextTeamIndex = (currentGameIndex + 1) % questionData.teams.length;
-      
+
       // تحديث الفريق الحالي في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/update-team`, {
         teamIndex: nextTeamIndex
       });
-      
+
       console.log(`🔄 تم تبديل الدور تلقائياً من الفريق ${currentGameIndex} إلى الفريق ${nextTeamIndex} بعد الإجابة`);
-      
+
       // العودة إلى صفحة اللعب بعد تأخير قصير
       setTimeout(() => {
         navigate(`/play/${gameId}`);
@@ -628,22 +628,22 @@ export default function QuestionPage() {
       setTimer(null);
     }
     setTimerRunning(false);
-    
+
     // التأكد من عدم عرض حوار اختيار الفريق عند العودة
     setShowTeamSelection(false);
-    
+
     // تبديل الدور للفريق التالي
     if (questionData) {
       const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
-      
+
       try {
         // تحديث الفريق الحالي في قاعدة البيانات
         await apiRequest('POST', `/api/games/${gameId}/update-team`, {
           teamIndex: nextTeamIndex
         });
-        
+
         console.log(`🔄 تم تبديل الدور تلقائياً من الفريق ${currentTeamIndex} إلى الفريق ${nextTeamIndex} عند الخروج من السؤال`);
-        
+
         // عرض إشعار للمستخدم
         toast({
           title: "تم تبديل الدور",
@@ -653,7 +653,7 @@ export default function QuestionPage() {
         console.error("خطأ في تبديل الدور:", error);
       }
     }
-    
+
     // تأخير قصير ثم العودة إلى صفحة اللعب
     setTimeout(() => {
       navigate(`/play/${gameId}`);
@@ -670,11 +670,7 @@ export default function QuestionPage() {
     submitAnswer(false);
   };
 
-  export default function QuestionPage() {
-  const { gameId, questionId } = useParams();
-  const [, navigate] = useLocation();
-  const { getModalClass } = useSite();
-  const { toast } = useToast();
+  // تم حذف التعريف المكرر هنا
 
   // عرض شاشة التحميل
   if (loading) {
@@ -741,12 +737,12 @@ export default function QuestionPage() {
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-          
+
           {/* الجزء الأوسط - اسم اللعبة */}
           <div className="text-center font-semibold text-lg">
             {questionData?.gameName || questionData?.question?.gameName || 'جاوب'}
           </div>
-          
+
           {/* الجزء الأيسر - شعار الموقع */}
           <div>
             {questionData?.logoUrl && (
@@ -758,7 +754,7 @@ export default function QuestionPage() {
             )}
           </div>
         </div>
-        
+
         {/* مؤشر الفريق الحالي أسفل شريط العنوان */}
         <div className="container mx-auto mt-2 flex justify-center">
           <Badge 
@@ -774,7 +770,7 @@ export default function QuestionPage() {
           </Badge>
         </div>
       </header>
-      
+
       {/* محتوى السؤال */}
       <div className="container mx-auto py-4 px-4 flex-grow">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -789,7 +785,7 @@ export default function QuestionPage() {
                   <span className={questionData.question.categoryIcon}></span>
                   <span>{questionData.question.categoryName}</span>
                 </Badge>
-                
+
                 <Badge 
                   variant="outline" 
                   className="px-3 py-1"
@@ -802,10 +798,10 @@ export default function QuestionPage() {
                   {requestedDifficulty} نقاط
                 </Badge>
               </div>
-              
+
               <CardContent className="p-6">
                 <h2 className="text-2xl font-semibold text-center mb-4">{questionData.question.text}</h2>
-                
+
                 {/* إذا كان هناك صورة، اعرضها */}
                 {questionData.question.imageUrl && (
                   <div className="my-4 flex justify-center">
@@ -816,7 +812,7 @@ export default function QuestionPage() {
                     />
                   </div>
                 )}
-                
+
                 {/* إذا كان هناك فيديو، اعرضه */}
                 {questionData.question.videoUrl && (
                   <div className="my-4 flex justify-center">
@@ -827,7 +823,7 @@ export default function QuestionPage() {
                     />
                   </div>
                 )}
-                
+
                 {/* عرض الإجابة عند الضغط على زر "عرض الإجابة" */}
                 {showAnswer && (
                   <Alert className="mt-6 bg-green-50 border-green-500">
@@ -840,7 +836,7 @@ export default function QuestionPage() {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* لوحة التحكم بالمؤقت والإجابة */}
           <div className="md:col-span-3">
             <Card>
@@ -884,7 +880,7 @@ export default function QuestionPage() {
                       />
                     </svg>
                   </div>
-                  
+
                   {/* أزرار التحكم بالمؤقت والدور */}
                   <div className="flex gap-2 mt-2">
                     {!timerRunning ? (
@@ -912,7 +908,7 @@ export default function QuestionPage() {
                         <span>إيقاف</span>
                       </Button>
                     )}
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -924,7 +920,7 @@ export default function QuestionPage() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* زر عرض الإجابة فقط */}
                 <div className="space-y-2">
                   <Button
@@ -935,7 +931,7 @@ export default function QuestionPage() {
                     <HelpCircle className="h-5 w-5" />
                     <span>عرض الإجابة</span>
                   </Button>
-                  
+
                   {/* إظهار أزرار الفرق فقط بعد عرض الإجابة */}
                   {showAnswer && (
                     <div className="mt-4 space-y-2">
@@ -964,7 +960,7 @@ export default function QuestionPage() {
                           </span>
                         </Button>
                       ))}
-                      
+
                       {/* زر لا أحد أجاب */}
                       <Button
                         variant="outline"
@@ -984,10 +980,10 @@ export default function QuestionPage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* تبديل الدور للفريق التالي */}
                 {/* تم إزالة زر تبديل الدور من هنا لأنه موجود بالفعل في أزرار المؤقت */}
-                
+
                 {/* وسائل المساعدة */}
                 {isHelpEnabled && (
                   <div className="mt-4 pt-4 border-t border-dashed">
@@ -1009,7 +1005,7 @@ export default function QuestionPage() {
                           disabled={helpUsed.skip}
                         />
                       )}
-                      
+
                       {helpSettings.pointDeductionEnabled && (
                         <HelpButton
                           icon={<Minus size={16} />}
@@ -1025,7 +1021,7 @@ export default function QuestionPage() {
                           disabled={helpUsed.discount}
                         />
                       )}
-                      
+
                       {helpSettings.turnReverseEnabled && (
                         <HelpButton
                           icon={<RotateCw size={16} />}
