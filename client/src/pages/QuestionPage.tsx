@@ -253,9 +253,9 @@ export default function QuestionPage() {
           }
           
           // استخراج الفريق الحالي من بيانات اللعبة
-          const gameData = await gameResponse.json();
-          setCurrentTeamIndex(gameData.currentTeamIndex || 0);
-          console.log(`تعيين الفريق الحالي: ${gameData.currentTeamIndex} (${gameData.teams[gameData.currentTeamIndex].name})`);
+          const currentGameData = await gameResponse.json();
+          setCurrentTeamIndex(currentGameData.currentTeamIndex || 0);
+          console.log(`تعيين الفريق الحالي: ${currentGameData.currentTeamIndex} (${currentGameData.teams[currentGameData.currentTeamIndex].name})`);
           
 
           // تحديث حالة السؤال ليكون "تم فتحه" بمجرد عرضه
@@ -303,8 +303,19 @@ export default function QuestionPage() {
         return;
       }
 
-      // حساب الفريق التالي (الفريق الحالي + 1 وإذا وصلنا للنهاية نعود للبداية)
-      const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
+      // حساب الفريق التالي (الفريق الحالي + 1)
+      const nextTeamIndex = currentTeamIndex + 1;
+
+      // إذا وصلنا للفريق الأخير، لا ننتقل بعده
+      if (nextTeamIndex >= questionData.teams.length) {
+        // وصلنا للفريق الأخير، لا ننتقل بعده
+        setTimerRunning(false);
+        toast({
+          title: "انتهت جميع الأدوار",
+          description: "وصلنا للفريق الأخير، يمكنك الرجوع لصفحة اللعب."
+        });
+        return;
+      }
 
       // تحديث الفريق الحالي في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/update-team`, {
@@ -313,13 +324,16 @@ export default function QuestionPage() {
 
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(nextTeamIndex);
+      
+      // عرض رسالة تأكيد
+      toast({
+        title: "تم تبديل الدور",
+        description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`
+      });
 
-      // دوران الفريق بشكل دائري، حتى لو وصل إلى الفريق الأول يستمر الدوران
-      // لا تعديل خاص للفريق الأول
-
-      // ضبط الوقت المناسب حسب الفريق باستخدام الطريقة الموحدة
-      const newTime = (nextTeamIndex === 0) 
-        ? questionData.firstAnswerTime 
+      // ضبط الوقت المناسب حسب الفريق
+      const newTime = nextTeamIndex === 0
+        ? questionData.firstAnswerTime
         : questionData.secondAnswerTime;
 
       // ضبط المؤقت بالوقت المناسب
@@ -683,18 +697,15 @@ export default function QuestionPage() {
             <RotateCw className="h-5 w-5" />
           </Button>
 
-          {/* زر تبديل الدور */}
+          {/* زر تبديل الدور - تحسين المظهر وجعله أكثر وضوحاً */}
           <Button 
-            variant="outline" 
-            size="icon" 
             onClick={() => {
               moveToNextTeam();
-              // لا نقوم بتشغيل المؤقت تلقائياً، ننتظر المستخدم ليضغط على زر تجديد الوقت
             }}
-            className="h-12 w-12 rounded-full bg-amber-50 border-amber-200 hover:bg-amber-100"
-            title="تبديل الدور"
+            className="bg-yellow-100 border border-yellow-400 text-yellow-700 hover:bg-yellow-200 h-12 shadow-md px-4 flex items-center gap-2"
           >
-            ➡️
+            <RotateCw className="h-5 w-5" />
+            <span className="font-bold">تبديل الدور يدوياً</span>
           </Button>
         </div>
       </div>
