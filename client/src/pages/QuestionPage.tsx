@@ -164,6 +164,7 @@ export default function QuestionPage() {
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isChangingTeam, setIsChangingTeam] = useState(false);
+  const [isTimerExpired, setIsTimerExpired] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -291,6 +292,23 @@ export default function QuestionPage() {
     };
   }, [gameId, questionId]);
 
+  // الدالة المسؤولة عن تحديد وقت المؤقت بناءً على إعدادات اللعبة
+  const getTimerDuration = (teamIndex: number) => {
+    // القيم الافتراضية في حالة عدم وجود إعدادات
+    let firstTeamTime = 30;
+    let otherTeamsTime = 15;
+    
+    // استخدام إعدادات اللعبة من لوحة التحكم إذا كانت متوفرة
+    if (gameSettings) {
+      firstTeamTime = gameSettings.defaultFirstAnswerTime;
+      otherTeamsTime = gameSettings.defaultSecondAnswerTime;
+    }
+    
+    // الفريق الأول يحصل على وقت الإجابة الأولى
+    // وباقي الفرق تحصل على وقت الإجابة الثانية
+    return teamIndex === 0 ? firstTeamTime : otherTeamsTime;
+  };
+
   // وظيفة بدء المؤقت - مع تبديل الدور تلقائياً عند انتهاء الوقت
   const startTimer = () => {
     // منع تشغيل مؤقتات متعددة
@@ -311,7 +329,7 @@ export default function QuestionPage() {
       return;
     }
     
-    // إعداد الفريق الحالي
+    // التحقق من وجود الفريق الحالي
     const currentTeam = questionData.teams[currentTeamIndex];
     if (!currentTeam) {
       console.error('⛔ لا يوجد فريق حالي محدد');
@@ -342,8 +360,7 @@ export default function QuestionPage() {
           
           // تبديل الدور تلقائياً بعد ثانية
           setTimeout(() => {
-            // تشغيل وظيفة تبديل الدور
-            moveToNextTeam();
+            handleTeamChange();
           }, 1000);
           
           return 0;
