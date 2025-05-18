@@ -681,37 +681,60 @@ export default function GameSettingsManagement() {
                     />
                     
                     <Separator className="my-4" />
-                    <h3 className="text-lg font-medium">أوقات الإجابة حسب عدد الفرق</h3>
+                    <h3 className="text-lg font-medium">إعدادات أوقات الإجابة</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      حدد خيارات أوقات الإجابة المتاحة حسب عدد الفرق المشاركة في اللعبة
+                      تخصيص أوقات الإجابة المتاحة وتعيين القيم الافتراضية لكل مستوى
                     </p>
                     
-                    {/* أوقات الإجابة لفريقين */}
-                    <div className="space-y-4">
+                    {/* واجهة إدارة أوقات الإجابة المتقدمة */}
+                    <div className="space-y-6">
+                      {/* وقت الإجابة الأول */}
                       <div className="rounded-md border p-4">
-                        <h4 className="font-medium mb-2">أوقات الإجابة لفريقين</h4>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {form.watch('answerTimesFor2Teams')?.map((time, index) => (
+                        <h4 className="font-medium mb-3">وقت الإجابة الأول</h4>
+                        <div className="flex flex-wrap gap-3 mb-3">
+                          {form.watch('answerTimeOptions.first.options')?.map((time, index) => (
                             <div 
-                              key={`2teams-${index}`} 
-                              className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1"
+                              key={`first-${index}`} 
+                              className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
+                                form.watch('answerTimeOptions.first.default') === time ? 'border-2 border-primary' : ''
+                              }`}
                             >
                               <span>{time} ثانية</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 rounded-full"
-                                onClick={() => {
-                                  const currentTimes = [...form.watch('answerTimesFor2Teams')];
-                                  currentTimes.splice(index, 1);
-                                  form.setValue('answerTimesFor2Teams', currentTimes);
-                                }}
-                                disabled={!form.watch('timerEnabled')}
-                              >
-                                <span className="sr-only">حذف</span>
-                                &times;
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-green-100"
+                                  onClick={() => {
+                                    form.setValue('answerTimeOptions.first.default', time);
+                                  }}
+                                  title="تعيين كافتراضي"
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.first.default') === time}
+                                >
+                                  <span className="sr-only">تعيين كافتراضي</span>
+                                  {form.watch('answerTimeOptions.first.default') === time ? '✓' : '*'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-red-100"
+                                  onClick={() => {
+                                    const currentOptions = [...form.watch('answerTimeOptions.first.options')];
+                                    // لا تسمح بحذف الوقت الافتراضي
+                                    if (form.watch('answerTimeOptions.first.default') === currentOptions[index]) {
+                                      return;
+                                    }
+                                    currentOptions.splice(index, 1);
+                                    form.setValue('answerTimeOptions.first.options', currentOptions);
+                                  }}
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.first.default') === time}
+                                >
+                                  <span className="sr-only">حذف</span>
+                                  &times;
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -720,7 +743,7 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            id="newTimeFor2Teams"
+                            id="newTimeForFirst"
                             min={5}
                             max={120}
                             disabled={!form.watch('timerEnabled')}
@@ -728,12 +751,12 @@ export default function GameSettingsManagement() {
                           <Button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('newTimeFor2Teams') as HTMLInputElement;
+                              const input = document.getElementById('newTimeForFirst') as HTMLInputElement;
                               const newTime = parseInt(input.value);
                               if (newTime && newTime >= 5 && newTime <= 120) {
-                                const currentTimes = [...form.watch('answerTimesFor2Teams')];
-                                if (!currentTimes.includes(newTime)) {
-                                  form.setValue('answerTimesFor2Teams', [...currentTimes, newTime].sort((a, b) => a - b));
+                                const currentOptions = [...form.watch('answerTimeOptions.first.options')];
+                                if (!currentOptions.includes(newTime)) {
+                                  form.setValue('answerTimeOptions.first.options', [...currentOptions, newTime].sort((a, b) => a - b));
                                   input.value = '';
                                 }
                               }
@@ -745,31 +768,52 @@ export default function GameSettingsManagement() {
                         </div>
                       </div>
                       
-                      {/* أوقات الإجابة لثلاثة فرق */}
+                      {/* وقت الإجابة الثاني */}
                       <div className="rounded-md border p-4">
-                        <h4 className="font-medium mb-2">أوقات الإجابة لثلاثة فرق</h4>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {form.watch('answerTimesFor3Teams')?.map((time, index) => (
+                        <h4 className="font-medium mb-3">وقت الإجابة الثاني</h4>
+                        <div className="flex flex-wrap gap-3 mb-3">
+                          {form.watch('answerTimeOptions.second.options')?.map((time, index) => (
                             <div 
-                              key={`3teams-${index}`} 
-                              className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1"
+                              key={`second-${index}`} 
+                              className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
+                                form.watch('answerTimeOptions.second.default') === time ? 'border-2 border-primary' : ''
+                              }`}
                             >
                               <span>{time} ثانية</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 rounded-full"
-                                onClick={() => {
-                                  const currentTimes = [...form.watch('answerTimesFor3Teams')];
-                                  currentTimes.splice(index, 1);
-                                  form.setValue('answerTimesFor3Teams', currentTimes);
-                                }}
-                                disabled={!form.watch('timerEnabled')}
-                              >
-                                <span className="sr-only">حذف</span>
-                                &times;
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-green-100"
+                                  onClick={() => {
+                                    form.setValue('answerTimeOptions.second.default', time);
+                                  }}
+                                  title="تعيين كافتراضي"
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.second.default') === time}
+                                >
+                                  <span className="sr-only">تعيين كافتراضي</span>
+                                  {form.watch('answerTimeOptions.second.default') === time ? '✓' : '*'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-red-100"
+                                  onClick={() => {
+                                    const currentOptions = [...form.watch('answerTimeOptions.second.options')];
+                                    if (form.watch('answerTimeOptions.second.default') === currentOptions[index]) {
+                                      return;
+                                    }
+                                    currentOptions.splice(index, 1);
+                                    form.setValue('answerTimeOptions.second.options', currentOptions);
+                                  }}
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.second.default') === time}
+                                >
+                                  <span className="sr-only">حذف</span>
+                                  &times;
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -778,7 +822,7 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            id="newTimeFor3Teams"
+                            id="newTimeForSecond"
                             min={5}
                             max={120}
                             disabled={!form.watch('timerEnabled')}
@@ -786,12 +830,12 @@ export default function GameSettingsManagement() {
                           <Button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('newTimeFor3Teams') as HTMLInputElement;
+                              const input = document.getElementById('newTimeForSecond') as HTMLInputElement;
                               const newTime = parseInt(input.value);
                               if (newTime && newTime >= 5 && newTime <= 120) {
-                                const currentTimes = [...form.watch('answerTimesFor3Teams')];
-                                if (!currentTimes.includes(newTime)) {
-                                  form.setValue('answerTimesFor3Teams', [...currentTimes, newTime].sort((a, b) => a - b));
+                                const currentOptions = [...form.watch('answerTimeOptions.second.options')];
+                                if (!currentOptions.includes(newTime)) {
+                                  form.setValue('answerTimeOptions.second.options', [...currentOptions, newTime].sort((a, b) => a - b));
                                   input.value = '';
                                 }
                               }
@@ -803,31 +847,52 @@ export default function GameSettingsManagement() {
                         </div>
                       </div>
                       
-                      {/* أوقات الإجابة لأربعة فرق */}
+                      {/* وقت الإجابة الثالث */}
                       <div className="rounded-md border p-4">
-                        <h4 className="font-medium mb-2">أوقات الإجابة لأربعة فرق</h4>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {form.watch('answerTimesFor4Teams')?.map((time, index) => (
+                        <h4 className="font-medium mb-3">وقت الإجابة الثالث</h4>
+                        <div className="flex flex-wrap gap-3 mb-3">
+                          {form.watch('answerTimeOptions.third.options')?.map((time, index) => (
                             <div 
-                              key={`4teams-${index}`} 
-                              className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1"
+                              key={`third-${index}`} 
+                              className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
+                                form.watch('answerTimeOptions.third.default') === time ? 'border-2 border-primary' : ''
+                              }`}
                             >
                               <span>{time} ثانية</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 rounded-full"
-                                onClick={() => {
-                                  const currentTimes = [...form.watch('answerTimesFor4Teams')];
-                                  currentTimes.splice(index, 1);
-                                  form.setValue('answerTimesFor4Teams', currentTimes);
-                                }}
-                                disabled={!form.watch('timerEnabled')}
-                              >
-                                <span className="sr-only">حذف</span>
-                                &times;
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-green-100"
+                                  onClick={() => {
+                                    form.setValue('answerTimeOptions.third.default', time);
+                                  }}
+                                  title="تعيين كافتراضي"
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.third.default') === time}
+                                >
+                                  <span className="sr-only">تعيين كافتراضي</span>
+                                  {form.watch('answerTimeOptions.third.default') === time ? '✓' : '*'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-red-100"
+                                  onClick={() => {
+                                    const currentOptions = [...form.watch('answerTimeOptions.third.options')];
+                                    if (form.watch('answerTimeOptions.third.default') === currentOptions[index]) {
+                                      return;
+                                    }
+                                    currentOptions.splice(index, 1);
+                                    form.setValue('answerTimeOptions.third.options', currentOptions);
+                                  }}
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.third.default') === time}
+                                >
+                                  <span className="sr-only">حذف</span>
+                                  &times;
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -836,7 +901,7 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            id="newTimeFor4Teams"
+                            id="newTimeForThird"
                             min={5}
                             max={120}
                             disabled={!form.watch('timerEnabled')}
@@ -844,12 +909,12 @@ export default function GameSettingsManagement() {
                           <Button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('newTimeFor4Teams') as HTMLInputElement;
+                              const input = document.getElementById('newTimeForThird') as HTMLInputElement;
                               const newTime = parseInt(input.value);
                               if (newTime && newTime >= 5 && newTime <= 120) {
-                                const currentTimes = [...form.watch('answerTimesFor4Teams')];
-                                if (!currentTimes.includes(newTime)) {
-                                  form.setValue('answerTimesFor4Teams', [...currentTimes, newTime].sort((a, b) => a - b));
+                                const currentOptions = [...form.watch('answerTimeOptions.third.options')];
+                                if (!currentOptions.includes(newTime)) {
+                                  form.setValue('answerTimeOptions.third.options', [...currentOptions, newTime].sort((a, b) => a - b));
                                   input.value = '';
                                 }
                               }
@@ -860,6 +925,111 @@ export default function GameSettingsManagement() {
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* وقت الإجابة الرابع */}
+                      <div className="rounded-md border p-4">
+                        <h4 className="font-medium mb-3">وقت الإجابة الرابع</h4>
+                        <div className="flex flex-wrap gap-3 mb-3">
+                          {form.watch('answerTimeOptions.fourth.options')?.map((time, index) => (
+                            <div 
+                              key={`fourth-${index}`} 
+                              className={`bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1 ${
+                                form.watch('answerTimeOptions.fourth.default') === time ? 'border-2 border-primary' : ''
+                              }`}
+                            >
+                              <span>{time} ثانية</span>
+                              <div className="flex gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-green-100"
+                                  onClick={() => {
+                                    form.setValue('answerTimeOptions.fourth.default', time);
+                                  }}
+                                  title="تعيين كافتراضي"
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.fourth.default') === time}
+                                >
+                                  <span className="sr-only">تعيين كافتراضي</span>
+                                  {form.watch('answerTimeOptions.fourth.default') === time ? '✓' : '*'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 rounded-full hover:bg-red-100"
+                                  onClick={() => {
+                                    const currentOptions = [...form.watch('answerTimeOptions.fourth.options')];
+                                    if (form.watch('answerTimeOptions.fourth.default') === currentOptions[index]) {
+                                      return;
+                                    }
+                                    currentOptions.splice(index, 1);
+                                    form.setValue('answerTimeOptions.fourth.options', currentOptions);
+                                  }}
+                                  disabled={!form.watch('timerEnabled') || form.watch('answerTimeOptions.fourth.default') === time}
+                                >
+                                  <span className="sr-only">حذف</span>
+                                  &times;
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            placeholder="أضف وقت جديد بالثواني"
+                            className="max-w-[200px]"
+                            id="newTimeForFourth"
+                            min={5}
+                            max={120}
+                            disabled={!form.watch('timerEnabled')}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const input = document.getElementById('newTimeForFourth') as HTMLInputElement;
+                              const newTime = parseInt(input.value);
+                              if (newTime && newTime >= 5 && newTime <= 120) {
+                                const currentOptions = [...form.watch('answerTimeOptions.fourth.options')];
+                                if (!currentOptions.includes(newTime)) {
+                                  form.setValue('answerTimeOptions.fourth.options', [...currentOptions, newTime].sort((a, b) => a - b));
+                                  input.value = '';
+                                }
+                              }
+                            }}
+                            disabled={!form.watch('timerEnabled')}
+                          >
+                            إضافة
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-yellow-50 p-3 border border-yellow-200 rounded-md text-sm">
+                        <p className="mb-2 font-medium">ملاحظات:</p>
+                        <ul className="list-disc list-inside space-y-1 text-yellow-700">
+                          <li>الأوقات معروضة بالثواني</li>
+                          <li>لا يمكن حذف الوقت المحدد كافتراضي (المحدد بعلامة ✓)</li>
+                          <li>يمكن تغيير الوقت الافتراضي بالضغط على "*" بجانب الوقت المطلوب</li>
+                          <li>هذه الأوقات ستظهر للمستخدمين عند إنشاء لعبة جديدة</li>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    {/* أوقات الإجابة القديمة - مخفية للتوافق مع النسخ القديمة */}
+                    <div className="hidden">
+                      <input
+                        type="hidden"
+                        {...form.register('answerTimesFor2Teams')}
+                      />
+                      <input
+                        type="hidden"
+                        {...form.register('answerTimesFor3Teams')}
+                      />
+                      <input
+                        type="hidden"
+                        {...form.register('answerTimesFor4Teams')}
+                      />
                     </div>
                   </div>
                 </TabsContent>
