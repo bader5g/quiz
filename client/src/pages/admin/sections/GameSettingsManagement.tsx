@@ -37,8 +37,6 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Settings, Users, Timer, HelpCircle, FileText } from 'lucide-react';
 
-// تم نقل المكون إلى ملف منفصل @/components/controlled-inputs.tsx
-
 // مخطط التحقق من الإدخالات الأساسية
 const gameSettingsBaseSchema = z.object({
   minCategories: z.coerce.number().min(1, { message: 'عدد الفئات الأدنى يجب أن يكون 1 على الأقل' }).max(20),
