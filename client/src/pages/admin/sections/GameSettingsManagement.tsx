@@ -660,6 +660,188 @@ export default function GameSettingsManagement() {
                         </FormItem>
                       )}
                     />
+                    
+                    <Separator className="my-4" />
+                    <h3 className="text-lg font-medium">أوقات الإجابة حسب عدد الفرق</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      حدد خيارات أوقات الإجابة المتاحة حسب عدد الفرق المشاركة في اللعبة
+                    </p>
+                    
+                    {/* أوقات الإجابة لفريقين */}
+                    <div className="space-y-4">
+                      <div className="rounded-md border p-4">
+                        <h4 className="font-medium mb-2">أوقات الإجابة لفريقين</h4>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {form.watch('answerTimesFor2Teams')?.map((time, index) => (
+                            <div 
+                              key={`2teams-${index}`} 
+                              className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1"
+                            >
+                              <span>{time} ثانية</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 rounded-full"
+                                onClick={() => {
+                                  const currentTimes = [...form.watch('answerTimesFor2Teams')];
+                                  currentTimes.splice(index, 1);
+                                  form.setValue('answerTimesFor2Teams', currentTimes);
+                                }}
+                                disabled={!form.watch('timerEnabled')}
+                              >
+                                <span className="sr-only">حذف</span>
+                                &times;
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            placeholder="أضف وقت جديد بالثواني"
+                            className="max-w-[200px]"
+                            id="newTimeFor2Teams"
+                            min={5}
+                            max={120}
+                            disabled={!form.watch('timerEnabled')}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const input = document.getElementById('newTimeFor2Teams') as HTMLInputElement;
+                              const newTime = parseInt(input.value);
+                              if (newTime && newTime >= 5 && newTime <= 120) {
+                                const currentTimes = [...form.watch('answerTimesFor2Teams')];
+                                if (!currentTimes.includes(newTime)) {
+                                  form.setValue('answerTimesFor2Teams', [...currentTimes, newTime].sort((a, b) => a - b));
+                                  input.value = '';
+                                }
+                              }
+                            }}
+                            disabled={!form.watch('timerEnabled')}
+                          >
+                            إضافة
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* أوقات الإجابة لثلاثة فرق */}
+                      <div className="rounded-md border p-4">
+                        <h4 className="font-medium mb-2">أوقات الإجابة لثلاثة فرق</h4>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {form.watch('answerTimesFor3Teams')?.map((time, index) => (
+                            <div 
+                              key={`3teams-${index}`} 
+                              className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1"
+                            >
+                              <span>{time} ثانية</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 rounded-full"
+                                onClick={() => {
+                                  const currentTimes = [...form.watch('answerTimesFor3Teams')];
+                                  currentTimes.splice(index, 1);
+                                  form.setValue('answerTimesFor3Teams', currentTimes);
+                                }}
+                                disabled={!form.watch('timerEnabled')}
+                              >
+                                <span className="sr-only">حذف</span>
+                                &times;
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            placeholder="أضف وقت جديد بالثواني"
+                            className="max-w-[200px]"
+                            id="newTimeFor3Teams"
+                            min={5}
+                            max={120}
+                            disabled={!form.watch('timerEnabled')}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const input = document.getElementById('newTimeFor3Teams') as HTMLInputElement;
+                              const newTime = parseInt(input.value);
+                              if (newTime && newTime >= 5 && newTime <= 120) {
+                                const currentTimes = [...form.watch('answerTimesFor3Teams')];
+                                if (!currentTimes.includes(newTime)) {
+                                  form.setValue('answerTimesFor3Teams', [...currentTimes, newTime].sort((a, b) => a - b));
+                                  input.value = '';
+                                }
+                              }
+                            }}
+                            disabled={!form.watch('timerEnabled')}
+                          >
+                            إضافة
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* أوقات الإجابة لأربعة فرق */}
+                      <div className="rounded-md border p-4">
+                        <h4 className="font-medium mb-2">أوقات الإجابة لأربعة فرق</h4>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {form.watch('answerTimesFor4Teams')?.map((time, index) => (
+                            <div 
+                              key={`4teams-${index}`} 
+                              className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center gap-1"
+                            >
+                              <span>{time} ثانية</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 rounded-full"
+                                onClick={() => {
+                                  const currentTimes = [...form.watch('answerTimesFor4Teams')];
+                                  currentTimes.splice(index, 1);
+                                  form.setValue('answerTimesFor4Teams', currentTimes);
+                                }}
+                                disabled={!form.watch('timerEnabled')}
+                              >
+                                <span className="sr-only">حذف</span>
+                                &times;
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            placeholder="أضف وقت جديد بالثواني"
+                            className="max-w-[200px]"
+                            id="newTimeFor4Teams"
+                            min={5}
+                            max={120}
+                            disabled={!form.watch('timerEnabled')}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const input = document.getElementById('newTimeFor4Teams') as HTMLInputElement;
+                              const newTime = parseInt(input.value);
+                              if (newTime && newTime >= 5 && newTime <= 120) {
+                                const currentTimes = [...form.watch('answerTimesFor4Teams')];
+                                if (!currentTimes.includes(newTime)) {
+                                  form.setValue('answerTimesFor4Teams', [...currentTimes, newTime].sort((a, b) => a - b));
+                                  input.value = '';
+                                }
+                              }
+                            }}
+                            disabled={!form.watch('timerEnabled')}
+                          >
+                            إضافة
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
 
