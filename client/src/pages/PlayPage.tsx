@@ -97,38 +97,43 @@ export default function PlayPage() {
     const checkPageVisibility = () => {
       if (document.visibilityState === 'visible' && gameId) {
         console.log("تحديث بيانات اللعبة عند العودة من صفحة أخرى");
-        // إضافة تأخير قصير لضمان تطبيق التغييرات من الخادم
+        // استدعاء وظيفة جلب البيانات فوراً
+        fetchGameDetails();
+        
+        // إجراء تحديث إضافي بعد تأخير لضمان جلب أحدث البيانات
         setTimeout(() => {
           fetchGameDetails();
-        }, 500);
+          console.log("تحديث إضافي لبيانات اللعبة");
+        }, 800);
       }
     };
     
     document.addEventListener('visibilitychange', checkPageVisibility);
     
-    // تحديث عند تغيير الموقع (URL)
-    const handleRouteChange = () => {
-      if (gameId) {
-        console.log("تحديث بيانات اللعبة بعد تغيير المسار");
-        setTimeout(() => {
-          fetchGameDetails();
-        }, 500);
-      }
-    };
-    
-    // إضافة استماع لتغيير المسار
-    window.addEventListener('popstate', handleRouteChange);
-    
     // تحديث فوري عند تركيب المكون (بعد الانتقال من صفحة أخرى)
     if (document.visibilityState === 'visible' && gameId) {
       fetchGameDetails();
+      
+      // إضافة تحديث إضافي بعد تأخير عند تثبيت المكون
+      setTimeout(() => {
+        fetchGameDetails();
+        console.log("تحديث ثانوي لبيانات اللعبة");
+      }, 1000);
     }
+    
+    // تحديث دوري كل 3 ثواني
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible' && gameId) {
+        fetchGameDetails();
+        console.log("تحديث دوري لبيانات اللعبة");
+      }
+    }, 3000);
     
     // إزالة مستمعات الأحداث عند إزالة المكون
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', checkPageVisibility);
-      window.removeEventListener('popstate', handleRouteChange);
+      clearInterval(intervalId);
     };
   }, [gameId]);
   
