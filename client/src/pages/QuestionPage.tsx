@@ -672,16 +672,18 @@ export default function QuestionPage() {
 
   // تم حذف التعريف المكرر هنا
 
-  // عرض شاشة التحميل
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
-        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-        <h2 className="text-xl font-semibold text-center mb-2">جاري تحميل السؤال...</h2>
-        <p className="text-gray-500 text-center">يرجى الانتظار قليلًا</p>
-      </div>
-    );
-  }
+  const renderLoading = () => {
+    if (loading) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
+          <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+          <h2 className="text-xl font-semibold text-center mb-2">جاري تحميل السؤال...</h2>
+          <p className="text-gray-500 text-center">يرجى الانتظار قليلًا</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // عرض رسالة الخطأ إذا حدث خطأ
   if (error) {
