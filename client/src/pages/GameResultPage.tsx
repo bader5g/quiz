@@ -160,40 +160,99 @@ export default function GameResultPage() {
           <p className="text-muted-foreground">{gameResult.name} - {formatDate(gameResult.date)}</p>
         </div>
 
-        {/* الفريق الفائز */}
+        {/* الفريق الفائز - مع تأثيرات حركية محسّنة */}
         {gameResult.winningTeam && (
-          <Card className="mb-8 border-4 shadow-lg animate-pulse" style={{ borderColor: sortedTeams[0].color }}>
-            <CardContent className="p-6 text-center">
-              <div className="flex justify-center mb-4">
-                <Trophy className="h-16 w-16 text-yellow-500" />
+          <Card className="mb-8 border-4 shadow-lg animate-bounce-slow" 
+                style={{ 
+                  borderColor: sortedTeams[0].color,
+                  background: `linear-gradient(45deg, ${sortedTeams[0].color}11, #ffffff, ${sortedTeams[0].color}11)`
+                }}>
+            <CardContent className="p-6 text-center relative overflow-hidden">
+              {/* تأثيرات إضافية للخلفية */}
+              <div className="absolute top-0 left-0 w-full h-full opacity-20">
+                <div className="absolute top-1/4 left-1/4 w-16 h-16 rounded-full bg-yellow-300 animate-ping"></div>
+                <div className="absolute top-3/4 right-1/4 w-12 h-12 rounded-full bg-yellow-400 animate-ping animation-delay-500"></div>
+                <div className="absolute top-1/2 right-1/3 w-8 h-8 rounded-full bg-yellow-500 animate-ping animation-delay-1000"></div>
               </div>
-              <h2 className="text-2xl font-bold mb-2">
-                الفريق الفائز: {gameResult.winningTeam}
-              </h2>
-              <p className="text-muted-foreground">
-                بمجموع نقاط: {sortedTeams[0].score}
-              </p>
+              
+              <div className="flex justify-center mb-4 animate-bounce">
+                <Trophy className="h-20 w-20 text-yellow-500 drop-shadow-lg" />
+              </div>
+              
+              <div className="relative z-10">
+                <h2 className="text-3xl font-bold mb-3 text-gradient animate-gradient">
+                  الفريق الفائز: {gameResult.winningTeam}
+                </h2>
+                <div className="flex justify-center items-center gap-2">
+                  <span className="text-xl">🎯</span>
+                  <p className="text-lg font-semibold" style={{ color: sortedTeams[0].color }}>
+                    بمجموع نقاط: {sortedTeams[0].score}
+                  </p>
+                  <span className="text-xl">🎯</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
         
-        {/* جدول النقاط */}
-        <Card className="mb-8 shadow">
-          <CardHeader>
-            <CardTitle>جدول النقاط</CardTitle>
+        {/* جدول النقاط - محسّن بالتأثيرات والرسوم */}
+        <Card className="mb-8 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary animate-float">
+                <rect x="2" y="7" width="20" height="15" rx="2" />
+                <path d="M17 2v5" />
+                <path d="M7 2v5" />
+                <path d="M2 12h20" />
+              </svg>
+              <span>جدول النقاط</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-6">
+            <div className="space-y-6">
               {sortedTeams.map((team, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {team.isWinner && <Trophy className="h-5 w-5 text-yellow-500" />}
-                    <Badge style={{ backgroundColor: team.color }}>{index + 1}</Badge>
-                    <span className="font-semibold">{team.name}</span>
+                <div 
+                  key={index} 
+                  className={`flex items-center justify-between p-4 rounded-lg transition-all duration-500 transform hover:scale-[1.02] ${
+                    team.isWinner 
+                      ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 animate-scale-up-down' 
+                      : 'bg-gradient-to-r from-gray-50 to-slate-50 border'
+                  }`}
+                  style={{ borderColor: team.color }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex items-center justify-center w-10 h-10 rounded-full" 
+                        style={{ backgroundColor: `${team.color}22` }}>
+                        {team.isWinner ? (
+                          <Trophy className={`h-6 w-6 text-yellow-500 drop-shadow ${index === 0 ? 'animate-bounce' : ''}`} />
+                        ) : (
+                          <Badge 
+                            className="h-7 w-7 flex items-center justify-center text-white" 
+                            style={{ backgroundColor: team.color }}
+                          >
+                            {index + 1}
+                          </Badge>
+                        )}
+                    </div>
+                    <div>
+                      <span className={`text-lg font-bold ${team.isWinner ? 'text-gradient animate-gradient' : ''}`}>
+                        {team.name}
+                      </span>
+                      {team.isWinner && (
+                        <div className="text-xs text-yellow-600 mt-1">🏆 الفريق الفائز</div>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-lg p-2">
-                    {team.score}
-                  </Badge>
+                  <div className="flex flex-col items-end">
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xl p-2 px-4 font-bold ${team.isWinner ? 'ring-2 ring-yellow-400' : ''}`}
+                      style={{ color: team.color }}
+                    >
+                      {team.score}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground mt-1">النقاط</span>
+                  </div>
                 </div>
               ))}
             </div>
