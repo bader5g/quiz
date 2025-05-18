@@ -438,12 +438,26 @@ export default function QuestionPage() {
       const firstTeamTime = questionData.firstAnswerTime || 30;
       const secondTeamTime = questionData.secondAnswerTime || 15;
       
-      // نحدد أي فريق سيحصل على الوقت الأول وأيهم سيحصل على الوقت الثاني
-      // بناءً على دور كل فريق في اللعبة
-      const isFirstTeam = currentTeamIndex === 0;
+      // دائماً الفريق الأول الذي يظهر له السؤال يحصل على وقت الإجابة الأولى
+      // بغض النظر عن رقم الفريق (سواء كان الأول أو الثاني أو الثالث أو الرابع)
       
-      // وقت المؤقت يعتمد على ترتيب الفريق
-      const currentTime = isFirstTeam
+      // نتحقق إذا كان هذا أول تحميل للسؤال
+      const isFirstTimeLoading = !sessionStorage.getItem(`question_${questionId}_loaded`);
+      
+      // إذا كان أول تحميل للسؤال، نستخدم وقت الإجابة الأولى ونضع علامة أن السؤال تم تحميله
+      if (isFirstTimeLoading) {
+        console.log("هذا أول ظهور للسؤال - استخدام وقت الإجابة الأولى");
+        sessionStorage.setItem(`question_${questionId}_loaded`, "true");
+        sessionStorage.setItem(`question_${questionId}_first_team`, currentTeamIndex.toString());
+      }
+      
+      // نتحقق من الفريق الذي حصل على السؤال أولاً
+      const firstTeamForQuestion = sessionStorage.getItem(`question_${questionId}_first_team`);
+      const isFirstTeamForQuestion = firstTeamForQuestion !== null && 
+                                     parseInt(firstTeamForQuestion) === currentTeamIndex;
+      
+      // اختيار الوقت المناسب
+      const currentTime = isFirstTimeLoading || isFirstTeamForQuestion
         ? firstTeamTime 
         : secondTeamTime;
         
