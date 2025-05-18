@@ -231,6 +231,7 @@ export default function PlayPage() {
     >
       <div className="container mx-auto p-4 pb-8">
         <GameHeader
+          key={`header-team-${game.currentTeamIndex}-${Date.now()}`}
           logoUrl={siteSettings?.logoUrl}
           appName={siteSettings?.appName}
           gameName={game.name}

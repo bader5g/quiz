@@ -39,19 +39,29 @@ export function GameHeader({
           </div>
         )}
         
-        {/* الدور الحالي - تمييز واضح أكثر */}
-        <Badge 
-          className="text-lg py-3 px-6 rounded-full shadow-lg flex items-center gap-3 transition-all text-black border-2 animate-pulse" 
-          style={{ 
-            backgroundColor: currentTeam.color || 'white',
-            borderColor: 'black',
-            fontSize: '1.1rem',
-            fontWeight: 'bold'
-          }}
-        >
-          <Trophy className="h-6 w-6 text-gray-800" />
-          <span className="font-extrabold">الدور الحالي: {currentTeam.name}</span>
-        </Badge>
+        {/* الدور الحالي - تمييز واضح مع تحسينات مرئية */}
+        <div className="relative">
+          <Badge 
+            className="text-lg py-3 px-6 rounded-full shadow-xl flex items-center gap-3 transition-colors duration-300 text-black border-2 animate-pulse" 
+            style={{ 
+              backgroundColor: `${currentTeam.color}dd` || 'white',
+              borderColor: 'black',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              boxShadow: `0 0 15px ${currentTeam.color}`
+            }}
+          >
+            <Trophy className="h-6 w-6 text-gray-800" />
+            <span className="font-extrabold">الدور الحالي: {currentTeam.name}</span>
+          </Badge>
+          <div 
+            className="absolute inset-0 rounded-full opacity-30 animate-ping" 
+            style={{ 
+              backgroundColor: currentTeam.color,
+              animationDuration: '1.5s'
+            }}
+          />
+        </div>
       </div>
 
       {/* الجزء الأوسط: اسم اللعبة */}
