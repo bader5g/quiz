@@ -125,6 +125,12 @@ export default function GameSettingsManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+  
+  // متغيرات حالة لتتبع قيم حقول إضافة الأوقات
+  const [newTimeForFirst, setNewTimeForFirst] = useState<string>('');
+  const [newTimeForSecond, setNewTimeForSecond] = useState<string>('');
+  const [newTimeForThird, setNewTimeForThird] = useState<string>('');
+  const [newTimeForFourth, setNewTimeForFourth] = useState<string>('');
 
   // إعداد النموذج
   const form = useForm<GameSettingsFormValues>({
@@ -771,30 +777,18 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            id="newTimeForFirst"
+                            value={newTimeForFirst}
+                            onChange={(e) => setNewTimeForFirst(e.target.value)}
                             min={5}
                             max={120}
-                            defaultValue=""
-                            key="newTimeForFirst"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
                             type="button"
                             onClick={() => {
-                              // استخدام ref بدلاً من الوصول المباشر للعنصر
-                              const input = document.getElementById('newTimeForFirst') as HTMLInputElement;
-                              
-                              // فحص وجود الحقل
-                              if (!input) {
-                                console.error('لم يتم العثور على حقل الإدخال');
-                                return;
-                              }
-
-                              // الحصول على القيمة
-                              const newTimeStr = input.value;
-                              const newTime = parseInt(newTimeStr);
-                              
                               // التحقق من القيمة
+                              const newTime = parseInt(newTimeForFirst);
+                              
                               if (isNaN(newTime) || newTime < 5 || newTime > 120) {
                                 console.log('القيمة المدخلة غير صالحة');
                                 return;
@@ -817,7 +811,7 @@ export default function GameSettingsManagement() {
                                 }
                                 
                                 // تفريغ الحقل
-                                input.value = '';
+                                setNewTimeForFirst('');
                                 console.log('تمت إضافة القيمة:', newTime);
                               }
                             }}
@@ -886,30 +880,18 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            id="newTimeForSecond"
+                            value={newTimeForSecond}
+                            onChange={(e) => setNewTimeForSecond(e.target.value)}
                             min={5}
                             max={120}
-                            defaultValue=""
-                            key="newTimeForSecond"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
                             type="button"
                             onClick={() => {
-                              // استخدام ref بدلاً من الوصول المباشر للعنصر
-                              const input = document.getElementById('newTimeForSecond') as HTMLInputElement;
-                              
-                              // فحص وجود الحقل
-                              if (!input) {
-                                console.error('لم يتم العثور على حقل الإدخال');
-                                return;
-                              }
-
-                              // الحصول على القيمة
-                              const newTimeStr = input.value;
-                              const newTime = parseInt(newTimeStr);
-                              
                               // التحقق من القيمة
+                              const newTime = parseInt(newTimeForSecond);
+                              
                               if (isNaN(newTime) || newTime < 5 || newTime > 120) {
                                 console.log('القيمة المدخلة غير صالحة');
                                 return;
@@ -932,7 +914,7 @@ export default function GameSettingsManagement() {
                                 }
                                 
                                 // تفريغ الحقل
-                                input.value = '';
+                                setNewTimeForSecond('');
                                 console.log('تمت إضافة القيمة:', newTime);
                               }
                             }}
@@ -1001,30 +983,18 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            id="newTimeForThird"
+                            value={newTimeForThird}
+                            onChange={(e) => setNewTimeForThird(e.target.value)}
                             min={5}
                             max={120}
-                            defaultValue=""
-                            key="newTimeForThird"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
                             type="button"
                             onClick={() => {
-                              // استخدام ref بدلاً من الوصول المباشر للعنصر
-                              const input = document.getElementById('newTimeForThird') as HTMLInputElement;
-                              
-                              // فحص وجود الحقل
-                              if (!input) {
-                                console.error('لم يتم العثور على حقل الإدخال');
-                                return;
-                              }
-
-                              // الحصول على القيمة
-                              const newTimeStr = input.value;
-                              const newTime = parseInt(newTimeStr);
-                              
                               // التحقق من القيمة
+                              const newTime = parseInt(newTimeForThird);
+                              
                               if (isNaN(newTime) || newTime < 5 || newTime > 120) {
                                 console.log('القيمة المدخلة غير صالحة');
                                 return;
@@ -1047,7 +1017,7 @@ export default function GameSettingsManagement() {
                                 }
                                 
                                 // تفريغ الحقل
-                                input.value = '';
+                                setNewTimeForThird('');
                                 console.log('تمت إضافة القيمة:', newTime);
                               }
                             }}
@@ -1116,30 +1086,18 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            id="newTimeForFourth"
+                            value={newTimeForFourth}
+                            onChange={(e) => setNewTimeForFourth(e.target.value)}
                             min={5}
                             max={120}
-                            defaultValue=""
-                            key="newTimeForFourth"
                             disabled={!form.watch('timerEnabled')}
                           />
                           <Button
                             type="button"
                             onClick={() => {
-                              // استخدام ref بدلاً من الوصول المباشر للعنصر
-                              const input = document.getElementById('newTimeForFourth') as HTMLInputElement;
-                              
-                              // فحص وجود الحقل
-                              if (!input) {
-                                console.error('لم يتم العثور على حقل الإدخال');
-                                return;
-                              }
-
-                              // الحصول على القيمة
-                              const newTimeStr = input.value;
-                              const newTime = parseInt(newTimeStr);
-                              
                               // التحقق من القيمة
+                              const newTime = parseInt(newTimeForFourth);
+                              
                               if (isNaN(newTime) || newTime < 5 || newTime > 120) {
                                 console.log('القيمة المدخلة غير صالحة');
                                 return;
@@ -1162,7 +1120,7 @@ export default function GameSettingsManagement() {
                                 }
                                 
                                 // تفريغ الحقل
-                                input.value = '';
+                                setNewTimeForFourth('');
                                 console.log('تمت إضافة القيمة:', newTime);
                               }
                             }}
