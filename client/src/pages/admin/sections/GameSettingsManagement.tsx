@@ -148,6 +148,26 @@ export default function GameSettingsManagement() {
       showTimerAnimation: true,
       pauseTimerOnQuestionView: false,
       enableTimerSounds: true,
+      
+      // إعدادات أوقات الإجابة
+      answerTimeOptions: {
+        first: {
+          default: 30,
+          options: [10, 20, 30, 45, 60, 90]
+        },
+        second: {
+          default: 20,
+          options: [5, 10, 15, 20, 30]
+        },
+        third: {
+          default: 15,
+          options: [5, 10, 15, 20, 30]
+        },
+        fourth: {
+          default: 10,
+          options: [5, 10, 15, 20]
+        }
+      },
       lowTimeThreshold: 5,
       timerDisplayFormat: 'digital',
       
