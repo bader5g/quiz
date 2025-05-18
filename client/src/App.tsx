@@ -50,6 +50,9 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/buy-cards" component={BuyCardsPage} />
       <Route path="/level" component={LevelPage} />
+      {/* لوحة تحكم المدير */}
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
