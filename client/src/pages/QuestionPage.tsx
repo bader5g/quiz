@@ -363,7 +363,10 @@ export default function QuestionPage() {
       setCurrentTeamIndex(nextTeamIndex);
       
       // تعيين الوقت المناسب للفريق الجديد
-      const newTime = nextTeamIndex === 0
+      // الفريق الذي تم اختياره للإجابة الأولى يحصل على الوقت الأول
+      // وباقي الفرق تحصل على الوقت الثاني
+      const isFirstTeam = questionData.currentTeamIndex === nextTeamIndex;
+      const newTime = isFirstTeam
         ? questionData.firstAnswerTime
         : questionData.secondAnswerTime;
       
@@ -428,10 +431,19 @@ export default function QuestionPage() {
   useEffect(() => {
     // فقط إذا تم تحميل البيانات
     if (questionData && !loading) {
-      // ضمان أن الوقت مضبوط بشكل صحيح دائماً
-      const currentTime = currentTeamIndex === 0
-        ? questionData.firstAnswerTime
-        : questionData.secondAnswerTime;
+      // الفريق الذي تم اختياره للسؤال يحصل على وقت الإجابة الأول
+      // والفرق الأخرى تحصل على وقت الإجابة الثاني
+      const firstTeamTime = questionData.firstAnswerTime;
+      const secondTeamTime = questionData.secondAnswerTime;
+      
+      // نحدد أي فريق سيحصل على الوقت الأول وأيهم سيحصل على الوقت الثاني
+      // بناءً على دور كل فريق في اللعبة
+      const isFirstTeam = currentTeamIndex === 0;
+      
+      // وقت المؤقت يعتمد على ما إذا كان هذا هو الفريق الأصلي أم لا
+      const currentTime = isOriginalTeam
+        ? firstTeamTime 
+        : secondTeamTime;
         
       console.log(`⚡ تشغيل تلقائي للمؤقت - الفريق: ${questionData.teams[currentTeamIndex]?.name}، الوقت: ${currentTime}`);
       
@@ -444,7 +456,7 @@ export default function QuestionPage() {
       // إعادة ضبط حالة المؤقت
       setTimerRunning(false);
       
-      // ضبط الوقت دائماً للتأكد من تحديثه
+      // ضبط الوقت للفريق الحالي
       setTimeLeft(currentTime);
       
       // تشغيل المؤقت تلقائياً بعد تأخير قصير
