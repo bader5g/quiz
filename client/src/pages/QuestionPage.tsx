@@ -670,6 +670,12 @@ export default function QuestionPage() {
     submitAnswer(false);
   };
 
+  export default function QuestionPage() {
+  const { gameId, questionId } = useParams();
+  const [, navigate] = useLocation();
+  const { getModalClass } = useSite();
+  const { toast } = useToast();
+
   // عرض شاشة التحميل
   if (loading) {
     return (
