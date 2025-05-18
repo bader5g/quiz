@@ -9,6 +9,7 @@ import QuestionsManagement from './sections/QuestionsManagement';
 import GameSettingsManagement from './sections/GameSettingsManagement';
 import PackagesManagement from './sections/PackagesManagement';
 import LevelsManagement from './sections/LevelsManagement';
+import SiteSettingsManagement from './sections/SiteSettingsManagement';
 
 import {
   Users,
@@ -24,6 +25,7 @@ import {
   ChevronLeft,
   SlidersHorizontal,
   Home,
+  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -271,6 +273,12 @@ export default function AdminPage() {
                   href="/admin/levels"
                   isActive={location === '/admin/levels'}
                 />
+                <SidebarItem
+                  icon={<Globe className="h-5 w-5" />}
+                  title="إعدادات الموقع"
+                  href="/admin/site-settings"
+                  isActive={location === '/admin/site-settings'}
+                />
               </div>
             </ScrollArea>
             <Separator className="my-4" />
@@ -299,6 +307,7 @@ export default function AdminPage() {
               <Route path="/admin/game-settings" component={GameSettingsManagement} />
               <Route path="/admin/packages" component={PackagesManagement} />
               <Route path="/admin/levels" component={LevelsManagement} />
+              <Route path="/admin/site-settings" component={SiteSettingsManagement} />
               <Route path="/admin/:rest*" component={Dashboard} />
             </Switch>
           </div>
