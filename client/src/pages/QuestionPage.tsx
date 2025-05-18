@@ -35,6 +35,7 @@ import { ModalDialogContent } from '@/components/ui/modal-dialog';
 import { useSite } from '@/context/SiteContext';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useQuery } from '@tanstack/react-query';
+import type { GameSettings } from '@shared/schema';
 
 interface Question {
   id: number;
@@ -144,25 +145,8 @@ export default function QuestionPage() {
   // نحصل على معرف الفئة إذا كان موجوداً
   const requestedCategoryId = searchParams.get("categoryId");
 
-  // استيراد نوع GameSettings من مخطط البيانات المشترك
-  interface GameSettingsType {
-    id: number;
-    minCategories: number;
-    maxCategories: number;
-    minTeams: number;
-    maxTeams: number;
-    maxGameNameLength: number;
-    maxTeamNameLength: number;
-    defaultFirstAnswerTime: number;
-    defaultSecondAnswerTime: number;
-    allowedFirstAnswerTimes: number[];
-    allowedSecondAnswerTimes: number[];
-    modalTitle: string;
-    pageDescription: string;
-  }
-
   // جلب إعدادات اللعبة من API لاستخدام الوقت الافتراضي منها
-  const { data: gameSettings, isLoading: isLoadingSettings } = useQuery<GameSettingsType>({
+  const { data: gameSettings, isLoading: isLoadingSettings } = useQuery<GameSettings>({
     queryKey: ["/api/game-settings"],
     staleTime: 60000, // تحديث كل دقيقة
   });
@@ -216,8 +200,18 @@ export default function QuestionPage() {
         }
 
         // استخدام إعدادات اللعبة من API إذا كانت متوفرة، أو استخدام القيم من الخادم
-        const firstTime = gameSettings?.defaultFirstAnswerTime || data.firstAnswerTime;
-        const secondTime = gameSettings?.defaultSecondAnswerTime || data.secondAnswerTime;
+        let firstTime = data.firstAnswerTime;
+        let secondTime = data.secondAnswerTime;
+        
+        // تحديث الأوقات فقط إذا كانت إعدادات اللعبة متوفرة من لوحة التحكم
+        if (gameSettings) {
+          console.log('استخدام أوقات الإجابة من إعدادات لوحة التحكم:', 
+            gameSettings.defaultFirstAnswerTime, 
+            gameSettings.defaultSecondAnswerTime
+          );
+          firstTime = gameSettings.defaultFirstAnswerTime;
+          secondTime = gameSettings.defaultSecondAnswerTime;
+        }
         
         // تحديث بيانات السؤال مع الأوقات المحدثة
         const updatedData = {
