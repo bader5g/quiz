@@ -15,7 +15,8 @@ import {
   AlertTriangle,
   RotateCw,
   Minus,
-  UserX
+  UserX,
+  Trophy
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
@@ -587,9 +588,19 @@ export default function QuestionPage() {
             <img src="/assets/jaweb-logo.png" alt="جاوب" className="h-10" />
           </div>
 
-          {/* اسم الفريق الذي عليه الدور (وسط) */}
-          <div className="text-lg font-bold px-4 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
-            دور: {currentTeam?.name || 'الفريق الأول'}
+          {/* اسم الفريق الذي عليه الدور (وسط) مع تأثير نبض وإبراز اللون */}
+          <div 
+            className="text-lg font-bold px-4 py-2 rounded-full shadow-md animate-pulse flex items-center gap-2" 
+            style={{ 
+              backgroundColor: currentTeam?.color || '#e2e8f0',
+              color: '#1e293b',
+              borderWidth: '2px',
+              borderStyle: 'solid',
+              borderColor: '#1e293b'
+            }}
+          >
+            <LogOut className="h-5 w-5" />
+            <span>دور: {currentTeam?.name || 'الفريق الأول'}</span>
           </div>
 
           {/* أزرار التحكم (يسار) */}
