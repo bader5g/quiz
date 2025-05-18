@@ -524,8 +524,8 @@ export default function QuestionPage() {
     }
   };
 
-  // إغلاق السؤال والعودة للخلف
-  const closeQuestion = () => {
+  // إغلاق السؤال والعودة للخلف مع تبديل الدور للفريق التالي
+  const closeQuestion = async () => {
     // إيقاف المؤقت إذا كان قيد التشغيل
     if (timer) {
       clearInterval(timer);
@@ -536,8 +536,32 @@ export default function QuestionPage() {
     // التأكد من عدم عرض حوار اختيار الفريق عند العودة
     setShowTeamSelection(false);
     
-    // العودة إلى صفحة اللعب
-    navigate(`/play/${gameId}`);
+    // تبديل الدور للفريق التالي
+    if (questionData) {
+      const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
+      
+      try {
+        // تحديث الفريق الحالي في قاعدة البيانات
+        await apiRequest('POST', `/api/games/${gameId}/update-team`, {
+          teamIndex: nextTeamIndex
+        });
+        
+        console.log(`🔄 تم تبديل الدور تلقائياً من الفريق ${currentTeamIndex} إلى الفريق ${nextTeamIndex} عند الخروج من السؤال`);
+        
+        // عرض إشعار للمستخدم
+        toast({
+          title: "تم تبديل الدور",
+          description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`
+        });
+      } catch (error) {
+        console.error("خطأ في تبديل الدور:", error);
+      }
+    }
+    
+    // تأخير قصير ثم العودة إلى صفحة اللعب
+    setTimeout(() => {
+      navigate(`/play/${gameId}`);
+    }, 500);
   };
 
   // معالجة تقديم النتيجة الإيجابية (إجابة صحيحة)
