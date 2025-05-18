@@ -25,13 +25,33 @@ export const gameSettings = pgTable("game_settings", {
   maxTeams: integer("max_teams").notNull().default(4),
   maxGameNameLength: integer("max_game_name_length").notNull().default(45),
   maxTeamNameLength: integer("max_team_name_length").notNull().default(45),
+  
+  // أوقات الإجابة الافتراضية
   defaultFirstAnswerTime: integer("default_first_answer_time").notNull().default(30),
   defaultSecondAnswerTime: integer("default_second_answer_time").notNull().default(15),
+  
+  // القيم المسموح بها لأوقات الإجابة
   allowedFirstAnswerTimes: jsonb("allowed_first_answer_times").notNull().default([15, 30, 45, 60]),
   allowedSecondAnswerTimes: jsonb("allowed_second_answer_times").notNull().default([10, 15, 20, 30]),
+  
+  // أوقات الإجابة حسب عدد الفرق
+  answerTimesFor2Teams: jsonb("answer_times_for_2_teams").notNull().default([15, 30, 45]),
+  answerTimesFor3Teams: jsonb("answer_times_for_3_teams").notNull().default([20, 40, 60]),
+  answerTimesFor4Teams: jsonb("answer_times_for_4_teams").notNull().default([30, 60, 90]),
+  
+  // إعدادات وسائل المساعدة
+  helpToolsEnabled: boolean("help_tools_enabled").notNull().default(true),
+  onlyEnabledForTwoTeams: boolean("only_enabled_for_two_teams").notNull().default(true),
+  skipQuestionEnabled: boolean("skip_question_enabled").notNull().default(true),
+  pointDeductionEnabled: boolean("point_deduction_enabled").notNull().default(true),
+  turnReverseEnabled: boolean("turn_reverse_enabled").notNull().default(true),
+  
+  // إعدادات عامة أخرى
   maxSubUsers: integer("max_sub_users").notNull().default(5),
   modalTitle: text("modal_title").notNull().default("إعدادات اللعبة"),
   pageDescription: text("page_description").notNull().default("اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!"),
+  minQuestionsPerCategory: integer("min_questions_per_category").notNull().default(5),
+  
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
   updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
 });

@@ -59,6 +59,11 @@ const gameSettingsTimerSchema = z.object({
   enableTimerSounds: z.boolean().default(true),
   lowTimeThreshold: z.coerce.number().min(3).max(20),
   timerDisplayFormat: z.enum(['digital', 'analog', 'bar']).default('digital'),
+  
+  // أوقات الإجابة حسب عدد الفرق
+  answerTimesFor2Teams: z.array(z.number()).default([15, 30, 45]),
+  answerTimesFor3Teams: z.array(z.number()).default([20, 40, 60]),
+  answerTimesFor4Teams: z.array(z.number()).default([30, 60, 90]),
 });
 
 // مخطط التحقق من إدخالات وسائل المساعدة
