@@ -385,14 +385,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>الحد الأدنى لعدد الفئات</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                value={field.value === undefined ? '' : field.value} 
-                                onChange={field.onChange}
-                                onBlur={field.onBlur}
-                                name={field.name}
-                                ref={field.ref}
-                              />
+                              <ControlledNumberInput field={field} min={1} max={20} />
                             </FormControl>
                             <FormDescription>
                               أقل عدد من الفئات المطلوبة للعبة
@@ -409,14 +402,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>الحد الأقصى لعدد الفئات</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                value={field.value === undefined ? '' : field.value} 
-                                onChange={field.onChange}
-                                onBlur={field.onBlur}
-                                name={field.name}
-                                ref={field.ref}
-                              />
+                              <ControlledNumberInput field={field} min={1} max={20} />
                             </FormControl>
                             <FormDescription>
                               أقصى عدد من الفئات المسموح به في اللعبة
@@ -433,7 +419,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>الحد الأدنى من الأسئلة لكل فئة</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <ControlledNumberInput field={field} min={1} max={20} />
                             </FormControl>
                             <FormDescription>
                               أقل عدد من الأسئلة المطلوبة لظهور الفئة للاعبين
@@ -454,7 +440,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>الحد الأدنى لعدد الفرق</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <ControlledNumberInput field={field} min={2} max={10} />
                             </FormControl>
                             <FormDescription>
                               أقل عدد من الفرق المطلوبة للعبة
@@ -471,7 +457,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>الحد الأقصى لعدد الفرق</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <ControlledNumberInput field={field} min={2} max={10} />
                             </FormControl>
                             <FormDescription>
                               أقصى عدد من الفرق المسموح به في اللعبة
@@ -496,7 +482,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>وقت الإجابة الأول (بالثواني)</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <ControlledNumberInput field={field} min={10} max={120} />
                             </FormControl>
                             <FormDescription>
                               الوقت المتاح للفريق الأول للإجابة
