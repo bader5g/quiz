@@ -34,6 +34,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import axios from "axios";
 
+interface AnswerTimeOption {
+  default: number;
+  options: number[];
+}
+
+interface AnswerTimeOptions {
+  first: AnswerTimeOption;
+  second: AnswerTimeOption;
+  third: AnswerTimeOption;
+  fourth: AnswerTimeOption;
+}
+
 interface GameSettings {
   minTeams: number;
   maxTeams: number;
@@ -46,6 +58,7 @@ interface GameSettings {
   answerTimesFor2Teams: number[];
   answerTimesFor3Teams: number[];
   answerTimesFor4Teams: number[];
+  answerTimeOptions: AnswerTimeOptions;
   modalTitle: string;
   minCategories: number;
   maxCategories: number;
@@ -78,6 +91,8 @@ const formSchema = z.object({
   ),
   answerTimeFirst: z.string(),
   answerTimeSecond: z.string(),
+  answerTimeThird: z.string().optional(),
+  answerTimeFourth: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -106,6 +121,8 @@ export function GameSettingsModal({
       ],
       answerTimeFirst: "30",
       answerTimeSecond: "15",
+      answerTimeThird: "10",
+      answerTimeFourth: "5",
     },
   });
 
@@ -115,14 +132,37 @@ export function GameSettingsModal({
         try {
           const response = await axios.get("/api/game-settings");
           setSettings(response.data);
-          form.setValue(
-            "answerTimeFirst",
-            response.data.defaultFirstAnswerTime.toString(),
-          );
-          form.setValue(
-            "answerTimeSecond",
-            response.data.defaultSecondAnswerTime.toString(),
-          );
+          
+          // تحميل الإعدادات الافتراضية من خيارات أوقات الإجابة في لوحة التحكم
+          if (response.data.answerTimeOptions) {
+            form.setValue(
+              "answerTimeFirst",
+              response.data.answerTimeOptions.first.default.toString(),
+            );
+            form.setValue(
+              "answerTimeSecond",
+              response.data.answerTimeOptions.second.default.toString(),
+            );
+            form.setValue(
+              "answerTimeThird",
+              response.data.answerTimeOptions.third.default.toString(),
+            );
+            form.setValue(
+              "answerTimeFourth",
+              response.data.answerTimeOptions.fourth.default.toString(),
+            );
+          } else {
+            // استخدام القيم القديمة للتوافق
+            form.setValue(
+              "answerTimeFirst",
+              response.data.defaultFirstAnswerTime.toString(),
+            );
+            form.setValue(
+              "answerTimeSecond",
+              response.data.defaultSecondAnswerTime.toString(),
+            );
+          }
+          
           form.setValue("teamCount", response.data.minTeams.toString());
         } catch (error) {
           toast({
@@ -138,6 +178,37 @@ export function GameSettingsModal({
   }, [open, toast, form]);
 
   const watchTeamCount = form.watch("teamCount");
+
+  // دالة للحصول على خيارات أوقات الإجابة حسب عدد الفرق ونوع الوقت
+  const getAnswerTimeOptions = (timeType: 'first' | 'second' | 'third' | 'fourth') => {
+    if (!settings) return [];
+    
+    // تحقق من وجود بيانات أوقات الإجابة الجديدة
+    if (settings.answerTimeOptions) {
+      return settings.answerTimeOptions[timeType].options;
+    }
+    
+    // استخدام البيانات القديمة كخيار بديل
+    if (timeType === 'first') {
+      return settings.allowedFirstAnswerTimes;
+    } else if (timeType === 'second') {
+      return settings.allowedSecondAnswerTimes;
+    }
+    
+    // قيم افتراضية للوقت الثالث والرابع
+    if (timeType === 'third') {
+      return [15, 10, 5];
+    } else {
+      return [10, 5, 3];
+    }
+  };
+  
+  // دالة لإظهار/إخفاء أوقات الإجابة الإضافية حسب عدد الفرق
+  const shouldShowAdditionalTime = (timeIndex: number) => {
+    if (!watchTeamCount) return false;
+    const count = parseInt(watchTeamCount, 10);
+    return count >= timeIndex + 1;
+  };
 
   useEffect(() => {
     if (!watchTeamCount) return;
@@ -163,12 +234,27 @@ export function GameSettingsModal({
     setLoading(true);
     try {
       const numTeams = parseInt(data.teamCount, 10);
+      
+      // جمع جميع أوقات الإجابة في مصفوفة واحدة حسب عدد الفرق
+      const answerTimes = [
+        parseInt(data.answerTimeFirst, 10),
+        parseInt(data.answerTimeSecond, 10),
+      ];
+      
+      // إضافة وقت الإجابة الثالث والرابع إذا كان عدد الفرق 3 أو 4
+      if (numTeams >= 3 && data.answerTimeThird) {
+        answerTimes.push(parseInt(data.answerTimeThird, 10));
+      }
+      
+      if (numTeams >= 4 && data.answerTimeFourth) {
+        answerTimes.push(parseInt(data.answerTimeFourth, 10));
+      }
+      
       const gameData = {
         gameName: data.gameName,
         teamsCount: numTeams,
         teamNames: data.teamNames.slice(0, numTeams),
-        firstAnswerTime: parseInt(data.answerTimeFirst, 10),
-        secondAnswerTime: parseInt(data.answerTimeSecond, 10),
+        answerTimes: answerTimes, // إرسال جميع أوقات الإجابة كمصفوفة
         categories: selectedCategories.map((cat) => cat.id),
       };
 
@@ -191,6 +277,7 @@ export function GameSettingsModal({
         ? onGameCreated(response.data.id)
         : navigate(`/play/${response.data.id}`);
     } catch (error) {
+      console.error("Error creating game:", error);
       toast({
         title: "خطأ",
         description: "فشل في إنشاء اللعبة، يرجى المحاولة مرة أخرى",
@@ -308,6 +395,7 @@ export function GameSettingsModal({
               </div>
             </div>
 
+            {/* وقت الإجابة الأول - لجميع الفرق */}
             <FormField
               control={form.control}
               name="answerTimeFirst"
@@ -315,7 +403,7 @@ export function GameSettingsModal({
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الأول</FormLabel>
                   <Select 
-                    defaultValue={field.value} 
+                    value={field.value ?? ""}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
@@ -324,61 +412,22 @@ export function GameSettingsModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="z-[9999]" side="bottom" sideOffset={4}>
-                      {watchTeamCount && (
-                        watchTeamCount === "2" ? (
-                          settings.answerTimesFor2Teams?.length > 0 ? (
-                            settings.answerTimesFor2Teams.map((time) => (
-                              <SelectItem key={time} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          ) : (
-                            settings.allowedFirstAnswerTimes.map((time) => (
-                              <SelectItem key={time} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          )
-                        ) : watchTeamCount === "3" ? (
-                          settings.answerTimesFor3Teams?.length > 0 ? (
-                            settings.answerTimesFor3Teams.map((time) => (
-                              <SelectItem key={time} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          ) : (
-                            settings.allowedFirstAnswerTimes.map((time) => (
-                              <SelectItem key={time} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          )
-                        ) : (
-                          settings.answerTimesFor4Teams?.length > 0 ? (
-                            settings.answerTimesFor4Teams.map((time) => (
-                              <SelectItem key={time} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          ) : (
-                            settings.allowedFirstAnswerTimes.map((time) => (
-                              <SelectItem key={time} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          )
-                        )
-                      )}
+                      {getAnswerTimeOptions('first').map((time) => (
+                        <SelectItem key={`first-${time}`} value={time.toString()}>
+                          {time} ثانية
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormDescription className="text-xs">
-                    وقت الإجابة الأولي للفريق متاح حسب عدد الفرق المختار
+                    وقت الإجابة الأساسي للفريق الأول
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* وقت الإجابة الثاني - لجميع الفرق */}
             <FormField
               control={form.control}
               name="answerTimeSecond"
@@ -386,7 +435,7 @@ export function GameSettingsModal({
                 <FormItem className="space-y-2">
                   <FormLabel>وقت الإجابة الثاني</FormLabel>
                   <Select 
-                    defaultValue={field.value} 
+                    value={field.value ?? ""}
                     onValueChange={field.onChange}
                   >
                     <FormControl>
@@ -395,60 +444,88 @@ export function GameSettingsModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="z-[9999]" side="bottom" sideOffset={4}>
-                      {watchTeamCount && (
-                        watchTeamCount === "2" ? (
-                          settings.answerTimesFor2Teams?.length > 0 ? (
-                            settings.answerTimesFor2Teams.map((time) => (
-                              <SelectItem key={`second-${time}`} value={Math.max(Math.floor(time/2), 5).toString()}>
-                                {Math.max(Math.floor(time/2), 5)} ثانية
-                              </SelectItem>
-                            ))
-                          ) : (
-                            settings.allowedSecondAnswerTimes.map((time) => (
-                              <SelectItem key={`second-${time}`} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          )
-                        ) : watchTeamCount === "3" ? (
-                          settings.answerTimesFor3Teams?.length > 0 ? (
-                            settings.answerTimesFor3Teams.map((time) => (
-                              <SelectItem key={`second-${time}`} value={Math.max(Math.floor(time/2), 5).toString()}>
-                                {Math.max(Math.floor(time/2), 5)} ثانية
-                              </SelectItem>
-                            ))
-                          ) : (
-                            settings.allowedSecondAnswerTimes.map((time) => (
-                              <SelectItem key={`second-${time}`} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          )
-                        ) : (
-                          settings.answerTimesFor4Teams?.length > 0 ? (
-                            settings.answerTimesFor4Teams.map((time) => (
-                              <SelectItem key={`second-${time}`} value={Math.max(Math.floor(time/2), 5).toString()}>
-                                {Math.max(Math.floor(time/2), 5)} ثانية
-                              </SelectItem>
-                            ))
-                          ) : (
-                            settings.allowedSecondAnswerTimes.map((time) => (
-                              <SelectItem key={`second-${time}`} value={time.toString()}>
-                                {time} ثانية
-                              </SelectItem>
-                            ))
-                          )
-                        )
-                      )}
+                      {getAnswerTimeOptions('second').map((time) => (
+                        <SelectItem key={`second-${time}`} value={time.toString()}>
+                          {time} ثانية
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormDescription className="text-xs">
-                    وقت الإجابة الثاني للفريق (نصف الوقت الأول تقريباً)
+                    وقت الإجابة للفريق الثاني
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
+            {/* وقت الإجابة الثالث - يظهر فقط إذا كان عدد الفرق 3 أو أكثر */}
+            {parseInt(watchTeamCount || "0", 10) >= 3 && (
+              <FormField
+                control={form.control}
+                name="answerTimeThird"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>وقت الإجابة الثالث</FormLabel>
+                    <Select 
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر وقت الإجابة الثالث" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="z-[9999]" side="bottom" sideOffset={4}>
+                        {getAnswerTimeOptions('third').map((time) => (
+                          <SelectItem key={`third-${time}`} value={time.toString()}>
+                            {time} ثانية
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      وقت الإجابة للفريق الثالث
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            {/* وقت الإجابة الرابع - يظهر فقط إذا كان عدد الفرق 4 */}
+            {parseInt(watchTeamCount || "0", 10) >= 4 && (
+              <FormField
+                control={form.control}
+                name="answerTimeFourth"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>وقت الإجابة الرابع</FormLabel>
+                    <Select 
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر وقت الإجابة الرابع" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="z-[9999]" side="bottom" sideOffset={4}>
+                        {getAnswerTimeOptions('fourth').map((time) => (
+                          <SelectItem key={`fourth-${time}`} value={time.toString()}>
+                            {time} ثانية
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      وقت الإجابة للفريق الرابع
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter className="pt-4">
               <Button

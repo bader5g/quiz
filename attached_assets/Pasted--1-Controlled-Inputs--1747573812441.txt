@@ -1,0 +1,93 @@
+✅ الإصلاحات المطلوبة على الكود الحالي
+1. ✅ تنظيف الحقول والتحكم الكامل بـ Controlled Inputs
+استبدال جميع defaultValue={field.value} بـ:
+
+tsx
+Copy
+Edit
+value={field.value}
+onValueChange={field.onChange}
+في Input، تأكد أن value لا يمكن أن يكون undefined:
+
+tsx
+Copy
+Edit
+value={field.value ?? ""}
+2. ✅ إزالة التكرار في كود أوقات الإجابة
+استخدم دالة واحدة مثل getAnswerTimesByTeamCount('first') لعرض خيارات الوقت حسب الفريق وعدد الفرق.
+
+هذا يقلل التكرار ويجعل الكود نظيفًا.
+
+3. ✅ إضافة وقت الإجابة الثالث والرابع عند 3 و4 فرق
+في الواجهة:
+
+أضف حقول اختيار answerTimeThird وanswerTimeFourth عند الحاجة (watchTeamCount === "3" أو "4").
+
+استخدم نفس منطق Select الحالي.
+
+في formSchema، أضف:
+
+ts
+Copy
+Edit
+answerTimeThird: z.string().optional(),
+answerTimeFourth: z.string().optional(),
+4. ✅ تحميل الوقت الافتراضي من لوحة التحكم
+من settings.answerTimeOptions, حمّل:
+
+ts
+Copy
+Edit
+form.setValue("answerTimeFirst", settings.answerTimeOptions.first.default.toString());
+form.setValue("answerTimeSecond", settings.answerTimeOptions.second.default.toString());
+form.setValue("answerTimeThird", settings.answerTimeOptions.third.default.toString());
+form.setValue("answerTimeFourth", settings.answerTimeOptions.fourth.default.toString());
+5. ✅ عند حفظ اللعبة، إرسال جميع الأوقات حسب عدد الفرق
+ts
+Copy
+Edit
+const answerTimes = [
+  parseInt(data.answerTimeFirst, 10),
+  parseInt(data.answerTimeSecond, 10),
+];
+if (numTeams >= 3) answerTimes.push(parseInt(data.answerTimeThird || "0", 10));
+if (numTeams === 4) answerTimes.push(parseInt(data.answerTimeFourth || "0", 10));
+ثم تضمينها في gameData:
+
+ts
+Copy
+Edit
+answerTimes: answerTimes
+6. ✅ في لوحة التحكم – إعدادات اللعبة (backend + admin panel)
+أضف الحقل الجديد answerTimeOptions بالشكل التالي:
+
+ts
+Copy
+Edit
+{
+  answerTimeOptions: {
+    first: {
+      default: 30,
+      options: [60, 30, 15, 10]
+    },
+    second: {
+      default: 15,
+      options: [30, 22, 10]
+    },
+    third: {
+      default: 5,
+      options: [10, 5, 1]
+    },
+    fourth: {
+      default: 5,
+      options: [10, 5, 3]
+    }
+  }
+}
+احفظه في عمود answer_time_options من نوع JSONB.
+
+7. ✅ اختياري لتحسين الأداء
+تحميل settings يتم فقط مرة واحدة عند open = true (تم بشكل صحيح).
+
+احرص على استخدام useMemo أو useCallback لبعض الحسابات المعتمدة على watchTeamCount.
+

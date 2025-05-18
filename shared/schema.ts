@@ -34,7 +34,27 @@ export const gameSettings = pgTable("game_settings", {
   allowedFirstAnswerTimes: jsonb("allowed_first_answer_times").notNull().default([15, 30, 45, 60]),
   allowedSecondAnswerTimes: jsonb("allowed_second_answer_times").notNull().default([10, 15, 20, 30]),
   
-  // أوقات الإجابة حسب عدد الفرق
+  // إعدادات أوقات الإجابة المرنة
+  answerTimeOptions: jsonb("answer_time_options").notNull().default({
+    first: {
+      default: 30,
+      options: [60, 30, 15, 10]
+    },
+    second: {
+      default: 15,
+      options: [30, 15, 10, 5]
+    },
+    third: {
+      default: 10,
+      options: [20, 10, 5]
+    },
+    fourth: {
+      default: 5,
+      options: [10, 5, 3]
+    }
+  }),
+  
+  // أوقات الإجابة حسب عدد الفرق (مبقى للتوافق)
   answerTimesFor2Teams: jsonb("answer_times_for_2_teams").notNull().default([15, 30, 45]),
   answerTimesFor3Teams: jsonb("answer_times_for_3_teams").notNull().default([20, 40, 60]),
   answerTimesFor4Teams: jsonb("answer_times_for_4_teams").notNull().default([30, 60, 90]),

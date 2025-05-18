@@ -51,6 +51,12 @@ const gameSettingsBaseSchema = z.object({
   pageDescription: z.string().min(1, { message: 'يجب إدخال وصف الصفحة' }),
 });
 
+// تعريف هيكل خيارات أوقات الإجابة
+const answerTimeOptionSchema = z.object({
+  default: z.number().min(3).max(120),
+  options: z.array(z.number())
+});
+
 // مخطط التحقق من إدخالات التوقيت
 const gameSettingsTimerSchema = z.object({
   timerEnabled: z.boolean().default(true),
@@ -60,7 +66,20 @@ const gameSettingsTimerSchema = z.object({
   lowTimeThreshold: z.coerce.number().min(3).max(20),
   timerDisplayFormat: z.enum(['digital', 'analog', 'bar']).default('digital'),
   
-  // أوقات الإجابة حسب عدد الفرق
+  // خيارات أوقات الإجابة المحسنة
+  answerTimeOptions: z.object({
+    first: answerTimeOptionSchema,
+    second: answerTimeOptionSchema,
+    third: answerTimeOptionSchema,
+    fourth: answerTimeOptionSchema
+  }).default({
+    first: { default: 30, options: [60, 30, 15, 10] },
+    second: { default: 15, options: [30, 15, 10, 5] },
+    third: { default: 10, options: [20, 10, 5] },
+    fourth: { default: 5, options: [10, 5, 3] }
+  }),
+  
+  // أوقات الإجابة حسب عدد الفرق (للتوافق القديم)
   answerTimesFor2Teams: z.array(z.number()).default([15, 30, 45]),
   answerTimesFor3Teams: z.array(z.number()).default([20, 40, 60]),
   answerTimesFor4Teams: z.array(z.number()).default([30, 60, 90]),
