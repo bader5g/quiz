@@ -232,6 +232,8 @@ export default function GameSettingsManagement() {
     try {
       setIsSaving(true);
       
+      console.log("بدء عملية حفظ الإعدادات:", values);
+      
       // التحقق من أن الحد الأقصى أكبر من أو يساوي الحد الأدنى
       if (values.maxCategories < values.minCategories) {
         toast({
@@ -1108,7 +1110,7 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            value={newTimeForFourth}
+                            value={newTimeForFourth || ''}
                             onChange={(e) => setNewTimeForFourth(e.target.value)}
                             min={5}
                             max={120}
