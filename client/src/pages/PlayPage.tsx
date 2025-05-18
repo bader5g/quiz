@@ -108,19 +108,10 @@ export default function PlayPage() {
       fetchGameDetails();
     }
     
-    // إضافة تحديث دوري كل 3 ثوانٍ للتأكد من تحديث دور الفريق الحالي
-    const intervalId = setInterval(() => {
-      if (document.visibilityState === 'visible' && gameId) {
-        console.log("تحديث دوري لبيانات اللعبة");
-        fetchGameDetails();
-      }
-    }, 3000);
-    
     // إزالة مستمعات الأحداث عند إزالة المكون
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', checkPageVisibility);
-      clearInterval(intervalId);
     };
   }, [gameId]);
   
