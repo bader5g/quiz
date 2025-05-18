@@ -81,61 +81,79 @@ export default function PlayPage() {
   
   // آلية محسنة للتحديث عند العودة للصفحة
   useEffect(() => {
-    // التأكد من تنفيذ تحديث واحد فقط
-    let updateRequested = false;
+    // متغير للتعقب حالة التحديث
+    let isUpdating = false;
     
-    // دالة جلب البيانات مع التحقق من عدم التكرار
-    const updateGameData = () => {
-      if (!updateRequested && gameId) {
-        updateRequested = true;
-        console.log("تحديث بيانات اللعبة...");
+    // دالة جلب البيانات المحدثة مباشرة من الخادم
+    const updateGameData = async () => {
+      if (isUpdating || !gameId) return; // منع التحديثات المتزامنة
+      
+      try {
+        isUpdating = true;
+        console.log("تحديث بيانات اللعبة من الخادم...");
         
-        // استخدام كائن AbortController لإلغاء الطلبات المتكررة
-        const controller = new AbortController();
+        // استخدام apiRequest بدلاً من fetch للاستفادة من التعامل مع الأخطاء
+        const response = await apiRequest('GET', `/api/games/${gameId}`);
+        const gameData = await response.json();
         
-        // جلب بيانات اللعبة وتحديث الحالة - إصلاح عدد المعاملات
-        fetch(`/api/games/${gameId}`, { 
-          method: 'GET',
-          signal: controller.signal
-        })
-          .then(response => response.json())
-          .then(gameData => {
-            setGame(gameData);
-            console.log(`تم تحديث الفريق الحالي: الدور للفريق ${gameData.teams[gameData.currentTeamIndex].name}`);
-            setError(null);
-          })
-          .catch(err => {
-            if (err.name !== 'AbortError') {
-              console.error('خطأ في تحديث بيانات اللعبة:', err);
-            }
-          })
-          .finally(() => {
-            updateRequested = false;
-          });
+        // تحديث حالة اللعبة في واجهة المستخدم
+        setGame(gameData);
+        
+        console.log(`🎮 تم تحديث الدور الحالي: الفريق ${gameData.teams[gameData.currentTeamIndex].name}`);
+        console.log(`📊 مؤشر الفريق الحالي: ${gameData.currentTeamIndex}`);
+        
+        setError(null);
+      } catch (err) {
+        console.error('خطأ في تحديث بيانات اللعبة:', err);
+        toast({
+          title: "خطأ في تحديث البيانات",
+          description: "حدثت مشكلة أثناء تحديث بيانات اللعبة. يرجى المحاولة مرة أخرى.",
+          variant: "destructive",
+        });
+      } finally {
+        isUpdating = false;
       }
     };
     
     // استدعاء عند تحميل الصفحة لأول مرة
     updateGameData();
     
-    // تحديث البيانات عند العودة للصفحة
+    // تحديث البيانات عند العودة للصفحة - مع محاولات متكررة لضمان تحديث الواجهة
     const handleFocus = () => {
       if (document.hasFocus() && gameId) {
+        // تحديث فوري
         updateGameData();
+        
+        // تحديث مرة أخرى بعد تأخير قصير للتأكد من تحديث البيانات
+        setTimeout(() => {
+          updateGameData();
+        }, 500);
       }
     };
     
     // تحديث البيانات عند عودة النافذة للمقدمة
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && gameId) {
+        // تحديث فوري
         updateGameData();
+        
+        // تحديث إضافي بعد تأخير قصير
+        setTimeout(() => {
+          updateGameData();
+        }, 500);
       }
     };
     
     // تحديث البيانات عند العودة من صفحة أخرى (popstate)
     const handleRouteChange = () => {
       if (gameId) {
+        // تحديث فوري ثم مرة أخرى بعد تأخير
         updateGameData();
+        
+        // تحديث مؤجل للتأكد من تحديث الواجهة بعد تغييرات الخادم
+        setTimeout(() => {
+          updateGameData();
+        }, 800);
       }
     };
     
