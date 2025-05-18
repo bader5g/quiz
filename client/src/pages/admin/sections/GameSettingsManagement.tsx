@@ -499,7 +499,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>وقت الإجابة الثاني (بالثواني)</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <ControlledNumberInput field={field} min={5} max={60} />
                             </FormControl>
                             <FormDescription>
                               الوقت المتاح للفرق اللاحقة للإجابة
@@ -520,7 +520,7 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>عنوان نافذة إنشاء اللعبة</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <ControlledTextInput field={field} />
                             </FormControl>
                             <FormDescription>
                               العنوان الذي يظهر عند إنشاء لعبة جديدة
