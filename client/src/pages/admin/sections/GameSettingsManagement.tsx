@@ -218,7 +218,7 @@ export default function GameSettingsManagement() {
         maxTeamNameLength: values.maxTeamNameLength,
         defaultFirstAnswerTime: values.defaultFirstAnswerTime,
         defaultSecondAnswerTime: values.defaultSecondAnswerTime,
-        minQuestionsPerCategory: values.minQuestionsPerCategory,
+        minQuestionsPerCategory: values.minQuestionsPerCategory || 5,
         modalTitle: values.modalTitle,
         pageDescription: values.pageDescription
       };
@@ -227,20 +227,22 @@ export default function GameSettingsManagement() {
       
       // إرسال البيانات إلى الخادم
       const response = await apiRequest('PATCH', '/api/game-settings', gameSettingsData);
-      console.log('استجابة الخادم:', response);
+      console.log('تم حفظ الإعدادات بنجاح');
       
-      if (response.ok) {
-        // تحديث queryCache لضمان تحديث الواجهة
-        // استخدام نفس مفتاح الاستعلام المستخدم في الواجهة
-        queryClient.invalidateQueries({ queryKey: ['/api/game-settings'] });
-        
-        toast({
-          title: 'تم الحفظ بنجاح',
-          description: 'تم تحديث إعدادات اللعبة بنجاح',
-        });
-      } else {
-        throw new Error('فشل حفظ الإعدادات');
+      // إعادة تحميل الإعدادات
+      try {
+        const refreshResponse = await apiRequest('GET', '/api/game-settings');
+        const updatedSettings = await refreshResponse.json();
+        console.log('الإعدادات المحدثة:', updatedSettings);
+        form.reset(updatedSettings);
+      } catch (err) {
+        console.error('خطأ في إعادة تحميل الإعدادات', err);
       }
+      
+      toast({
+        title: 'تم الحفظ بنجاح',
+        description: 'تم تحديث إعدادات اللعبة بنجاح',
+      });
     } catch (error) {
       console.error('Error saving game settings:', error);
       toast({
