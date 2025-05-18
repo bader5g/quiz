@@ -163,6 +163,7 @@ export default function QuestionPage() {
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChangingTeam, setIsChangingTeam] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -292,9 +293,21 @@ export default function QuestionPage() {
 
   // وظيفة بدء المؤقت - مع تبديل الدور تلقائياً عند انتهاء الوقت
   const startTimer = () => {
-    // تحقق إن كان المؤقت يعمل مسبقًا أو الوقت صفر أو عدم وجود بيانات السؤال
-    if (timerRunning || !timeLeft || timeLeft <= 0 || !questionData) {
-      console.log(`⚠️ لا يمكن بدء المؤقت: ${timerRunning ? 'المؤقت يعمل بالفعل' : (timeLeft <= 0 ? 'الوقت صفر' : 'بيانات مفقودة')}`);
+    // منع تشغيل مؤقتات متعددة
+    if (timerRunning) {
+      console.log(`⚠️ المؤقت يعمل بالفعل - تم إلغاء تشغيل مؤقت جديد`);
+      return;
+    }
+    
+    // تحقق من وجود وقت صالح للمؤقت
+    if (!timeLeft || timeLeft <= 0) {
+      console.log(`⚠️ لا يمكن بدء المؤقت: الوقت ${timeLeft} غير صالح`);
+      return;
+    }
+    
+    // تحقق من وجود بيانات السؤال
+    if (!questionData) {
+      console.log(`⚠️ لا يمكن بدء المؤقت: بيانات السؤال غير متوفرة`);
       return;
     }
     
@@ -314,23 +327,28 @@ export default function QuestionPage() {
       setTimer(null);
     }
     
+    // تفعيل حالة تشغيل المؤقت
     setTimerRunning(true);
 
+    // إنشاء مؤقت جديد
     const interval = setInterval(() => {
       setTimeLeft((prevTime) => {
+        // عند وصول الوقت للصفر
         if (prevTime <= 1) {
+          // إيقاف المؤقت
           clearInterval(interval);
           setTimerRunning(false);
           console.log("⏱️ انتهى الوقت للفريق!", questionData.teams[currentTeamIndex]?.name);
           
-          // تبديل الدور تلقائياً للفريق التالي عند انتهاء الوقت
-          console.log('⏲️ جدولة تبديل الدور بعد ثانية واحدة');
+          // تبديل الدور تلقائياً بعد ثانية
           setTimeout(() => {
+            // تشغيل وظيفة تبديل الدور
             moveToNextTeam();
           }, 1000);
           
           return 0;
         }
+        // خفض الوقت بمقدار ثانية واحدة
         return prevTime - 1;
       });
     }, 1000);
@@ -338,86 +356,95 @@ export default function QuestionPage() {
     setTimer(interval);
   };
 
-  // تحويل الدور للفريق التالي
+  // تحويل الدور للفريق التالي - تصميم جديد يمنع تبديل الدور بشكل متكرر
   const moveToNextTeam = async () => {
     try {
+      // منع تبديل متكرر للفريق - إضافة حالة جاري التبديل
+      if (isChangingTeam) {
+        console.log('⛔ جاري تبديل الدور بالفعل - تم إلغاء الطلب الإضافي');
+        return;
+      }
+      
+      // تعيين حالة جاري التبديل
+      setIsChangingTeam(true);
+      
       // تحقق من وجود بيانات السؤال
       if (!questionData) {
         console.error('لا يمكن تبديل الدور: بيانات السؤال غير متوفرة');
+        setIsChangingTeam(false);
         return;
       }
 
-      // إيقاف المؤقت الحالي أولًا
+      // إيقاف المؤقت بشكل آمن
       if (timer) {
+        console.log('⏹️ إيقاف المؤقت قبل تبديل الدور');
         clearInterval(timer);
         setTimer(null);
+        setTimerRunning(false);
       }
-      setTimerRunning(false);
       
-      // حساب الفريق التالي (الفريق الحالي + 1)
+      // حساب الفريق التالي
       const nextTeamIndex = currentTeamIndex + 1;
+      let targetIndex = nextTeamIndex;
 
-      // إذا وصلنا للفريق الأخير، نعود للفريق الأول (دورة كاملة)
+      // التعامل مع إعادة الدورة من البداية
       if (nextTeamIndex >= questionData.teams.length) {
-        const resetTeamIndex = 0; // نعود للفريق الأول
-        console.log(`🔄 تم الوصول لآخر فريق. العودة للفريق الأول.`);
-        
-        // تحديث الفريق الحالي في قاعدة البيانات
-        await apiRequest('POST', `/api/games/${gameId}/update-team`, {
-          teamIndex: resetTeamIndex
-        });
-        
-        // تحديث الفريق في الواجهة
-        setCurrentTeamIndex(resetTeamIndex);
+        targetIndex = 0; // العودة للفريق الأول
+        console.log(`🔄 تم الوصول لآخر فريق. العودة للفريق الأول`);
         
         // إظهار رسالة توضيحية
         toast({
           title: "تمت دورة كاملة",
-          description: `تم الانتقال للفريق: ${questionData.teams[resetTeamIndex].name}`,
+          description: `تم الانتقال للفريق: ${questionData.teams[targetIndex].name}`,
         });
-        
-        return;
+      } else {
+        console.log(`🔄 تبديل الدور من الفريق ${currentTeamIndex} إلى الفريق ${targetIndex}`);
       }
-
-      console.log(`🔄 تبديل الدور من الفريق ${currentTeamIndex} إلى الفريق ${nextTeamIndex}`);
       
       // تحديث الفريق الحالي في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/update-team`, {
-        teamIndex: nextTeamIndex
+        teamIndex: targetIndex
       });
 
       // تحديث الفريق الحالي في الواجهة
-      setCurrentTeamIndex(nextTeamIndex);
+      setCurrentTeamIndex(targetIndex);
       
-      // تعيين الوقت المناسب للفريق الجديد من إعدادات اللعبة
-      // نتحقق أولاً من وجود إعدادات اللعبة من لوحة التحكم
-      let firstTeamTime = 30;
-      let secondTeamTime = 15;
-
-      // استخدام الأوقات من إعدادات اللعبة إذا كانت متوفرة
-      if (gameSettings) {
-        firstTeamTime = gameSettings.defaultFirstAnswerTime;
-        secondTeamTime = gameSettings.defaultSecondAnswerTime;
-      }
+      // تحديد وقت المؤقت الجديد بناءً على إعدادات اللعبة
+      const getTimeSettings = () => {
+        // قيم افتراضية
+        let firstTime = 30;
+        let secondTime = 15;
+        
+        // استخدام الإعدادات من لوحة التحكم إذا كانت متوفرة
+        if (gameSettings) {
+          firstTime = gameSettings.defaultFirstAnswerTime;
+          secondTime = gameSettings.defaultSecondAnswerTime;
+        }
+        
+        return { firstTime, secondTime };
+      };
       
-      // الفريق الأول يحصل على وقت الإجابة الأولى، وباقي الفرق على وقت الإجابة الثانية
-      const newTime = nextTeamIndex === 0 ? firstTeamTime : secondTeamTime;
+      // الحصول على إعدادات الوقت
+      const { firstTime, secondTime } = getTimeSettings();
       
-      console.log(`⏱️ تعيين وقت جديد: ${newTime} ثانية للفريق ${questionData.teams[nextTeamIndex].name} [معدل]`);
+      // تعيين وقت المؤقت حسب ترتيب الفريق
+      const newTime = targetIndex === 0 ? firstTime : secondTime;
+      console.log(`⏱️ تعيين وقت جديد: ${newTime} ثانية للفريق ${questionData.teams[targetIndex].name}`);
       
-      // ضبط الوقت الجديد
+      // تطبيق الوقت الجديد
       setTimeLeft(newTime);
       
       // عرض رسالة تأكيد
       toast({
         title: "تم تبديل الدور",
-        description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`
+        description: `الدور الآن للفريق: ${questionData.teams[targetIndex].name}`
       });
       
-      // تأخير قصير ثم بدء المؤقت للفريق الجديد تلقائياً
+      // تأخير قصير قبل بدء المؤقت الجديد
       setTimeout(() => {
-        // بدء المؤقت للفريق الجديد
         startTimer();
+        // إنهاء حالة تبديل الفريق
+        setIsChangingTeam(false);
       }, 500);
     } catch (error) {
       console.error("خطأ في تبديل الدور:", error);
@@ -426,6 +453,7 @@ export default function QuestionPage() {
         description: "حدث خطأ أثناء تبديل الدور، يرجى المحاولة مرة أخرى.",
         variant: "destructive",
       });
+      setIsChangingTeam(false);
     }
   };
 
