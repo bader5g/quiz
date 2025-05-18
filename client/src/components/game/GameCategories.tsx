@@ -114,15 +114,17 @@ export function GameCategories({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              disabled={question.isAnswered}
+                              disabled={question.isAnswered || question.questionId === -1} // تعطيل الأسئلة المجابة أو التي لا تحتوي على أسئلة
                               onClick={() =>
-                                !question.isAnswered &&
+                                !question.isAnswered && question.questionId !== -1 &&
                                 onSelectQuestion(question.id, difficulty)
                               }
                               className={cn(
                                 "w-10 h-10 md:w-12 md:h-12 rounded-full text-sm font-bold flex items-center justify-center shadow-md transition",
                                 question.isAnswered
                                   ? "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-400 opacity-60"
+                                  : question.questionId === -1 // سؤال تمت مشاهدته ولكن ليس له معرف سؤال فعلي
+                                  ? "bg-yellow-300 text-gray-700 cursor-not-allowed border border-yellow-400 opacity-70"
                                   : "bg-blue-600 text-white hover:bg-blue-700"
                               )}
                             >

@@ -463,8 +463,17 @@ export default function QuestionPage() {
       
       // تحديث الفريق الحالي في قاعدة البيانات قبل الانتقال
       const nextTeamIndex = (currentTeamIndex + 1) % questionData.teams.length;
+      
+      // تحديث الفريق الحالي في قاعدة البيانات
       await apiRequest('POST', `/api/games/${gameId}/update-team`, {
         teamIndex: nextTeamIndex
+      });
+      
+      // تحديث الفريق الحالي في واجهة المستخدم
+      setCurrentTeamIndex(nextTeamIndex);
+      toast({
+        title: `تم تبديل الدور تلقائيًا`,
+        description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`,
       });
 
       // بعد ثانيتين نعود إلى صفحة اللعبة
