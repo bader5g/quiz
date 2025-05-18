@@ -16,7 +16,9 @@ import {
   RotateCw,
   Minus,
   UserX,
-  Trophy
+  Trophy,
+  Flag,
+  Save
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
@@ -628,6 +630,7 @@ export default function QuestionPage() {
       {/* رأس الصفحة */}
       <header className="bg-white shadow-sm py-2 px-4">
         <div className="container mx-auto flex justify-between items-center">
+          {/* الجزء الأيمن - زر الرجوع */}
           <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
@@ -637,25 +640,30 @@ export default function QuestionPage() {
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
-            
-            {/* شعار الموقع */}
-            {questionData?.siteSettings?.logoUrl && (
+          </div>
+          
+          {/* الجزء الأوسط - اسم اللعبة */}
+          <div className="text-center font-semibold text-lg">
+            {questionData?.gameName || questionData?.question?.gameName || 'جاوب'}
+          </div>
+          
+          {/* الجزء الأيسر - شعار الموقع */}
+          <div>
+            {questionData?.logoUrl && (
               <img 
-                src={questionData.siteSettings?.logoUrl} 
+                src={questionData.logoUrl} 
                 alt="شعار الموقع" 
                 className="h-8 object-contain"
               />
             )}
           </div>
-          
-          {/* اسم اللعبة في المنتصف */}
-          <div className="text-center font-semibold text-lg">
-            {questionData?.question?.gameName || 'جاوب'}
-          </div>
-          
+        </div>
+        
+        {/* مؤشر الفريق الحالي أسفل شريط العنوان */}
+        <div className="container mx-auto mt-2 flex justify-center">
           <Badge 
             variant="outline" 
-            className="bg-white flex items-center gap-1 py-2 border-2"
+            className="bg-white flex items-center gap-1 py-2 px-4 border-2"
             style={{ borderColor: currentTeam?.color || '#ccc' }}
           >
             <div 
