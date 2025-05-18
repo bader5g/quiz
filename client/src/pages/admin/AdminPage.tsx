@@ -299,6 +299,7 @@ export default function AdminPage() {
               <Route path="/admin/game-settings" component={GameSettingsManagement} />
               <Route path="/admin/packages" component={PackagesManagement} />
               <Route path="/admin/levels" component={LevelsManagement} />
+              <Route path="/admin/:rest*" component={Dashboard} />
             </Switch>
           </div>
         </main>

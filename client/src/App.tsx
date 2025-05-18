@@ -51,7 +51,8 @@ function Router() {
       <Route path="/buy-cards" component={BuyCardsPage} />
       <Route path="/level" component={LevelPage} />
       {/* لوحة تحكم المدير - تتضمن جميع المسارات الفرعية */}
-      <Route path="/admin/:rest*" component={AdminPage} />
+      <Route path="/admin" component={AdminPage} />
+      <Route path="/admin/:path" component={AdminPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
