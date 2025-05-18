@@ -164,7 +164,6 @@ export default function QuestionPage() {
   const [currentTeamIndex, setCurrentTeamIndex] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isChangingTeam, setIsChangingTeam] = useState(false);
-  const [isTimerExpired, setIsTimerExpired] = useState(false);
   const [notFoundError, setNotFoundError] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -292,23 +291,6 @@ export default function QuestionPage() {
     };
   }, [gameId, questionId]);
 
-  // الدالة المسؤولة عن تحديد وقت المؤقت بناءً على إعدادات اللعبة
-  const getTimerDuration = (teamIndex: number) => {
-    // القيم الافتراضية في حالة عدم وجود إعدادات
-    let firstTeamTime = 30;
-    let otherTeamsTime = 15;
-    
-    // استخدام إعدادات اللعبة من لوحة التحكم إذا كانت متوفرة
-    if (gameSettings) {
-      firstTeamTime = gameSettings.defaultFirstAnswerTime;
-      otherTeamsTime = gameSettings.defaultSecondAnswerTime;
-    }
-    
-    // الفريق الأول يحصل على وقت الإجابة الأولى
-    // وباقي الفرق تحصل على وقت الإجابة الثانية
-    return teamIndex === 0 ? firstTeamTime : otherTeamsTime;
-  };
-
   // وظيفة بدء المؤقت - مع تبديل الدور تلقائياً عند انتهاء الوقت
   const startTimer = () => {
     // منع تشغيل مؤقتات متعددة
@@ -329,7 +311,7 @@ export default function QuestionPage() {
       return;
     }
     
-    // التحقق من وجود الفريق الحالي
+    // إعداد الفريق الحالي
     const currentTeam = questionData.teams[currentTeamIndex];
     if (!currentTeam) {
       console.error('⛔ لا يوجد فريق حالي محدد');
@@ -360,7 +342,8 @@ export default function QuestionPage() {
           
           // تبديل الدور تلقائياً بعد ثانية
           setTimeout(() => {
-            handleTeamChange();
+            // تشغيل وظيفة تبديل الدور
+            moveToNextTeam();
           }, 1000);
           
           return 0;
@@ -426,17 +409,15 @@ export default function QuestionPage() {
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(targetIndex);
       
-      // الحصول على أوقات الإجابة من إعدادات اللعبة
-      let firstAnswerTime = 30; // وقت افتراضي
-      let secondAnswerTime = 15; // وقت افتراضي
+      // الحصول على أوقات الإجابة من بيانات اللعبة الخاصة بالسؤال
+      let firstAnswerTime = questionData.firstAnswerTime || 30; // وقت افتراضي إذا لم تكن القيمة موجودة
+      let secondAnswerTime = questionData.secondAnswerTime || 15; // وقت افتراضي إذا لم تكن القيمة موجودة
       
-      // استخدام إعدادات اللعبة إذا كانت متوفرة
-      if (gameSettings) {
-        firstAnswerTime = gameSettings.defaultFirstAnswerTime;
-        secondAnswerTime = gameSettings.defaultSecondAnswerTime;
-      }
+      // طباعة الإعدادات للتأكد من استخدام القيم الصحيحة
+      console.log(`⚙️ إعدادات الوقت: الأول = ${firstAnswerTime}، الثاني = ${secondAnswerTime}`);
       
       // تحديد الوقت المناسب للفريق الحالي
+      // الفريق الأول دائماً يأخذ وقت الإجابة الأولى، وباقي الفرق تأخذ وقت الإجابة الثانية
       const newTime = targetIndex === 0 ? firstAnswerTime : secondAnswerTime;
       
       console.log(`⏱️ تعيين وقت جديد: ${newTime} ثانية للفريق ${questionData.teams[targetIndex].name}`);
