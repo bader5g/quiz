@@ -97,11 +97,27 @@ export default function PlayPage() {
     const checkPageVisibility = () => {
       if (document.visibilityState === 'visible' && gameId) {
         console.log("تحديث بيانات اللعبة عند العودة من صفحة أخرى");
-        fetchGameDetails();
+        // إضافة تأخير قصير لضمان تطبيق التغييرات من الخادم
+        setTimeout(() => {
+          fetchGameDetails();
+        }, 500);
       }
     };
     
     document.addEventListener('visibilitychange', checkPageVisibility);
+    
+    // تحديث عند تغيير الموقع (URL)
+    const handleRouteChange = () => {
+      if (gameId) {
+        console.log("تحديث بيانات اللعبة بعد تغيير المسار");
+        setTimeout(() => {
+          fetchGameDetails();
+        }, 500);
+      }
+    };
+    
+    // إضافة استماع لتغيير المسار
+    window.addEventListener('popstate', handleRouteChange);
     
     // تحديث فوري عند تركيب المكون (بعد الانتقال من صفحة أخرى)
     if (document.visibilityState === 'visible' && gameId) {
@@ -112,6 +128,7 @@ export default function PlayPage() {
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', checkPageVisibility);
+      window.removeEventListener('popstate', handleRouteChange);
     };
   }, [gameId]);
   

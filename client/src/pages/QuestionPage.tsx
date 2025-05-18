@@ -477,9 +477,18 @@ export default function QuestionPage() {
         description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`,
       });
 
-      // بعد ثانيتين نعود إلى صفحة اللعبة
+      // إضافة تأخير قبل العودة لضمان تطبيق التغييرات
+      toast({
+        title: `الانتقال إلى صفحة اللعب`,
+        description: `سيتم الانتقال خلال ثانيتين...`,
+      });
+      
+      // زيادة التأخير قبل العودة إلى صفحة اللعبة لضمان حفظ التغييرات
       setTimeout(() => {
-        navigate(`/play/${gameId}`);
+        // تنفيذ طلب إضافي للتأكد من تحديث البيانات
+        apiRequest('GET', `/api/games/${gameId}`).then(() => {
+          navigate(`/play/${gameId}`);
+        });
       }, 2000);
 
     } catch (err) {
