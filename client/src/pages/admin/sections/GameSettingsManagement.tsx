@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
+import { ControllerRenderProps } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useForm } from 'react-hook-form';
@@ -35,6 +36,38 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Settings, Users, Timer, HelpCircle, FileText } from 'lucide-react';
+
+// مكون إدخال عددي مخصص للتعامل مع حقول النموذج بشكل متحكم به
+const ControlledNumberInput = forwardRef<
+  HTMLInputElement,
+  {
+    field: ControllerRenderProps<any, any>;
+    min?: number;
+    max?: number;
+    disabled?: boolean;
+    placeholder?: string;
+    className?: string;
+  }
+>(({ field, min, max, disabled, placeholder, className }, ref) => {
+  // استخدام قيمة محددة دائمًا لمنع التحويل من غير متحكم به إلى متحكم به
+  const value = field.value === undefined || field.value === null ? '' : field.value;
+  
+  return (
+    <Input
+      type="number"
+      value={value}
+      onChange={field.onChange}
+      onBlur={field.onBlur}
+      name={field.name}
+      ref={ref || field.ref}
+      min={min}
+      max={max}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+});
 
 // مخطط التحقق من الإدخالات الأساسية
 const gameSettingsBaseSchema = z.object({
@@ -384,7 +417,14 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>الحد الأدنى لعدد الفئات</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <Input 
+                                type="number" 
+                                value={field.value === undefined ? '' : field.value} 
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                                name={field.name}
+                                ref={field.ref}
+                              />
                             </FormControl>
                             <FormDescription>
                               أقل عدد من الفئات المطلوبة للعبة
@@ -401,7 +441,14 @@ export default function GameSettingsManagement() {
                           <FormItem>
                             <FormLabel>الحد الأقصى لعدد الفئات</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <Input 
+                                type="number" 
+                                value={field.value === undefined ? '' : field.value} 
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                                name={field.name}
+                                ref={field.ref}
+                              />
                             </FormControl>
                             <FormDescription>
                               أقصى عدد من الفئات المسموح به في اللعبة
