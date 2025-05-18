@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import SafeNumberInput from '@/components/SafeNumberInput';
 
 import {
   Card,
@@ -261,10 +262,27 @@ export default function GameSettingsManagement() {
         return;
       }
 
-      // الحصول على خيارات أوقات الإجابة من القيم الموجودة
-      const answerTimeOptions = values.answerTimeOptions;
+      // معالجة خيارات أوقات الإجابة للتأكد من صحة البيانات
+      const answerTimeOptions = {
+        first: {
+          default: Number(values.answerTimeOptions?.first?.default) || 30,
+          options: values.answerTimeOptions?.first?.options || [10, 20, 30, 45, 60, 90]
+        },
+        second: {
+          default: Number(values.answerTimeOptions?.second?.default) || 15,
+          options: values.answerTimeOptions?.second?.options || [5, 10, 15, 20, 30]
+        },
+        third: {
+          default: Number(values.answerTimeOptions?.third?.default) || 10,
+          options: values.answerTimeOptions?.third?.options || [5, 10, 15, 20]
+        },
+        fourth: {
+          default: Number(values.answerTimeOptions?.fourth?.default) || 5,
+          options: values.answerTimeOptions?.fourth?.options || [5, 10, 15]
+        }
+      };
       
-      console.log('أوقات الإجابة للإرسال:', answerTimeOptions);
+      console.log('أوقات الإجابة للإرسال (بعد المعالجة):', answerTimeOptions);
 
       // إعداد البيانات للإرسال مع التأكد من تحويل أنواع البيانات بشكل صحيح
       const gameSettingsData = {

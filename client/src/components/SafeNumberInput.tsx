@@ -1,9 +1,14 @@
 import React, { forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 
-interface SafeNumberInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface SafeNumberInputProps {
   value: number | undefined | null;
-  onChange: (value: number) => void;
+  onChange: (value: number | undefined) => void;
+  min?: number;
+  max?: number;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
 }
 
 /**
