@@ -433,8 +433,10 @@ export default function QuestionPage() {
     if (questionData && !loading) {
       // الفريق الذي تم اختياره للسؤال يحصل على وقت الإجابة الأول
       // والفرق الأخرى تحصل على وقت الإجابة الثاني
-      const firstTeamTime = questionData.firstAnswerTime;
-      const secondTeamTime = questionData.secondAnswerTime;
+      
+      // نستخدم قيم افتراضية إذا كانت القيم غير موجودة
+      const firstTeamTime = questionData.firstAnswerTime || 30;
+      const secondTeamTime = questionData.secondAnswerTime || 15;
       
       // نحدد أي فريق سيحصل على الوقت الأول وأيهم سيحصل على الوقت الثاني
       // بناءً على دور كل فريق في اللعبة
