@@ -748,8 +748,8 @@ export default function GameSettingsManagement() {
                             type="number"
                             placeholder="أضف وقت جديد بالثواني"
                             className="max-w-[200px]"
-                            value={newTimeForFirst || ''}
-                            onChange={(e) => setNewTimeForFirst(e.target.value)}
+                            value={newTimeForFirst === '' ? '' : newTimeForFirst}
+                            onChange={(e) => setNewTimeForFirst(e.target.value === '' ? '' : e.target.value)}
                             min={5}
                             max={120}
                             disabled={!form.watch('timerEnabled')}
@@ -758,10 +758,15 @@ export default function GameSettingsManagement() {
                             type="button"
                             onClick={() => {
                               // التحقق من القيمة
-                              const newTime = parseInt(newTimeForFirst);
+                              const newTime = parseInt(String(newTimeForFirst));
                               
                               if (isNaN(newTime) || newTime < 5 || newTime > 120) {
                                 console.log('القيمة المدخلة غير صالحة');
+                                toast({
+                                  variant: 'destructive',
+                                  title: 'قيمة غير صالحة',
+                                  description: 'يرجى إدخال قيمة بين 5 و 120 ثانية'
+                                });
                                 return;
                               }
                               
