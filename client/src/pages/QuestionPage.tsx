@@ -377,8 +377,11 @@ export default function QuestionPage() {
         description: `الدور الآن للفريق: ${questionData.teams[nextTeamIndex].name}`
       });
       
-      // بدء المؤقت للفريق الجديد تلقائياً
-      startTimer();
+      // تأخير قصير ثم بدء المؤقت للفريق الجديد تلقائياً
+      setTimeout(() => {
+        // بدء المؤقت للفريق الجديد
+        startTimer();
+      }, 500);
     } catch (error) {
       console.error("خطأ في تبديل الدور:", error);
       toast({
@@ -422,17 +425,30 @@ export default function QuestionPage() {
 
   // تشغيل المؤقت عند تحميل السؤال بطريقة مباشرة
   useEffect(() => {
-    // تأكد من وجود بيانات السؤال والفريق وأن التحميل اكتمل
-    if (questionData && !loading && timeLeft > 0 && !timerRunning) {
-      // تأخير قصير قبل بدء المؤقت للتأكد من تحديث واجهة المستخدم
+    // فقط إذا تم تحميل البيانات ولم يكن المؤقت يعمل بالفعل
+    if (questionData && !loading && !timerRunning) {
+      // تحديث الوقت المناسب للفريق الحالي - هذا يضمن أن يكون الوقت صحيحاً
+      const currentTime = currentTeamIndex === 0
+        ? questionData.firstAnswerTime
+        : questionData.secondAnswerTime;
+        
+      // طباعة معلومات التشخيص
+      console.log(`⏱️ محاولة تشغيل المؤقت - الفريق: ${questionData.teams[currentTeamIndex]?.name}، الوقت: ${currentTime}`);
+      
+      // ضبط الوقت إذا لم يكن مضبوطاً بالفعل
+      if (timeLeft <= 0) {
+        setTimeLeft(currentTime);
+      }
+      
+      // تأخير قصير لضمان تحديث واجهة المستخدم أولاً
       const timerId = setTimeout(() => {
         startTimer();
-      }, 500);
+      }, 300);
       
       // تنظيف المؤقت عند إلغاء التركيب
       return () => clearTimeout(timerId);
     }
-  }, [questionData, loading, timeLeft, timerRunning]);
+  }, [questionData, loading, currentTeamIndex, timeLeft, timerRunning]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
