@@ -293,12 +293,28 @@ export default function QuestionPage() {
   // وظيفة بدء المؤقت - مع تبديل الدور تلقائياً عند انتهاء الوقت
   const startTimer = () => {
     // تحقق إن كان المؤقت يعمل مسبقًا أو الوقت صفر أو عدم وجود بيانات السؤال
-    if (timerRunning || timeLeft <= 0 || !questionData) return;
+    if (timerRunning || !timeLeft || timeLeft <= 0 || !questionData) {
+      console.log(`⚠️ لا يمكن بدء المؤقت: ${timerRunning ? 'المؤقت يعمل بالفعل' : (timeLeft <= 0 ? 'الوقت صفر' : 'بيانات مفقودة')}`);
+      return;
+    }
     
-    console.log(`⏱️ بدء المؤقت للفريق: ${questionData.teams[currentTeamIndex]?.name} بوقت ${timeLeft} ثانية`);
+    // إعداد الفريق الحالي
+    const currentTeam = questionData.teams[currentTeamIndex];
+    if (!currentTeam) {
+      console.error('⛔ لا يوجد فريق حالي محدد');
+      return;
+    }
+    
+    console.log(`⏱️ بدء المؤقت للفريق: ${currentTeam.name} بوقت ${timeLeft} ثانية`);
+    
+    // إيقاف أي مؤقت سابق
+    if (timer) {
+      console.log('⏸️ إيقاف المؤقت السابق');
+      clearInterval(timer);
+      setTimer(null);
+    }
     
     setTimerRunning(true);
-    if (timer) clearInterval(timer);
 
     const interval = setInterval(() => {
       setTimeLeft((prevTime) => {
@@ -308,6 +324,7 @@ export default function QuestionPage() {
           console.log("⏱️ انتهى الوقت للفريق!", questionData.teams[currentTeamIndex]?.name);
           
           // تبديل الدور تلقائياً للفريق التالي عند انتهاء الوقت
+          console.log('⏲️ جدولة تبديل الدور بعد ثانية واحدة');
           setTimeout(() => {
             moveToNextTeam();
           }, 1000);
@@ -372,15 +389,21 @@ export default function QuestionPage() {
       // تحديث الفريق الحالي في الواجهة
       setCurrentTeamIndex(nextTeamIndex);
       
-      // تعيين الوقت المناسب للفريق الجديد
-      // الفريق الذي تم اختياره للإجابة الأولى يحصل على الوقت الأول
-      // وباقي الفرق تحصل على الوقت الثاني
-      const isFirstTeam = questionData.currentTeamIndex === nextTeamIndex;
-      const newTime = isFirstTeam
-        ? questionData.firstAnswerTime
-        : questionData.secondAnswerTime;
+      // تعيين الوقت المناسب للفريق الجديد من إعدادات اللعبة
+      // نتحقق أولاً من وجود إعدادات اللعبة من لوحة التحكم
+      let firstTeamTime = 30;
+      let secondTeamTime = 15;
+
+      // استخدام الأوقات من إعدادات اللعبة إذا كانت متوفرة
+      if (gameSettings) {
+        firstTeamTime = gameSettings.defaultFirstAnswerTime;
+        secondTeamTime = gameSettings.defaultSecondAnswerTime;
+      }
       
-      console.log(`⏱️ تعيين وقت جديد: ${newTime} ثانية للفريق ${questionData.teams[nextTeamIndex].name}`);
+      // الفريق الأول يحصل على وقت الإجابة الأولى، وباقي الفرق على وقت الإجابة الثانية
+      const newTime = nextTeamIndex === 0 ? firstTeamTime : secondTeamTime;
+      
+      console.log(`⏱️ تعيين وقت جديد: ${newTime} ثانية للفريق ${questionData.teams[nextTeamIndex].name} [معدل]`);
       
       // ضبط الوقت الجديد
       setTimeLeft(newTime);
