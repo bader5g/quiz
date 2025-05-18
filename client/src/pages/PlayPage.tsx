@@ -201,6 +201,17 @@ export default function PlayPage() {
       return;
     }
     
+    // التحقق من قائمة الأسئلة التي تم عرضها
+    const viewedQuestionIds = game?.viewedQuestionIds || [];
+    if (viewedQuestionIds.includes(questionId) || (question && question.questionId === -1)) {
+      toast({
+        title: "تنبيه",
+        description: "تم عرض هذا السؤال بالفعل، اختر سؤالًا آخر",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (question) {
       navigate(`/play/${gameId}/question/${questionId}?difficulty=${difficulty}&categoryId=${question.categoryId}`);
     } else {
@@ -292,7 +303,11 @@ export default function PlayPage() {
         {/* عرض الفئات والأسئلة */}
         <GameCategories 
           categories={game.categories}
-          questions={game.questions}
+          questions={game.questions.map(q => ({
+            ...q,
+            // تحديد إذا كان هذا السؤال قد تمت مشاهدته بالفعل
+            isAnswered: q.isAnswered || (game.viewedQuestionIds || []).includes(q.id)
+          }))}
           teams={game.teams}
           currentTeamIndex={game.currentTeamIndex}
           onSelectQuestion={handleSelectQuestion}

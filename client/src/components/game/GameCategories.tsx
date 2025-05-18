@@ -37,6 +37,7 @@ interface GameCategoriesProps {
   teams: GameTeam[];
   currentTeamIndex: number;
   onSelectQuestion: (questionId: number, indexInCategory: number) => void;
+  viewedQuestionIds?: number[]; // معرفات الأسئلة التي تم عرضها
 }
 
 export function GameCategories({
@@ -45,6 +46,7 @@ export function GameCategories({
   teams,
   currentTeamIndex,
   onSelectQuestion,
+  viewedQuestionIds = [],
 }: GameCategoriesProps) {
   const allQuestionsAnsweredInCategory = useMemo(() => {
     const result: Record<number, boolean> = {};
