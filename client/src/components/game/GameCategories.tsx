@@ -123,10 +123,7 @@ export function GameCategories({
                                 "w-10 h-10 md:w-12 md:h-12 rounded-full text-sm font-bold flex items-center justify-center shadow-md transition",
                                 question.isAnswered
                                   ? "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-400 opacity-60"
-                                  : "bg-blue-600 text-white hover:bg-blue-700",
-                                isCurrentTeam && !question.isAnswered
-                                  ? "ring-2 ring-yellow-400"
-                                  : "",
+                                  : "bg-blue-600 text-white hover:bg-blue-700"
                               )}
                             >
                               {difficulty}
