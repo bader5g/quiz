@@ -288,7 +288,7 @@ export default function QuestionPage() {
     };
   }, [gameId, questionId]);
 
-  // وظيفة بدء المؤقت
+  // وظيفة بدء المؤقت - مع تبديل الدور تلقائياً عند انتهاء الوقت
   const startTimer = () => {
     // تحقق إن كان المؤقت يعمل مسبقًا أو الوقت صفر أو عدم وجود بيانات السؤال
     if (timerRunning || timeLeft <= 0 || !questionData) return;
@@ -303,13 +303,12 @@ export default function QuestionPage() {
         if (prevTime <= 1) {
           clearInterval(interval);
           setTimerRunning(false);
-          console.log("⏱️ انتهى الوقت!");
+          console.log("⏱️ انتهى الوقت للفريق!", questionData.teams[currentTeamIndex]?.name);
           
-          // انتهى الوقت، نعرض إشعار
-          toast({
-            title: "انتهى الوقت",
-            description: "انتهى وقت هذا الفريق، يمكنك تبديل الدور أو تجديد الوقت.",
-          });
+          // تبديل الدور تلقائياً للفريق التالي عند انتهاء الوقت
+          setTimeout(() => {
+            moveToNextTeam();
+          }, 1000);
           
           return 0;
         }
@@ -423,32 +422,38 @@ export default function QuestionPage() {
     }
   };
 
-  // تشغيل المؤقت عند تحميل السؤال بطريقة مباشرة
+  // تشغيل المؤقت تلقائياً عند تحميل السؤال
   useEffect(() => {
-    // فقط إذا تم تحميل البيانات ولم يكن المؤقت يعمل بالفعل
-    if (questionData && !loading && !timerRunning) {
-      // تحديث الوقت المناسب للفريق الحالي - هذا يضمن أن يكون الوقت صحيحاً
+    // فقط إذا تم تحميل البيانات
+    if (questionData && !loading) {
+      // ضمان أن الوقت مضبوط بشكل صحيح دائماً
       const currentTime = currentTeamIndex === 0
         ? questionData.firstAnswerTime
         : questionData.secondAnswerTime;
         
-      // طباعة معلومات التشخيص
-      console.log(`⏱️ محاولة تشغيل المؤقت - الفريق: ${questionData.teams[currentTeamIndex]?.name}، الوقت: ${currentTime}`);
+      console.log(`⚡ تشغيل تلقائي للمؤقت - الفريق: ${questionData.teams[currentTeamIndex]?.name}، الوقت: ${currentTime}`);
       
-      // ضبط الوقت إذا لم يكن مضبوطاً بالفعل
-      if (timeLeft <= 0) {
-        setTimeLeft(currentTime);
+      // إيقاف أي مؤقت سابق
+      if (timer) {
+        clearInterval(timer);
+        setTimer(null);
       }
       
-      // تأخير قصير لضمان تحديث واجهة المستخدم أولاً
+      // إعادة ضبط حالة المؤقت
+      setTimerRunning(false);
+      
+      // ضبط الوقت دائماً للتأكد من تحديثه
+      setTimeLeft(currentTime);
+      
+      // تشغيل المؤقت تلقائياً بعد تأخير قصير
       const timerId = setTimeout(() => {
         startTimer();
-      }, 300);
+      }, 500);
       
       // تنظيف المؤقت عند إلغاء التركيب
       return () => clearTimeout(timerId);
     }
-  }, [questionData, loading, currentTeamIndex, timeLeft, timerRunning]);
+  }, [questionData, loading, currentTeamIndex]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
@@ -639,8 +644,7 @@ export default function QuestionPage() {
                       requestedDifficulty === 2 ? '#ff980022' : '#f4433622' 
                   }}
                 >
-                  {requestedDifficulty === 1 ? 'سهل' : 
-                   requestedDifficulty === 2 ? 'متوسط' : 'صعب'}
+                  {requestedDifficulty} نقاط
                 </Badge>
               </div>
               
@@ -766,44 +770,42 @@ export default function QuestionPage() {
                   </div>
                 </div>
                 
-                {/* أزرار الإجابة */}
+                {/* زر عرض الإجابة فقط */}
                 <div className="space-y-2">
                   <Button
-                    onClick={handleCorrectAnswer}
-                    className="w-full h-12 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600"
-                    disabled={isSubmitting}
+                    onClick={() => setShowAnswer(true)}
+                    className="w-full h-12 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600"
+                    disabled={showAnswer}
                   >
-                    <CheckCircle className="h-5 w-5" />
-                    <span>إجابة صحيحة</span>
+                    <HelpCircle className="h-5 w-5" />
+                    <span>عرض الإجابة</span>
                   </Button>
                   
-                  <Button
-                    onClick={handleWrongAnswer}
-                    variant="destructive"
-                    className="w-full h-12 flex items-center justify-center gap-2"
-                    disabled={isSubmitting}
-                  >
-                    <XCircle className="h-5 w-5" />
-                    <span>إجابة خاطئة</span>
-                  </Button>
-                  
-                  <Button
-                    onClick={() => setShowAnswer(prev => !prev)}
-                    variant="ghost"
-                    className="w-full h-12 flex items-center justify-center gap-2 border border-dashed"
-                  >
-                    {showAnswer ? (
-                      <>
-                        <XCircleIcon className="h-5 w-5" />
-                        <span>إخفاء الإجابة</span>
-                      </>
-                    ) : (
-                      <>
-                        <HelpCircle className="h-5 w-5" />
-                        <span>عرض الإجابة</span>
-                      </>
-                    )}
-                  </Button>
+                  {/* عرض الفريق الذي أجاب بشكل صحيح */}
+                  {questionData.teams.map((team, idx) => (
+                    <Button
+                      key={team.id}
+                      variant="outline"
+                      className="w-full h-12 flex items-center justify-center gap-2 border-2"
+                      style={{ 
+                        borderColor: team.color,
+                        backgroundColor: `${team.color}11`
+                      }}
+                      onClick={() => {
+                        submitAnswer(true, idx);
+                        toast({
+                          title: `إجابة صحيحة من ${team.name}!`,
+                          description: `تم إضافة ${requestedDifficulty} نقاط للفريق.`,
+                        });
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      <CheckCircle className="h-5 w-5" style={{ color: team.color }} />
+                      <span style={{ color: team.color }}>
+                        الفريق: {team.name}
+                      </span>
+                    </Button>
+                  ))}
                 </div>
                 
                 {/* تبديل الدور للفريق التالي */}
