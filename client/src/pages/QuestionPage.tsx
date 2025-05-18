@@ -397,11 +397,12 @@ export default function QuestionPage() {
     }
   };
 
-  // وظيفة بدء المؤقت (تم نقلها لوظيفة منفصلة)
+  // وظيفة بدء المؤقت (تم نقلها لوظيفة منفصلة) - مع حماية إضافية
   const startTimer = () => {
-    // تحقق إن كان المؤقت يعمل مسبقًا قبل أن تعيد تشغيله
-    if (timerRunning) return;
-
+    // تحقق إن كان المؤقت يعمل مسبقًا أو الوقت صفر أو عدم وجود بيانات السؤال
+    if (timerRunning || timeLeft <= 0 || !questionData) return;
+    
+    console.log("📌 الفريق الحالي عند بداية السؤال:", currentTeamIndex, questionData.teams[currentTeamIndex]?.name);
     setTimerRunning(true);
     if (timer) clearInterval(timer);
 
@@ -437,22 +438,29 @@ export default function QuestionPage() {
     setTimer(interval);
   };
 
-  // تشغيل المؤقت عند تحميل السؤال لأول مرة فقط
+  // تشغيل المؤقت عند تحميل السؤال لأول مرة فقط - مع تحسين للتأكد من تعيين الفريق الحالي أولًا
   useEffect(() => {
-    if (questionData && !timerRunning && !showTeamSelection) {
-      // تعيين وقت المؤقت
-      const newTime = (currentTeamIndex === 0) 
-        ? questionData.firstAnswerTime 
+    if (
+      questionData &&
+      !timerRunning &&
+      !showTeamSelection &&
+      !loading &&
+      timeLeft === 0 // فقط إذا لم يتم تعيين وقت مسبق
+    ) {
+      // تعيين وقت المؤقت حسب الفريق الحالي
+      const currentTime = currentTeamIndex === 0
+        ? questionData.firstAnswerTime
         : questionData.secondAnswerTime;
-      setTimeLeft(newTime);
+
+      console.log(`تعيين وقت المؤقت (${currentTime} ثانية) للفريق: ${questionData.teams[currentTeamIndex]?.name}`);
       
-      // تشغيل المؤقت تلقائياً عند التحميل الأولي فقط
-      const isInitialLoad = !timer && loading === false;
-      if (isInitialLoad) {
+      setTimeLeft(currentTime);
+      // تأخير قصير قبل بدء المؤقت للتأكد من تحديث الواجهة
+      setTimeout(() => {
         startTimer();
-      }
+      }, 300);
     }
-  }, [questionData, timerRunning, showTeamSelection, currentTeamIndex, loading, timer]);
+  }, [questionData, currentTeamIndex, timerRunning, showTeamSelection, loading, timeLeft]);
 
   // تسجيل إجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
