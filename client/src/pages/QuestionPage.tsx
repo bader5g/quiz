@@ -440,8 +440,8 @@ export default function QuestionPage() {
       // بناءً على دور كل فريق في اللعبة
       const isFirstTeam = currentTeamIndex === 0;
       
-      // وقت المؤقت يعتمد على ما إذا كان هذا هو الفريق الأصلي أم لا
-      const currentTime = isOriginalTeam
+      // وقت المؤقت يعتمد على ترتيب الفريق
+      const currentTime = isFirstTeam
         ? firstTeamTime 
         : secondTeamTime;
         
