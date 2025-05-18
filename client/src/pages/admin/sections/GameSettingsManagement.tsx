@@ -755,17 +755,40 @@ export default function GameSettingsManagement() {
                           <Button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('newTimeForFirst') as HTMLInputElement;
-                              const newTime = parseInt(input.value);
-                              if (newTime && newTime >= 5 && newTime <= 120) {
-                                const options = form.watch('answerTimeOptions.first.options');
-                                if (Array.isArray(options)) {
-                                  const currentOptions = [...options];
-                                  if (!currentOptions.includes(newTime)) {
-                                    form.setValue('answerTimeOptions.first.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                    input.value = '';
-                                  }
+                              try {
+                                const input = document.getElementById('newTimeForFirst') as HTMLInputElement;
+                                const newTime = parseInt(input.value);
+                                
+                                if (isNaN(newTime) || newTime < 5 || newTime > 120) {
+                                  console.log('القيمة المدخلة غير صالحة');
+                                  return;
                                 }
+                                
+                                // التأكد من وجود قيمة في options
+                                let currentOptions = form.watch('answerTimeOptions.first.options');
+                                if (!Array.isArray(currentOptions) || currentOptions === undefined) {
+                                  currentOptions = [];
+                                }
+                                
+                                // التأكد من عدم وجود القيمة مسبقًا
+                                if (!currentOptions.includes(newTime)) {
+                                  // إضافة القيمة الجديدة وترتيب المصفوفة
+                                  const newOptions = [...currentOptions, newTime].sort((a, b) => a - b);
+                                  
+                                  // تعيين القيمة الجديدة في النموذج
+                                  form.setValue('answerTimeOptions.first.options', newOptions);
+                                  
+                                  // تعيين القيمة الافتراضية إذا كانت غير موجودة
+                                  if (form.watch('answerTimeOptions.first.default') === undefined) {
+                                    form.setValue('answerTimeOptions.first.default', newTime);
+                                  }
+                                  
+                                  // تفريغ حقل الإدخال
+                                  input.value = '';
+                                  console.log('تمت إضافة القيمة:', newTime);
+                                }
+                              } catch (error) {
+                                console.error('خطأ في إضافة وقت جديد:', error);
                               }
                             }}
                             disabled={!form.watch('timerEnabled')}
@@ -841,17 +864,40 @@ export default function GameSettingsManagement() {
                           <Button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('newTimeForSecond') as HTMLInputElement;
-                              const newTime = parseInt(input.value);
-                              if (newTime && newTime >= 5 && newTime <= 120) {
-                                const options = form.watch('answerTimeOptions.second.options');
-                                if (Array.isArray(options)) {
-                                  const currentOptions = [...options];
-                                  if (!currentOptions.includes(newTime)) {
-                                    form.setValue('answerTimeOptions.second.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                    input.value = '';
-                                  }
+                              try {
+                                const input = document.getElementById('newTimeForSecond') as HTMLInputElement;
+                                const newTime = parseInt(input.value);
+                                
+                                if (isNaN(newTime) || newTime < 5 || newTime > 120) {
+                                  console.log('القيمة المدخلة غير صالحة');
+                                  return;
                                 }
+                                
+                                // التأكد من وجود قيمة في options
+                                let currentOptions = form.watch('answerTimeOptions.second.options');
+                                if (!Array.isArray(currentOptions) || currentOptions === undefined) {
+                                  currentOptions = [];
+                                }
+                                
+                                // التأكد من عدم وجود القيمة مسبقًا
+                                if (!currentOptions.includes(newTime)) {
+                                  // إضافة القيمة الجديدة وترتيب المصفوفة
+                                  const newOptions = [...currentOptions, newTime].sort((a, b) => a - b);
+                                  
+                                  // تعيين القيمة الجديدة في النموذج
+                                  form.setValue('answerTimeOptions.second.options', newOptions);
+                                  
+                                  // تعيين القيمة الافتراضية إذا كانت غير موجودة
+                                  if (form.watch('answerTimeOptions.second.default') === undefined) {
+                                    form.setValue('answerTimeOptions.second.default', newTime);
+                                  }
+                                  
+                                  // تفريغ حقل الإدخال
+                                  input.value = '';
+                                  console.log('تمت إضافة القيمة:', newTime);
+                                }
+                              } catch (error) {
+                                console.error('خطأ في إضافة وقت جديد:', error);
                               }
                             }}
                             disabled={!form.watch('timerEnabled')}
@@ -927,17 +973,40 @@ export default function GameSettingsManagement() {
                           <Button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('newTimeForThird') as HTMLInputElement;
-                              const newTime = parseInt(input.value);
-                              if (newTime && newTime >= 5 && newTime <= 120) {
-                                const options = form.watch('answerTimeOptions.third.options');
-                                if (Array.isArray(options)) {
-                                  const currentOptions = [...options];
-                                  if (!currentOptions.includes(newTime)) {
-                                    form.setValue('answerTimeOptions.third.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                    input.value = '';
-                                  }
+                              try {
+                                const input = document.getElementById('newTimeForThird') as HTMLInputElement;
+                                const newTime = parseInt(input.value);
+                                
+                                if (isNaN(newTime) || newTime < 5 || newTime > 120) {
+                                  console.log('القيمة المدخلة غير صالحة');
+                                  return;
                                 }
+                                
+                                // التأكد من وجود قيمة في options
+                                let currentOptions = form.watch('answerTimeOptions.third.options');
+                                if (!Array.isArray(currentOptions) || currentOptions === undefined) {
+                                  currentOptions = [];
+                                }
+                                
+                                // التأكد من عدم وجود القيمة مسبقًا
+                                if (!currentOptions.includes(newTime)) {
+                                  // إضافة القيمة الجديدة وترتيب المصفوفة
+                                  const newOptions = [...currentOptions, newTime].sort((a, b) => a - b);
+                                  
+                                  // تعيين القيمة الجديدة في النموذج
+                                  form.setValue('answerTimeOptions.third.options', newOptions);
+                                  
+                                  // تعيين القيمة الافتراضية إذا كانت غير موجودة
+                                  if (form.watch('answerTimeOptions.third.default') === undefined) {
+                                    form.setValue('answerTimeOptions.third.default', newTime);
+                                  }
+                                  
+                                  // تفريغ حقل الإدخال
+                                  input.value = '';
+                                  console.log('تمت إضافة القيمة:', newTime);
+                                }
+                              } catch (error) {
+                                console.error('خطأ في إضافة وقت جديد:', error);
                               }
                             }}
                             disabled={!form.watch('timerEnabled')}
@@ -1013,17 +1082,40 @@ export default function GameSettingsManagement() {
                           <Button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('newTimeForFourth') as HTMLInputElement;
-                              const newTime = parseInt(input.value);
-                              if (newTime && newTime >= 5 && newTime <= 120) {
-                                const options = form.watch('answerTimeOptions.fourth.options');
-                                if (Array.isArray(options)) {
-                                  const currentOptions = [...options];
-                                  if (!currentOptions.includes(newTime)) {
-                                    form.setValue('answerTimeOptions.fourth.options', [...currentOptions, newTime].sort((a, b) => a - b));
-                                    input.value = '';
-                                  }
+                              try {
+                                const input = document.getElementById('newTimeForFourth') as HTMLInputElement;
+                                const newTime = parseInt(input.value);
+                                
+                                if (isNaN(newTime) || newTime < 5 || newTime > 120) {
+                                  console.log('القيمة المدخلة غير صالحة');
+                                  return;
                                 }
+                                
+                                // التأكد من وجود قيمة في options
+                                let currentOptions = form.watch('answerTimeOptions.fourth.options');
+                                if (!Array.isArray(currentOptions) || currentOptions === undefined) {
+                                  currentOptions = [];
+                                }
+                                
+                                // التأكد من عدم وجود القيمة مسبقًا
+                                if (!currentOptions.includes(newTime)) {
+                                  // إضافة القيمة الجديدة وترتيب المصفوفة
+                                  const newOptions = [...currentOptions, newTime].sort((a, b) => a - b);
+                                  
+                                  // تعيين القيمة الجديدة في النموذج
+                                  form.setValue('answerTimeOptions.fourth.options', newOptions);
+                                  
+                                  // تعيين القيمة الافتراضية إذا كانت غير موجودة
+                                  if (form.watch('answerTimeOptions.fourth.default') === undefined) {
+                                    form.setValue('answerTimeOptions.fourth.default', newTime);
+                                  }
+                                  
+                                  // تفريغ حقل الإدخال
+                                  input.value = '';
+                                  console.log('تمت إضافة القيمة:', newTime);
+                                }
+                              } catch (error) {
+                                console.error('خطأ في إضافة وقت جديد:', error);
                               }
                             }}
                             disabled={!form.watch('timerEnabled')}
