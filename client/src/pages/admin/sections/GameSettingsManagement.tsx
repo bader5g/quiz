@@ -230,7 +230,6 @@ export default function GameSettingsManagement() {
   const onSubmit = async (values: GameSettingsFormValues) => {
     try {
       setIsSaving(true);
-      console.log('بدء حفظ الإعدادات...', values);
       
       // التحقق من أن الحد الأقصى أكبر من أو يساوي الحد الأدنى
       if (values.maxCategories < values.minCategories) {
@@ -261,7 +260,29 @@ export default function GameSettingsManagement() {
         return;
       }
 
-      // إعداد البيانات للإرسال - مع كل البيانات المطلوبة
+      // تحديد قيم أوقات الإجابة للتأكد من أنها معرفة بشكل صحيح
+      const answerTimeOptions = {
+        first: {
+          default: form.getValues('answerTimeOptions.first.default') || 30,
+          options: form.getValues('answerTimeOptions.first.options') || [10, 20, 30, 45, 60, 90]
+        },
+        second: {
+          default: form.getValues('answerTimeOptions.second.default') || 15,
+          options: form.getValues('answerTimeOptions.second.options') || [5, 10, 15, 20, 30]
+        },
+        third: {
+          default: form.getValues('answerTimeOptions.third.default') || 10,
+          options: form.getValues('answerTimeOptions.third.options') || [5, 10, 15, 20]
+        },
+        fourth: {
+          default: form.getValues('answerTimeOptions.fourth.default') || 5,
+          options: form.getValues('answerTimeOptions.fourth.options') || [5, 10, 15]
+        }
+      };
+      
+      console.log('أوقات الإجابة للإرسال:', answerTimeOptions);
+
+      // إعداد البيانات للإرسال مع التأكد من تضمين كل البيانات
       const gameSettingsData = {
         minCategories: values.minCategories,
         maxCategories: values.maxCategories,
@@ -276,7 +297,7 @@ export default function GameSettingsManagement() {
         timerEnabled: values.timerEnabled,
         helpToolsEnabled: values.helpToolsEnabled,
         minQuestionsPerCategory: values.minQuestionsPerCategory,
-        answerTimeOptions: values.answerTimeOptions
+        answerTimeOptions: answerTimeOptions
       };
 
       console.log('إرسال البيانات للخادم...', gameSettingsData);
