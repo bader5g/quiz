@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -177,6 +177,7 @@ export default function GameSettingsManagement() {
   const onSubmit = async (values: GameSettingsFormValues) => {
     try {
       setSaving(true);
+      console.log('بدء حفظ الإعدادات...', values);
       
       // التحقق من أن الحد الأقصى أكبر من أو يساوي الحد الأدنى
       if (values.maxCategories < values.minCategories) {
@@ -207,13 +208,39 @@ export default function GameSettingsManagement() {
         return;
       }
 
-      // إرسال البيانات إلى الخادم
-      await apiRequest('PATCH', '/api/game-settings', values);
+      // إعداد البيانات للإرسال (إستخراج فقط الحقول المطلوبة لتجنب أي خطأ في التحقق)
+      const gameSettingsData = {
+        minCategories: values.minCategories,
+        maxCategories: values.maxCategories,
+        minTeams: values.minTeams,
+        maxTeams: values.maxTeams,
+        maxGameNameLength: values.maxGameNameLength,
+        maxTeamNameLength: values.maxTeamNameLength,
+        defaultFirstAnswerTime: values.defaultFirstAnswerTime,
+        defaultSecondAnswerTime: values.defaultSecondAnswerTime,
+        minQuestionsPerCategory: values.minQuestionsPerCategory,
+        modalTitle: values.modalTitle,
+        pageDescription: values.pageDescription
+      };
+
+      console.log('إرسال البيانات للخادم...', gameSettingsData);
       
-      toast({
-        title: 'تم الحفظ بنجاح',
-        description: 'تم تحديث إعدادات اللعبة بنجاح',
-      });
+      // إرسال البيانات إلى الخادم
+      const response = await apiRequest('PATCH', '/api/game-settings', gameSettingsData);
+      console.log('استجابة الخادم:', response);
+      
+      if (response.ok) {
+        // تحديث queryCache لضمان تحديث الواجهة
+        // استخدام نفس مفتاح الاستعلام المستخدم في الواجهة
+        queryClient.invalidateQueries({ queryKey: ['/api/game-settings'] });
+        
+        toast({
+          title: 'تم الحفظ بنجاح',
+          description: 'تم تحديث إعدادات اللعبة بنجاح',
+        });
+      } else {
+        throw new Error('فشل حفظ الإعدادات');
+      }
     } catch (error) {
       console.error('Error saving game settings:', error);
       toast({
