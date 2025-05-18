@@ -639,9 +639,9 @@ export default function QuestionPage() {
             </Button>
             
             {/* شعار الموقع */}
-            {questionData?.logoUrl && (
+            {questionData?.siteSettings?.logoUrl && (
               <img 
-                src={questionData.logoUrl} 
+                src={questionData.siteSettings?.logoUrl} 
                 alt="شعار الموقع" 
                 className="h-8 object-contain"
               />
@@ -650,7 +650,7 @@ export default function QuestionPage() {
           
           {/* اسم اللعبة في المنتصف */}
           <div className="text-center font-semibold text-lg">
-            {questionData?.gameName || 'جاوب'}
+            {questionData?.question?.gameName || 'جاوب'}
           </div>
           
           <Badge 
@@ -777,18 +777,18 @@ export default function QuestionPage() {
                     </svg>
                   </div>
                   
-                  {/* أزرار التحكم بالمؤقت */}
+                  {/* أزرار التحكم بالمؤقت والدور */}
                   <div className="flex gap-2 mt-2">
                     {!timerRunning ? (
                       <Button
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-1"
-                        onClick={startTimer}
-                        disabled={timeLeft <= 0}
+                        onClick={moveToNextTeam} 
+                        disabled={isSubmitting}
                       >
-                        <Loader2 className="h-4 w-4" />
-                        <span>تشغيل</span>
+                        <RotateCw className="h-4 w-4" />
+                        <span>تبديل الدور</span>
                       </Button>
                     ) : (
                       <Button
@@ -828,45 +828,57 @@ export default function QuestionPage() {
                     <span>عرض الإجابة</span>
                   </Button>
                   
-                  {/* عرض الفريق الذي أجاب بشكل صحيح */}
-                  {questionData.teams.map((team, idx) => (
-                    <Button
-                      key={team.id}
-                      variant="outline"
-                      className="w-full h-12 flex items-center justify-center gap-2 border-2"
-                      style={{ 
-                        borderColor: team.color,
-                        backgroundColor: `${team.color}11`
-                      }}
-                      onClick={() => {
-                        submitAnswer(true, idx);
-                        toast({
-                          title: `إجابة صحيحة من ${team.name}!`,
-                          description: `تم إضافة ${requestedDifficulty} نقاط للفريق.`,
-                        });
-                      }}
-                      disabled={isSubmitting}
-                    >
-                      <CheckCircle className="h-5 w-5" style={{ color: team.color }} />
-                      <span style={{ color: team.color }}>
-                        الفريق: {team.name}
-                      </span>
-                    </Button>
-                  ))}
+                  {/* إظهار أزرار الفرق فقط بعد عرض الإجابة */}
+                  {showAnswer && (
+                    <div className="mt-4 space-y-2">
+                      {/* عرض أزرار الفرق الذين أجابوا بشكل صحيح */}
+                      {questionData.teams.map((team, idx) => (
+                        <Button
+                          key={team.id}
+                          variant="outline"
+                          className="w-full h-12 flex items-center justify-center gap-2 border-2"
+                          style={{ 
+                            borderColor: team.color,
+                            backgroundColor: `${team.color}11`
+                          }}
+                          onClick={() => {
+                            submitAnswer(true, idx);
+                            toast({
+                              title: `إجابة صحيحة من ${team.name}!`,
+                              description: `تم إضافة ${requestedDifficulty} نقاط للفريق.`,
+                            });
+                          }}
+                          disabled={isSubmitting}
+                        >
+                          <CheckCircle className="h-5 w-5" style={{ color: team.color }} />
+                          <span style={{ color: team.color }}>
+                            الفريق: {team.name}
+                          </span>
+                        </Button>
+                      ))}
+                      
+                      {/* زر لا أحد أجاب */}
+                      <Button
+                        variant="outline"
+                        className="w-full h-12 flex items-center justify-center gap-2 border-2 border-gray-300 mt-3"
+                        onClick={() => {
+                          submitAnswer(false);
+                          toast({
+                            title: "لم يجب أي فريق",
+                            description: "تم تسجيل عدم الإجابة والانتقال للفريق التالي.",
+                          });
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        <UserX className="h-5 w-5 text-gray-600" />
+                        <span className="text-gray-600 font-medium">لا أحد أجاب</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 
                 {/* تبديل الدور للفريق التالي */}
-                <div className="mt-4 pt-4 border-t border-dashed">
-                  <Button
-                    onClick={moveToNextTeam}
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
-                    disabled={currentTeamIndex >= questionData.teams.length - 1 || isSubmitting}
-                  >
-                    <RotateCw className="h-5 w-5" />
-                    <span>تبديل الدور للفريق التالي</span>
-                  </Button>
-                </div>
+                {/* تم إزالة زر تبديل الدور من هنا لأنه موجود بالفعل في أزرار المؤقت */}
                 
                 {/* وسائل المساعدة */}
                 {isHelpEnabled && (
