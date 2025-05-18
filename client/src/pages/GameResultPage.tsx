@@ -206,7 +206,7 @@ export default function GameResultPage() {
                 <path d="M7 2v5" />
                 <path d="M2 12h20" />
               </svg>
-              <span>جدول النقاط</span>
+              <span>النتيجة النهائية</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -263,22 +263,13 @@ export default function GameResultPage() {
 
 
         {/* أزرار التنقل */}
-        <div className="flex justify-center gap-4 mt-8">
+        <div className="flex justify-center mt-8">
           <Button 
-            variant="outline" 
             onClick={goToHome}
             className="flex items-center gap-2"
           >
             <Home className="h-4 w-4" />
-            الصفحة الرئيسية
-          </Button>
-          
-          <Button 
-            onClick={replayGame}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            لعب مباراة جديدة
+            العودة للصفحة الرئيسية
           </Button>
         </div>
       </div>
