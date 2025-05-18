@@ -273,6 +273,25 @@ export async function saveGameState(req: Request, res: Response) {
   }
 }
 
+// وظيفة تحديث الفريق الحالي في اللعبة
+export async function updateCurrentTeam(req: Request, res: Response) {
+  try {
+    const gameId = parseInt(req.params.gameId);
+    const { teamIndex } = req.body;
+    
+    if (teamIndex === undefined) {
+      return res.status(400).json({ error: "يرجى تحديد مؤشر الفريق الحالي" });
+    }
+    
+    await storage.updateGameCurrentTeam(gameId, teamIndex);
+    console.log(`تم تحديث الفريق الحالي للعبة ${gameId} إلى الفريق رقم ${teamIndex}`);
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("خطأ في تحديث الفريق الحالي:", error);
+    res.status(500).json({ error: "حدث خطأ أثناء تحديث الفريق الحالي" });
+  }
+}
+
 function generateGameQuestions(game: any) {
   const questions = [];
   const answeredQuestions = new Set(game.answeredQuestions || []);

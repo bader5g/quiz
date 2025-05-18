@@ -15,7 +15,8 @@ import {
   endGame,
   saveGameState,
   getGameResults,
-  markQuestionViewed
+  markQuestionViewed,
+  updateCurrentTeam
 } from './game-controller';
 import { z } from "zod";
 
@@ -192,6 +193,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Save game state
   app.post('/api/games/:gameId/save', saveGameState);
+  
+  // تحديث الفريق الحالي في اللعبة
+  app.post('/api/games/:gameId/update-team', updateCurrentTeam);
   
   // Use help tools (مساعدة) in game
   app.post('/api/games/:gameId/use-help', async (req, res) => {
