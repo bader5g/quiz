@@ -164,6 +164,21 @@ export default function QuestionPage() {
   const [notFoundError, setNotFoundError] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
+  // إعدادات وسائل المساعدة من لوحة التحكم
+  const helpSettings = gameSettings ? {
+    helpToolsEnabled: gameSettings.helpToolsEnabled ?? true,
+    onlyEnabledForTwoTeams: gameSettings.onlyEnabledForTwoTeams ?? true,
+    skipQuestionEnabled: gameSettings.skipQuestionEnabled ?? true,
+    pointDeductionEnabled: gameSettings.pointDeductionEnabled ?? true,
+    turnReverseEnabled: gameSettings.turnReverseEnabled ?? true,
+  } : {
+    helpToolsEnabled: true,
+    onlyEnabledForTwoTeams: true,
+    skipQuestionEnabled: true,
+    pointDeductionEnabled: true,
+    turnReverseEnabled: true,
+  };
+
   // حالة استخدام وسائل المساعدة
   const [helpUsed, setHelpUsed] = useState<{
     discount: boolean; // خصم
@@ -174,6 +189,10 @@ export default function QuestionPage() {
     swap: false,
     skip: false
   });
+  
+  // التحقق من إتاحة وسائل المساعدة (بناءً على عدد الفرق والإعدادات)
+  const isHelpEnabled = helpSettings.helpToolsEnabled && 
+    (!helpSettings.onlyEnabledForTwoTeams || (questionData?.teams.length === 2));
 
   // جلب تفاصيل السؤال
   useEffect(() => {
@@ -713,40 +732,52 @@ export default function QuestionPage() {
               </Card>
             )}
 
-            {/* أزرار وسائل المساعدة - تظهر فقط إذا كان هناك فريقين بالضبط وبعد عرض الإجابة */}
-            {questionData.teams.length === 2 && showAnswer && (
+            {/* أزرار وسائل المساعدة - تظهر بناءً على إعدادات لوحة التحكم وبعد عرض الإجابة */}
+            {isHelpEnabled && showAnswer && (
               <div className="mt-6 flex justify-center gap-3 bg-gray-50 p-3 rounded-lg">
-                <HelpButton 
-                  icon={<Minus className="h-4 w-4" />}
-                  label="خصم"
-                  tooltip="خصم الإجابة الخاطئة"
-                  onClick={() => {
-                    setHelpUsed(prev => ({ ...prev, discount: true }));
-                  }}
-                  disabled={helpUsed.discount}
-                />
+                {/* خصم النقاط */}
+                {helpSettings.pointDeductionEnabled && (
+                  <HelpButton 
+                    icon={<Minus className="h-4 w-4" />}
+                    label="خصم"
+                    tooltip="خصم الإجابة الخاطئة"
+                    onClick={() => {
+                      console.log('استخدام وسيلة مساعدة: خصم النقاط');
+                      setHelpUsed(prev => ({ ...prev, discount: true }));
+                    }}
+                    disabled={helpUsed.discount}
+                  />
+                )}
 
-                <HelpButton 
-                  icon={<Phone className="h-4 w-4" />}
-                  label="عكس"
-                  tooltip="تبديل الدور"
-                  onClick={() => {
-                    setHelpUsed(prev => ({ ...prev, swap: true }));
-                    moveToNextTeam();
-                  }}
-                  disabled={helpUsed.swap}
-                />
+                {/* عكس الدور */}
+                {helpSettings.turnReverseEnabled && (
+                  <HelpButton 
+                    icon={<Phone className="h-4 w-4" />}
+                    label="عكس"
+                    tooltip="تبديل الدور"
+                    onClick={() => {
+                      console.log('استخدام وسيلة مساعدة: عكس الدور');
+                      setHelpUsed(prev => ({ ...prev, swap: true }));
+                      moveToNextTeam();
+                    }}
+                    disabled={helpUsed.swap}
+                  />
+                )}
 
-                <HelpButton 
-                  icon={<UserX className="h-4 w-4" />}
-                  label="تخطي"
-                  tooltip="تخطي السؤال"
-                  onClick={() => {
-                    setHelpUsed(prev => ({ ...prev, skip: true }));
-                    navigate(`/play/${gameId}`);
-                  }}
-                  disabled={helpUsed.skip}
-                />
+                {/* تخطي السؤال */}
+                {helpSettings.skipQuestionEnabled && (
+                  <HelpButton 
+                    icon={<UserX className="h-4 w-4" />}
+                    label="تخطي"
+                    tooltip="تخطي السؤال"
+                    onClick={() => {
+                      console.log('استخدام وسيلة مساعدة: تخطي السؤال');
+                      setHelpUsed(prev => ({ ...prev, skip: true }));
+                      navigate(`/play/${gameId}`);
+                    }}
+                    disabled={helpUsed.skip}
+                  />
+                )}
               </div>
             )}
 
