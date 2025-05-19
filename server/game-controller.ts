@@ -455,7 +455,11 @@ function getCategoryIcon(categoryId) {
     22: "🌍",
     23: "🐘",
     24: "🍔",
+    31: "🏛️",
+    32: "🧩",
     33: "🔬",
+    34: "🧪",
+    35: "📱",
   };
   return categoryIcons[categoryId] || "📋";
 }
