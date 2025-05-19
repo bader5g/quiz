@@ -227,8 +227,30 @@ export class MemStorage implements IStorage {
   async updateGameTeams(gameId: number, teams: any[]): Promise<void> {
     const game = await this.getGameSession(gameId);
     if (game) {
-      const updatedGame = { ...game, teams };
+      console.log("تحديث فرق اللعبة:", { 
+        قبل: JSON.stringify(game.teams),
+        بعد: JSON.stringify(teams)
+      });
+      
+      // نسخ عميق لفرق اللعبة لتجنب التعديل المباشر على الكائن الأصلي
+      const updatedTeams = JSON.parse(JSON.stringify(teams));
+      
+      // التأكد من أن جميع الفرق لديها قيمة score
+      updatedTeams.forEach((team: any, index: number) => {
+        if (typeof team.score !== 'number') {
+          team.score = 0;
+        }
+      });
+      
+      const updatedGame = { 
+        ...game, 
+        teams: updatedTeams 
+      };
+      
       this.gameSessions.set(gameId, updatedGame);
+      console.log("تم تحديث فرق اللعبة بنجاح:", updatedGame.teams);
+    } else {
+      console.error("لم يتم العثور على اللعبة رقم", gameId);
     }
   }
 
