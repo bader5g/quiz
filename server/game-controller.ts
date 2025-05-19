@@ -12,7 +12,49 @@ export async function getGameDetails(req, res) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
     
-    res.status(200).json(game);
+    // تجهيز البيانات بالتنسيق الذي تتوقعه واجهة المستخدم
+    const teamColors = [
+      "#FF5733", // أحمر برتقالي
+      "#33A8FF", // أزرق
+      "#33FF57", // أخضر
+      "#D433FF", // أرجواني
+      "#FFDA33", // أصفر
+      "#FF33A8", // وردي
+    ];
+    
+    // تنسيق الفرق بإضافة لون لكل فريق والنقاط إذا لم تكن موجودة
+    const formattedTeams = Array.isArray(game.teams) 
+      ? game.teams.map((team, index) => ({
+          name: team.name,
+          score: team.score || 0,
+          color: teamColors[index % teamColors.length]
+        }))
+      : [];
+    
+    // تحويل فئات الأسئلة إلى تنسيق مناسب
+    const formattedCategories = Array.isArray(game.selectedCategories) 
+      ? game.selectedCategories.map(categoryId => ({
+          id: categoryId,
+          name: getCategoryName(categoryId),
+          icon: getCategoryIcon(categoryId)
+        }))
+      : [];
+    
+    // إنشاء مصفوفة الأسئلة (فارغة مبدئياً)
+    const formattedQuestions = [];
+    
+    // إعداد الاستجابة بالتنسيق المتوقع
+    const formattedGame = {
+      id: game.id,
+      name: game.gameName,
+      teams: formattedTeams,
+      categories: formattedCategories,
+      questions: formattedQuestions,
+      currentTeamIndex: game.currentTeamIndex || 0,
+      viewedQuestionIds: game.viewedQuestionIds || []
+    };
+    
+    res.status(200).json(formattedGame);
   } catch (error) {
     console.error("Error getting game details:", error);
     res.status(500).json({ error: "حدث خطأ أثناء جلب تفاصيل اللعبة" });
