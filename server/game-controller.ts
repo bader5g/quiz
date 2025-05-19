@@ -40,8 +40,8 @@ export async function getGameDetails(req, res) {
         }))
       : [];
     
-    // إنشاء مصفوفة الأسئلة (فارغة مبدئياً)
-    const formattedQuestions = [];
+    // إنشاء مصفوفة الأسئلة باستخدام الدالة المساعدة
+    const formattedQuestions = generateGameQuestions(game);
     
     // إعداد الاستجابة بالتنسيق المتوقع
     const formattedGame = {
