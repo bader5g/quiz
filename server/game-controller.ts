@@ -156,13 +156,13 @@ export async function markQuestionViewed(req, res) {
   }
 }
 
-// دالة تسجيل الإجابة واحتساب النقاط (المعدلة)
+// دالة تسجيل الإجابة واحتساب النقاط (المحسنة)
 export async function submitAnswer(req, res) {
   try {
     const gameId = parseInt(req.params.gameId);
     // استخراج البيانات من الطلب
-    const { questionId, teamIndex, difficulty, isCorrect } = req.body;
-    console.log("بيانات الإجابة المستلمة:", req.body);
+    const { questionId, teamIndex, difficulty, isCorrect, categoryId } = req.body;
+    console.log("بيانات الإجابة المستلمة:", JSON.stringify(req.body));
 
     // جلب بيانات اللعبة
     const game = await storage.getGameById(gameId);
@@ -172,7 +172,7 @@ export async function submitAnswer(req, res) {
 
     // التحقق من أن الفرق هي مصفوفة صالحة
     if (!Array.isArray(game.teams)) {
-      console.error("خطأ: الفرق ليست مصفوفة", game.teams);
+      console.error("خطأ: الفرق ليست مصفوفة", JSON.stringify(game.teams));
       return res.status(500).json({ error: "بنية اللعبة غير صالحة" });
     }
 
@@ -185,60 +185,72 @@ export async function submitAnswer(req, res) {
     // إضافة النقاط للفريق المحدد إذا كانت الإجابة صحيحة
     if (isCorrect && typeof teamIndex === "number" && teamIndex >= 0 && teamIndex < updatedTeams.length) {
       // طباعة معلومات توضيحية
-      console.log(`إضافة ${pointsToAdd} نقطة للفريق رقم ${teamIndex} (${updatedTeams[teamIndex].name})`);
+      console.log(`إضافة ${pointsToAdd} نقطة للفريق رقم ${teamIndex}`);
       
-      // التأكد من وجود قيمة أولية للنقاط
-      if (typeof updatedTeams[teamIndex].score !== 'number') {
+      // إضافة خاصية score للفريق إذا لم تكن موجودة
+      if (updatedTeams[teamIndex].score === undefined) {
         updatedTeams[teamIndex].score = 0;
+        console.log(`تهيئة نقاط الفريق ${teamIndex} إلى 0`);
       }
       
-      // إضافة النقاط
-      updatedTeams[teamIndex].score += pointsToAdd;
+      // التأكد من أن القيمة رقمية
+      if (typeof updatedTeams[teamIndex].score !== 'number') {
+        const oldScore = updatedTeams[teamIndex].score;
+        updatedTeams[teamIndex].score = parseInt(updatedTeams[teamIndex].score) || 0;
+        console.log(`تحويل نقاط الفريق من ${oldScore} إلى ${updatedTeams[teamIndex].score}`);
+      }
+      
+      // التأكد من العملية الحسابية
+      const oldScore = updatedTeams[teamIndex].score;
+      updatedTeams[teamIndex].score = oldScore + pointsToAdd;
       
       // طباعة النتيجة النهائية
-      console.log(`نقاط الفريق ${updatedTeams[teamIndex].name} بعد الإضافة: ${updatedTeams[teamIndex].score}`);
+      console.log(`نقاط الفريق بعد الإضافة: ${oldScore} + ${pointsToAdd} = ${updatedTeams[teamIndex].score}`);
     } else {
       console.log(`عدم إضافة نقاط - إجابة خاطئة أو بيانات غير صالحة`);
     }
 
     // تخزين معلومات السؤال المجاب
-    const categoryId = req.body.categoryId || 0;
-    const questionKey = `${categoryId}-${difficulty}-${teamIndex}-${questionId}`;
+    const catId = categoryId || 0;
+    const questionKey = `${catId}-${difficulty}-${teamIndex}-${questionId}`;
+    
+    // تحديث فرق اللعبة في قاعدة البيانات
+    console.log("تحديث نقاط الفرق:", JSON.stringify(updatedTeams));
+    await storage.updateGameTeams(gameId, updatedTeams);
+    
+    // جلب بيانات اللعبة المحدثة للتحقق من تطبيق التغييرات
+    const updatedGame = await storage.getGameById(gameId);
+    if (updatedGame) {
+      console.log("بيانات اللعبة المحدثة:", JSON.stringify(updatedGame.teams));
+    }
+    
+    // محاولة تحديث سجل الأسئلة المجابة
+    const answeredQuestions = Array.isArray(game.answeredQuestions) 
+      ? [...game.answeredQuestions] 
+      : [];
+    
+    if (!answeredQuestions.includes(questionKey)) {
+      answeredQuestions.push(questionKey);
+    }
     
     try {
-      // تحديث فرق اللعبة في قاعدة البيانات
-      console.log("تحديث نقاط الفرق:", updatedTeams);
-      await storage.updateGameTeams(gameId, updatedTeams);
-      
-      // محاولة تحديث سجل الأسئلة المجابة إذا كانت الوظيفة متوفرة
-      try {
-        const answeredQuestions = new Set(game.answeredQuestions || []);
-        answeredQuestions.add(questionKey);
-        
-        if (typeof storage.updateGameQuestions === 'function') {
-          await storage.updateGameQuestions(
-            gameId,
-            Array.from(answeredQuestions)
-          );
-        }
-      } catch (questionError) {
-        console.log("تحذير: لا يمكن تحديث سجل الأسئلة المجابة", questionError);
-        // استمرار التنفيذ رغم الخطأ
+      if (typeof storage.updateGameQuestions === 'function') {
+        await storage.updateGameQuestions(gameId, answeredQuestions);
       }
-      
-      // إرجاع استجابة نجاح مع الفرق المحدثة لتحديث واجهة المستخدم مباشرة
-      res.status(200).json({ 
-        success: true,
-        teams: updatedTeams,
-        message: isCorrect ? `تم إضافة ${pointsToAdd} نقطة للفريق ${teamIndex}` : "لم تتم إضافة نقاط"
-      });
-      
-    } catch (storageError) {
-      console.error("خطأ في تحديث بيانات اللعبة:", storageError);
-      res.status(500).json({ error: "حدث خطأ أثناء حفظ النقاط" });
+    } catch (questionError) {
+      console.log("تحذير: لا يمكن تحديث سجل الأسئلة المجابة", questionError);
     }
+    
+    // إرجاع استجابة نجاح مع الفرق المحدثة لتحديث واجهة المستخدم مباشرة
+    const responseTeams = updatedGame ? updatedGame.teams : updatedTeams;
+    
+    res.status(200).json({ 
+      success: true,
+      teams: responseTeams,
+      message: isCorrect ? `تم إضافة ${pointsToAdd} نقطة للفريق` : "لم تتم إضافة نقاط"
+    });
   } catch (error) {
-    console.error("Error submitting answer:", error);
+    console.error("خطأ في تسجيل الإجابة:", error);
     res.status(500).json({ error: "حدث خطأ أثناء محاولة تسجيل الإجابة" });
   }
 }
