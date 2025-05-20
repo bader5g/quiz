@@ -845,8 +845,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // استخدام البيانات مباشرة من طلب المستخدم بعد التحقق الأساسي
       const { name, icon, imageUrl, isActive } = req.body;
 
-      if (!name || !icon) {
-        return res.status(400).json({ error: "الاسم والأيقونة مطلوبان" });
+      if (!name || !imageUrl) {
+        return res.status(400).json({ error: "الاسم وصورة الفئة مطلوبان" });
       }
 
       // استخدام SQL مباشر لإنشاء الفئة (الآن أصبحت حقول التاريخ من نوع TIMESTAMP)
