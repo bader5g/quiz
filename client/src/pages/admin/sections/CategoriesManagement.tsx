@@ -49,18 +49,19 @@ import {
   Save,
 } from "lucide-react";
 
+// تعريف مخططات المصادقة مع التركيز على الصور كمتطلب أساسي والأيقونات كعنصر اختياري
 const parentCategorySchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "اسم الفئة يجب أن يحتوي على حرفين على الأقل"),
-  icon: z.string().optional(),
-  imageUrl: z.string().min(1, "يجب إدخال رابط الصورة للفئة"),
+  icon: z.string().optional(), // الأيقونة عنصر اختياري
+  imageUrl: z.string().min(1, "يجب إدخال رابط الصورة للفئة"), // الصورة عنصر إجباري
 });
 
 const childCategorySchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "اسم الفئة الفرعية يجب أن يحتوي على حرفين على الأقل"),
-  icon: z.string().optional(),
-  imageUrl: z.string().min(1, "يجب إدخال رابط الصورة للفئة الفرعية"),
+  icon: z.string().optional(), // الأيقونة عنصر اختياري للفئات الفرعية أيضًا
+  imageUrl: z.string().min(1, "يجب إدخال رابط الصورة للفئة الفرعية"), // الصورة عنصر إجباري
   parentId: z.number(),
   availableQuestions: z.number().default(0),
 });
@@ -102,7 +103,8 @@ export default function CategoriesManagement() {
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
-      imageUrl: "",
+      icon: "", // الأيقونة اختيارية
+      imageUrl: "", // الصورة إجبارية
     },
   });
 
@@ -111,7 +113,8 @@ export default function CategoriesManagement() {
     resolver: zodResolver(childCategorySchema),
     defaultValues: {
       name: "",
-      icon: "",
+      icon: "", // الأيقونة اختيارية
+      imageUrl: "", // الصورة إجبارية
       parentId: 0,
       availableQuestions: 0,
     },
@@ -144,8 +147,8 @@ export default function CategoriesManagement() {
   const showAddParentCategoryForm = () => {
     parentForm.reset({
       name: "",
-      icon: "",
-      imageUrl: "",
+      icon: "", // الأيقونة اختيارية
+      imageUrl: "", // الصورة مطلوبة
     });
     setEditMode("parent");
     setDialogOpen(true);
@@ -155,8 +158,8 @@ export default function CategoriesManagement() {
     parentForm.reset({
       id: category.id,
       name: category.name,
-      icon: category.icon,
-      imageUrl: category.imageUrl,
+      icon: category.icon || "", // قد تكون الأيقونة غير موجودة في بعض الفئات
+      imageUrl: category.imageUrl || "", // الصورة يجب أن تكون موجودة دائماً
     });
     setEditMode("parent");
     setDialogOpen(true);
@@ -165,8 +168,8 @@ export default function CategoriesManagement() {
   const showAddChildCategoryForm = (parentId: number) => {
     childForm.reset({
       name: "",
-      icon: "",
-      imageUrl: "",
+      icon: "", // الأيقونة اختيارية
+      imageUrl: "", // الصورة مطلوبة
       parentId,
       availableQuestions: 0,
     });
@@ -179,8 +182,8 @@ export default function CategoriesManagement() {
     childForm.reset({
       id: category.id,
       name: category.name,
-      icon: category.icon,
-      imageUrl: category.imageUrl || "",
+      icon: category.icon || "", // التعامل مع حالة عدم وجود أيقونة
+      imageUrl: category.imageUrl || "", // الصورة يجب أن تكون موجودة
       parentId: category.parentId,
       availableQuestions: category.availableQuestions,
     });
@@ -191,7 +194,7 @@ export default function CategoriesManagement() {
 
   const onSubmitParentCategory = async (values: ParentCategory) => {
     try {
-      // تحقق من البيانات المدخلة
+      // تحقق من البيانات المدخلة - الصورة ضرورية، الأيقونة اختيارية
       if (!values.name || !values.imageUrl) {
         throw new Error("يرجى ملء اسم الفئة وإضافة صورة لها.");
       }
