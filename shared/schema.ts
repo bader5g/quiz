@@ -248,9 +248,9 @@ export type UpdateCategory = z.infer<typeof updateCategorySchema>;
 export const subcategories = pgTable("subcategories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  icon: text("icon").notNull(),
+  icon: text("icon"), // الأيقونة ليست إجبارية الآن
   parentId: integer("parent_id").notNull().references(() => categories.id),
-  imageUrl: text("image_url"),
+  imageUrl: text("image_url").notNull(), // الصورة إجبارية
   isActive: boolean("is_active").default(true),
   createdAt: text("created_at").notNull().default("2023-01-01T00:00:00.000Z"),
   updatedAt: text("updated_at").notNull().default("2023-01-01T00:00:00.000Z"),

@@ -946,8 +946,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/subcategories", async (req, res) => {
     try {
+      console.log("Received subcategory data:", req.body);
+      // تحقق من وجود البيانات المطلوبة مباشرة
+      const { name, imageUrl, parentId } = req.body;
+      
+      if (!name || !imageUrl || !parentId) {
+        return res.status(400).json({ error: "اسم الفئة الفرعية وصورتها والفئة الأم مطلوبان" });
+      }
+      
       const subcategoryData = insertSubcategorySchema.parse(req.body);
       const newSubcategory = await storage.createSubcategory(subcategoryData);
+      console.log("Subcategory created successfully:", newSubcategory);
       res.status(201).json(newSubcategory);
     } catch (error) {
       console.error("Error creating subcategory:", error);
