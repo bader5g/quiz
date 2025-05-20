@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   LogOut,
   Flag,
+  Filter,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,21 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Question {
   id: number;
@@ -54,6 +70,14 @@ export default function QuestionPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const requestedDifficulty = parseInt(searchParams.get("difficulty") || "1");
   const requestedCategoryId = searchParams.get("categoryId");
+  const requestedSubcategoryId = searchParams.get("subcategoryId");
+  
+  // حالة الفئات والفئات الفرعية والمستويات
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(requestedCategoryId ? parseInt(requestedCategoryId) : null);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(requestedSubcategoryId ? parseInt(requestedSubcategoryId) : null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState(requestedDifficulty);
 
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(
     null,
@@ -91,15 +115,55 @@ export default function QuestionPage() {
     );
   }
 
+  // جلب الفئات
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await apiRequest("GET", "/api/categories-with-children");
+      setCategories(response.data || []);
+    } catch (err) {
+      console.error("خطأ في جلب الفئات:", err);
+    }
+  }, []);
+  
+  // جلب الفئات الفرعية بناءً على الفئة المختارة
+  const fetchSubcategories = useCallback(async (categoryId) => {
+    if (!categoryId) {
+      setSubcategories([]);
+      return;
+    }
+    
+    try {
+      const response = await apiRequest("GET", `/api/subcategories?categoryId=${categoryId}`);
+      setSubcategories(response.data || []);
+    } catch (err) {
+      console.error("خطأ في جلب الفئات الفرعية:", err);
+    }
+  }, []);
+  
+  // عند تغيير الفئة المختارة
+  useEffect(() => {
+    if (selectedCategoryId) {
+      fetchSubcategories(selectedCategoryId);
+    }
+  }, [selectedCategoryId, fetchSubcategories]);
+  
+  // جلب الفئات عند تحميل الصفحة
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
   // جلب بيانات السؤال
   const fetchFreshQuestion = useCallback(async () => {
     setLoading(true);
     let categoryParam = requestedCategoryId
       ? `&categoryId=${requestedCategoryId}`
       : "";
+    let subcategoryParam = requestedSubcategoryId
+      ? `&subcategoryId=${requestedSubcategoryId}`
+      : "";
     const response = await apiRequest(
       "GET",
-      `/api/games/${gameId}/questions/${questionId}?difficulty=${requestedDifficulty}${categoryParam}`,
+      `/api/games/${gameId}/questions/${questionId}?difficulty=${requestedDifficulty}${categoryParam}${subcategoryParam}`,
     );
     if (response.status === 404) {
       setNotFoundError(true);
