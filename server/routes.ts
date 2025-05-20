@@ -439,6 +439,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
       default_answer_time_second: 15,
     });
   });
+  
+  // API لجلب إحصائيات لوحة التحكم
+  app.get("/api/admin/dashboard-stats", async (req, res) => {
+    try {
+      // في الإصدار النهائي، ستأتي هذه البيانات من قاعدة البيانات
+      // بيانات إحصائية تجريبية للعرض
+      res.json({
+        users: {
+          total: 240,
+          active: 180,
+          inactive: 60,
+          admins: 5,
+          newLastWeek: 15,
+        },
+        categories: {
+          total: 12,
+          subcategories: 45,
+          lowQuestionCount: 3,
+        },
+        questions: {
+          total: 850,
+          byDifficulty: {
+            easy: 350,
+            medium: 350,
+            hard: 150,
+          },
+          recentlyAdded: 25,
+        },
+        games: {
+          total: 120,
+          active: 15,
+          completed: 95,
+          totalRounds: 1250,
+        },
+        levels: {
+          total: 5,
+          users: {
+            "مبتدئ": 80,
+            "متوسط": 60,
+            "متقدم": 40,
+            "محترف": 20,
+            "خبير": 10,
+          },
+        },
+        packages: {
+          total: 8,
+          active: 6,
+          purchased: 85,
+        },
+        cards: {
+          totalUsed: 3600,
+          totalPurchased: 2000,
+          freeIssued: 2500,
+        },
+        stars: {
+          totalEarned: 1800,
+          weeklyAverage: 120,
+        },
+        notifications: {
+          total: 3,
+          items: [
+            {
+              id: 1,
+              message: "3 فئات تحتوي على أقل من الحد الأدنى من الأسئلة",
+              type: "warning",
+              date: "اليوم، 10:30 صباحًا",
+            },
+            {
+              id: 2,
+              message: "5 مستخدمين جدد سجلوا خلال آخر 24 ساعة",
+              type: "info",
+              date: "اليوم، 9:15 صباحًا",
+            },
+            {
+              id: 3,
+              message: "تمت إضافة 25 سؤال جديد هذا الأسبوع",
+              type: "success",
+              date: "أمس، 2:45 مساءً",
+            },
+          ],
+        },
+        weeklyGrowth: [
+          {
+            date: "2023-05-01",
+            users: 220,
+            games: 100,
+            cards: 3200,
+            stars: 1600,
+          },
+          {
+            date: "2023-05-02",
+            users: 225,
+            games: 102,
+            cards: 3300,
+            stars: 1650,
+          },
+          {
+            date: "2023-05-03",
+            users: 228,
+            games: 105,
+            cards: 3400,
+            stars: 1700,
+          },
+          {
+            date: "2023-05-04",
+            users: 232,
+            games: 108,
+            cards: 3450,
+            stars: 1720,
+          },
+          {
+            date: "2023-05-05",
+            users: 235,
+            games: 110,
+            cards: 3500,
+            stars: 1750,
+          },
+          {
+            date: "2023-05-06",
+            users: 238,
+            games: 115,
+            cards: 3550,
+            stars: 1780,
+          },
+          {
+            date: "2023-05-07",
+            users: 240,
+            games: 120,
+            cards: 3600,
+            stars: 1800,
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ error: "فشل في جلب إحصائيات لوحة التحكم" });
+    }
+  });
 
   // باقات الكروت - Card packages endpoint
   app.get("/api/card-packages", (_req, res) => {
