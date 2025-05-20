@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   Form,
   FormControl,
@@ -21,13 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -36,7 +23,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,15 +47,17 @@ import {
   BookOpen,
   FolderPlus,
   Save,
+  Image,
 } from "lucide-react";
 
+// تعريف مخطط الفئة الرئيسية بدون حقل الأيقونة
 const parentCategorySchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "اسم الفئة يجب أن يحتوي على حرفين على الأقل"),
-  icon: z.string().min(1, "يجب اختيار أيقونة للفئة"),
-  imageUrl: z.string().optional().nullable(),
+  imageUrl: z.string().min(1, "يجب إدخال رابط الصورة للفئة"),
 });
 
+// نحتفظ بنفس مخطط الفئة الفرعية مع الأيقونة لسهولة التعامل
 const childCategorySchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "اسم الفئة الفرعية يجب أن يحتوي على حرفين على الأقل"),
@@ -69,22 +71,8 @@ type ChildCategory = z.infer<typeof childCategorySchema>;
 
 interface CategoryWithChildren extends ParentCategory {
   children: ChildCategory[];
+  icon?: string; // نضيف الأيقونة كحقل اختياري للتوافق مع البيانات الموجودة
 }
-
-const availableIcons = [
-  { value: "🧪", label: "علوم" },
-  { value: "🧮", label: "رياضيات" },
-  { value: "📚", label: "أدب" },
-  { value: "🌍", label: "جغرافيا" },
-  { value: "🏺", label: "تاريخ" },
-  { value: "🎭", label: "فنون" },
-  { value: "🏀", label: "رياضة" },
-  { value: "🎬", label: "سينما" },
-  { value: "🎵", label: "موسيقى" },
-  { value: "💻", label: "تكنولوجيا" },
-  { value: "🍔", label: "طعام" },
-  { value: "🌿", label: "طبيعة" },
-];
 
 export default function CategoriesManagement() {
   const { toast } = useToast();
@@ -130,30 +118,31 @@ export default function CategoriesManagement() {
         console.error("Error fetching categories:", error);
         toast({
           variant: "destructive",
-          title: "خطأ في جلب الفئات",
+          title: "خطأ في جلب البيانات",
           description: "حدث خطأ أثناء محاولة جلب الفئات",
         });
       } finally {
         setLoading(false);
       }
     };
+
     fetchCategories();
   }, [toast]);
 
   const showAddParentCategoryForm = () => {
     parentForm.reset({
       name: "",
-      icon: "",
+      imageUrl: "",
     });
     setEditMode("parent");
     setDialogOpen(true);
   };
 
-  const showEditParentCategoryForm = (category: ParentCategory) => {
+  const showEditParentCategoryForm = (category: CategoryWithChildren) => {
     parentForm.reset({
       id: category.id,
       name: category.name,
-      icon: category.icon,
+      imageUrl: category.imageUrl || "",
     });
     setEditMode("parent");
     setDialogOpen(true);
@@ -163,7 +152,7 @@ export default function CategoriesManagement() {
     childForm.reset({
       name: "",
       icon: "",
-      parentId,
+      parentId: parentId,
       availableQuestions: 0,
     });
     setSelectedCategoryId(parentId);
@@ -177,7 +166,7 @@ export default function CategoriesManagement() {
       name: category.name,
       icon: category.icon,
       parentId: category.parentId,
-      availableQuestions: category.availableQuestions,
+      availableQuestions: category.availableQuestions || 0,
     });
     setSelectedCategoryId(category.parentId);
     setEditMode("child");
@@ -187,7 +176,7 @@ export default function CategoriesManagement() {
   const onSubmitParentCategory = async (values: ParentCategory) => {
     try {
       // تحقق من البيانات المدخلة
-      if (!values.name || !values.icon) {
+      if (!values.name || !values.imageUrl) {
         throw new Error("يرجى ملء جميع الحقول المطلوبة.");
       }
 
@@ -226,7 +215,7 @@ export default function CategoriesManagement() {
         });
       }
       setDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving parent category:", error);
       toast({
         variant: "destructive",
@@ -239,14 +228,22 @@ export default function CategoriesManagement() {
   const onSubmitChildCategory = async (values: ChildCategory) => {
     try {
       if (values.id) {
-        await apiRequest("PATCH", `/api/subcategories/${values.id}`, values);
+        const response = await apiRequest(
+          "PATCH",
+          `/api/subcategories/${values.id}`,
+          values,
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "حدث خطأ غير معروف");
+        }
         setCategories(
           categories.map((category) => {
             if (category.id === values.parentId) {
               return {
                 ...category,
                 children: category.children.map((child) =>
-                  child.id === values.id ? { ...values } : child,
+                  child.id === values.id ? { ...child, ...values } : child,
                 ),
               };
             }
@@ -259,6 +256,10 @@ export default function CategoriesManagement() {
         });
       } else {
         const response = await apiRequest("POST", "/api/subcategories", values);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "حدث خطأ غير معروف");
+        }
         const newSubcategory = await response.json();
         setCategories(
           categories.map((category) => {
@@ -277,7 +278,7 @@ export default function CategoriesManagement() {
         });
       }
       setDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving child category:", error);
       toast({
         variant: "destructive",
@@ -312,7 +313,9 @@ export default function CategoriesManagement() {
   };
 
   const deleteChildCategory = async (id: number, parentId: number) => {
-    if (confirm("هل أنت متأكد من رغبتك في حذف هذه الفئة الفرعية؟")) {
+    if (
+      confirm("هل أنت متأكد من رغبتك في حذف هذه الفئة الفرعية؟")
+    ) {
       try {
         await apiRequest("DELETE", `/api/subcategories/${id}`);
         setCategories(
@@ -339,15 +342,6 @@ export default function CategoriesManagement() {
         });
       }
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="mr-2">جاري تحميل الفئات...</span>
-      </div>
-    );
   }
 
   return (
@@ -366,7 +360,11 @@ export default function CategoriesManagement() {
       </div>
       <Card>
         <CardContent className="p-6">
-          {categories.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : categories.length === 0 ? (
             <div className="text-center py-6">
               <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <h3 className="text-lg font-medium">لا توجد فئات حاليًا</h3>
@@ -399,7 +397,9 @@ export default function CategoriesManagement() {
                             }}
                           />
                         ) : (
-                          <span className="text-xl ml-2">{category.icon}</span>
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center ml-2">
+                            <Image className="h-4 w-4 text-muted-foreground" />
+                          </div>
                         )}
                         <span className="font-medium">{category.name}</span>
                       </div>
@@ -445,14 +445,10 @@ export default function CategoriesManagement() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[50px]">الأيقونة</TableHead>
-                            <TableHead>اسم الفئة الفرعية</TableHead>
-                            <TableHead className="text-center">
-                              عدد الأسئلة
-                            </TableHead>
-                            <TableHead className="text-left">
-                              الإجراءات
-                            </TableHead>
+                            <TableHead>الأيقونة</TableHead>
+                            <TableHead>الاسم</TableHead>
+                            <TableHead>عدد الأسئلة</TableHead>
+                            <TableHead>الإجراءات</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -460,57 +456,45 @@ export default function CategoriesManagement() {
                             <TableRow>
                               <TableCell
                                 colSpan={4}
-                                className="text-center text-muted-foreground py-4"
+                                className="text-center py-4 text-muted-foreground"
                               >
-                                لا توجد فئات فرعية في هذه الفئة
+                                لا توجد فئات فرعية. أضف فئة فرعية جديدة.
                               </TableCell>
                             </TableRow>
                           ) : (
-                            category.children.map((child) => (
-                              <TableRow key={child.id}>
-                                <TableCell className="text-lg">
-                                  {child.icon}
-                                </TableCell>
+                            category.children.map((subcategory) => (
+                              <TableRow key={subcategory.id}>
                                 <TableCell className="font-medium">
-                                  {child.name}
+                                  <span className="text-xl">{subcategory.icon}</span>
                                 </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge
-                                    variant={
-                                      child.availableQuestions > 0
-                                        ? "default"
-                                        : "secondary"
+                                <TableCell>{subcategory.name}</TableCell>
+                                <TableCell>
+                                  {subcategory.availableQuestions || 0} سؤال
+                                </TableCell>
+                                <TableCell className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      showEditChildCategoryForm(subcategory)
                                     }
                                   >
-                                    {child.availableQuestions}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex gap-2 justify-end">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        showEditChildCategoryForm(child)
-                                      }
-                                    >
-                                      <Edit className="h-4 w-4 ml-1" />
-                                      تعديل
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        deleteChildCategory(
-                                          child.id || 0,
-                                          category.id || 0,
-                                        )
-                                      }
-                                    >
-                                      <Trash2 className="h-4 w-4 ml-1 text-destructive" />
-                                      حذف
-                                    </Button>
-                                  </div>
+                                    <Edit className="h-4 w-4 ml-1" />
+                                    تعديل
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      deleteChildCategory(
+                                        subcategory.id || 0,
+                                        subcategory.parentId,
+                                      )
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4 ml-1 text-destructive" />
+                                    حذف
+                                  </Button>
                                 </TableCell>
                               </TableRow>
                             ))
@@ -565,46 +549,13 @@ export default function CategoriesManagement() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={parentForm.control}
-                name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>أيقونة الفئة</FormLabel>
-                    <div className="grid grid-cols-6 gap-2 mb-2">
-                      {availableIcons.map((icon) => (
-                        <button
-                          key={icon.value}
-                          type="button"
-                          className={`h-12 text-xl flex items-center justify-center rounded border 
-                            ${field.value === icon.value ? "bg-blue-100 border-blue-500" : "bg-white border-gray-200"}
-                            focus:outline-none focus:ring-2 focus:ring-blue-400 transition`}
-                          onClick={() =>
-                            parentForm.setValue("icon", icon.value)
-                          }
-                          aria-label={icon.label}
-                        >
-                          {icon.value}
-                        </button>
-                      ))}
-                    </div>
-                    <FormControl>
-                      <Input {...field} placeholder="أيقونة الفئة" />
-                    </FormControl>
-                    <FormDescription>
-                      يمكنك اختيار أيقونة من الأعلى أو كتابة رمز تعبيري
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               
               <FormField
                 control={parentForm.control}
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>صورة الفئة (اختياري)</FormLabel>
+                    <FormLabel>صورة الفئة</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
@@ -614,7 +565,7 @@ export default function CategoriesManagement() {
                       />
                     </FormControl>
                     <FormDescription>
-                      يمكنك إضافة رابط لصورة الفئة. ستظهر في واجهة اللعبة.
+                      يجب إضافة رابط لصورة الفئة. ستظهر في واجهة اللعبة.
                     </FormDescription>
                     {field.value && (
                       <div className="mt-2">
@@ -700,26 +651,14 @@ export default function CategoriesManagement() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>أيقونة الفئة الفرعية</FormLabel>
-                    <div className="grid grid-cols-6 gap-2 mb-2">
-                      {availableIcons.map((icon) => (
-                        <button
-                          key={icon.value}
-                          type="button"
-                          className={`h-12 text-xl flex items-center justify-center rounded border 
-                                              ${field.value === icon.value ? "bg-blue-100 border-blue-500" : "bg-white border-gray-200"}
-                                              focus:outline-none focus:ring-2 focus:ring-blue-400 transition`}
-                          onClick={() => childForm.setValue("icon", icon.value)}
-                          aria-label={icon.label}
-                        >
-                          {icon.value}
-                        </button>
-                      ))}
-                    </div>
                     <FormControl>
-                      <Input {...field} placeholder="أيقونة الفئة الفرعية" />
+                      <Input
+                        {...field}
+                        placeholder="استخدم رمز الإيموجي 😊"
+                      />
                     </FormControl>
                     <FormDescription>
-                      يمكنك اختيار أيقونة من الأعلى أو كتابة رمز تعبيري
+                      يمكنك استخدام رموز الإيموجي مثل 🎮 ⚽ 🎬 📚
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
