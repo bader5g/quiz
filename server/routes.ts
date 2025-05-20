@@ -814,6 +814,223 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Categories Management Endpoints
+  app.get("/api/categories", async (_req, res) => {
+    try {
+      const categoriesList = await storage.getCategories();
+      res.json(categoriesList);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ error: "فشل في جلب الفئات" });
+    }
+  });
+  
+  app.get("/api/categories/:id", async (req, res) => {
+    try {
+      const category = await storage.getCategoryById(Number(req.params.id));
+      if (!category) {
+        return res.status(404).json({ error: "الفئة غير موجودة" });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error("Error fetching category:", error);
+      res.status(500).json({ error: "فشل في جلب الفئة" });
+    }
+  });
+  
+  app.post("/api/categories", async (req, res) => {
+    try {
+      const categoryData = insertCategorySchema.parse(req.body);
+      const newCategory = await storage.createCategory({
+        ...categoryData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      res.status(201).json(newCategory);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      res.status(400).json({ error: "فشل في إنشاء الفئة" });
+    }
+  });
+  
+  app.put("/api/categories/:id", async (req, res) => {
+    try {
+      const categoryId = Number(req.params.id);
+      const categoryData = updateCategorySchema.parse(req.body);
+      const updatedCategory = await storage.updateCategory(categoryId, {
+        ...categoryData,
+        updatedAt: new Date().toISOString()
+      });
+      if (!updatedCategory) {
+        return res.status(404).json({ error: "الفئة غير موجودة" });
+      }
+      res.json(updatedCategory);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      res.status(400).json({ error: "فشل في تحديث الفئة" });
+    }
+  });
+  
+  app.delete("/api/categories/:id", async (req, res) => {
+    try {
+      const categoryId = Number(req.params.id);
+      await storage.deleteCategory(categoryId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      res.status(500).json({ error: "فشل في حذف الفئة" });
+    }
+  });
+  
+  // Subcategories Management Endpoints
+  app.get("/api/subcategories", async (req, res) => {
+    try {
+      const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+      const subcategoriesList = await storage.getSubcategories(categoryId);
+      res.json(subcategoriesList);
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      res.status(500).json({ error: "فشل في جلب الفئات الفرعية" });
+    }
+  });
+  
+  app.get("/api/subcategories/:id", async (req, res) => {
+    try {
+      const subcategory = await storage.getSubcategoryById(Number(req.params.id));
+      if (!subcategory) {
+        return res.status(404).json({ error: "الفئة الفرعية غير موجودة" });
+      }
+      res.json(subcategory);
+    } catch (error) {
+      console.error("Error fetching subcategory:", error);
+      res.status(500).json({ error: "فشل في جلب الفئة الفرعية" });
+    }
+  });
+  
+  app.post("/api/subcategories", async (req, res) => {
+    try {
+      const subcategoryData = insertSubcategorySchema.parse(req.body);
+      const newSubcategory = await storage.createSubcategory({
+        ...subcategoryData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      res.status(201).json(newSubcategory);
+    } catch (error) {
+      console.error("Error creating subcategory:", error);
+      res.status(400).json({ error: "فشل في إنشاء الفئة الفرعية" });
+    }
+  });
+  
+  app.put("/api/subcategories/:id", async (req, res) => {
+    try {
+      const subcategoryId = Number(req.params.id);
+      const subcategoryData = updateSubcategorySchema.parse(req.body);
+      const updatedSubcategory = await storage.updateSubcategory(subcategoryId, {
+        ...subcategoryData,
+        updatedAt: new Date().toISOString()
+      });
+      if (!updatedSubcategory) {
+        return res.status(404).json({ error: "الفئة الفرعية غير موجودة" });
+      }
+      res.json(updatedSubcategory);
+    } catch (error) {
+      console.error("Error updating subcategory:", error);
+      res.status(400).json({ error: "فشل في تحديث الفئة الفرعية" });
+    }
+  });
+  
+  app.delete("/api/subcategories/:id", async (req, res) => {
+    try {
+      const subcategoryId = Number(req.params.id);
+      await storage.deleteSubcategory(subcategoryId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting subcategory:", error);
+      res.status(500).json({ error: "فشل في حذف الفئة الفرعية" });
+    }
+  });
+  
+  // Questions Management Endpoints
+  app.get("/api/questions", async (req, res) => {
+    try {
+      const questions = await storage.getQuestions();
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      res.status(500).json({ error: "فشل في جلب الأسئلة" });
+    }
+  });
+  
+  app.get("/api/questions/category/:categoryId", async (req, res) => {
+    try {
+      const categoryId = Number(req.params.categoryId);
+      const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
+      const questions = await storage.getQuestionsByCategory(categoryId, subcategoryId);
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching questions by category:", error);
+      res.status(500).json({ error: "فشل في جلب الأسئلة حسب الفئة" });
+    }
+  });
+  
+  app.get("/api/questions/:id", async (req, res) => {
+    try {
+      const question = await storage.getQuestionById(Number(req.params.id));
+      if (!question) {
+        return res.status(404).json({ error: "السؤال غير موجود" });
+      }
+      res.json(question);
+    } catch (error) {
+      console.error("Error fetching question:", error);
+      res.status(500).json({ error: "فشل في جلب السؤال" });
+    }
+  });
+  
+  app.post("/api/questions", async (req, res) => {
+    try {
+      const questionData = insertQuestionSchema.parse(req.body);
+      const newQuestion = await storage.createQuestion({
+        ...questionData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      res.status(201).json(newQuestion);
+    } catch (error) {
+      console.error("Error creating question:", error);
+      res.status(400).json({ error: "فشل في إنشاء السؤال" });
+    }
+  });
+  
+  app.put("/api/questions/:id", async (req, res) => {
+    try {
+      const questionId = Number(req.params.id);
+      const questionData = updateQuestionSchema.parse(req.body);
+      const updatedQuestion = await storage.updateQuestion(questionId, {
+        ...questionData,
+        updatedAt: new Date().toISOString()
+      });
+      if (!updatedQuestion) {
+        return res.status(404).json({ error: "السؤال غير موجود" });
+      }
+      res.json(updatedQuestion);
+    } catch (error) {
+      console.error("Error updating question:", error);
+      res.status(400).json({ error: "فشل في تحديث السؤال" });
+    }
+  });
+  
+  app.delete("/api/questions/:id", async (req, res) => {
+    try {
+      const questionId = Number(req.params.id);
+      await storage.deleteQuestion(questionId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      res.status(500).json({ error: "فشل في حذف السؤال" });
+    }
+  });
+
   // Footer settings API endpoints
   app.get("/api/footer-settings", (_req, res) => {
     // Sample footer settings data
