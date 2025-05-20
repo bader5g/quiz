@@ -20,7 +20,8 @@ interface CategoryChild {
 interface CategoryParent {
   id: number;
   name: string;
-  icon: string;
+  icon?: string;
+  imageUrl?: string;
   children: CategoryChild[];
 }
 
@@ -175,7 +176,7 @@ export default function Home() {
                   className="flex justify-between items-center bg-gray-50 border border-gray-200 rounded px-2 py-1"
                 >
                   <span className="text-sm flex items-center gap-1 truncate max-w-[80%]">
-                    {cat.icon} {cat.name}
+                    <span className="text-xl">{cat.icon}</span> {cat.name}
                   </span>
                   <button
                     onClick={() => handleCategoryClick(cat)}
@@ -218,7 +219,18 @@ export default function Home() {
                 return (
                   <div key={parent.id} className="mb-8">
                     <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center justify-center gap-2">
-                      <span className="text-3xl">{parent.icon}</span>
+                      {parent.imageUrl ? (
+                        <img 
+                          src={parent.imageUrl} 
+                          alt={parent.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "https://placehold.co/100x100/gray/white?text=خطأ";
+                          }}
+                        />
+                      ) : (
+                        <span className="text-3xl">{parent.icon || "📚"}</span>
+                      )}
                       <span>{parent.name}</span>
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
