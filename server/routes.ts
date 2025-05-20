@@ -443,19 +443,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API لجلب إحصائيات لوحة التحكم
   app.get("/api/admin/dashboard-stats", async (req, res) => {
     try {
-      // جلب البيانات من الخادم
-      const categoriesData = await storage.getCategories();
-      const subcategoriesData = await storage.getSubcategories();
-      const questionsData = await storage.getQuestions();
-      const gamesData = await storage.getUserGameSessions(1); // نستخدم المستخدم 1 للحصول على جميع الجلسات
+      // استرجاع بيانات حقيقية من الخادم عن طريق واجهات البرمجة الموجودة
+      let categoriesCount = 0;
+      let subcategoriesCount = 0;
+      let questionsCount = 0;
+      let gamesCount = 0;
       
-      // حساب الإحصائيات
-      const categoriesCount = categoriesData?.length || 0;
-      const subcategoriesCount = subcategoriesData?.length || 0;
-      const questionsCount = questionsData?.length || 0;
-      const gamesCount = gamesData?.length || 0;
+      try {
+        const categoriesData = await storage.getCategories();
+        categoriesCount = categoriesData?.length || 0;
+      } catch (error) {
+        console.error("Error fetching categories count:", error);
+      }
       
-      // بناء كائن الإحصائيات الديناميكي بناءً على بيانات قاعدة البيانات
+      try {
+        const subcategoriesData = await storage.getSubcategories();
+        subcategoriesCount = subcategoriesData?.length || 0;
+      } catch (error) {
+        console.error("Error fetching subcategories count:", error);
+      }
+      
+      try {
+        const questionsData = await storage.getQuestions();
+        questionsCount = questionsData?.length || 0;
+      } catch (error) {
+        console.error("Error fetching questions count:", error);
+      }
+      
+      try {
+        const gamesData = await storage.getUserGameSessions(1);
+        gamesCount = gamesData?.length || 0;
+      } catch (error) {
+        console.error("Error fetching games count:", error);
+      }
+      
+      // بناء كائن الإحصائيات الديناميكي بناءً على بيانات حقيقية
+      console.log("Dashboard stats:", {
+        categories: categoriesCount,
+        subcategories: subcategoriesCount,
+        questions: questionsCount,
+        games: gamesCount
+      });
+      
       res.json({
         users: {
           total: 35,

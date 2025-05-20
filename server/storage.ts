@@ -59,12 +59,6 @@ export interface IStorage {
   updateCategory(id: number, category: any): Promise<any>;
   deleteCategory(id: number): Promise<void>;
   
-  // الوظائف الإحصائية للوحة القيادة
-  getCategoriesCount(): Promise<number>;
-  getSubcategoriesCount(): Promise<number>;
-  getQuestionsCount(): Promise<number>;
-  getGameSessionsCount(): Promise<number>;
-  
   // Subcategories management
   getSubcategories(categoryId?: number): Promise<any[]>;
   getSubcategoryById(id: number): Promise<any | undefined>;
