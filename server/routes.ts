@@ -13,7 +13,7 @@ import {
   insertSubcategorySchema,
   updateSubcategorySchema,
   insertQuestionSchema,
-  updateQuestionSchema
+  updateQuestionSchema,
 } from "@shared/schema";
 import {
   getGameDetails,
@@ -54,28 +54,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const categoriesList = await storage.getCategories();
       const result = [];
-      
+
       for (const category of categoriesList) {
         const subcategories = await storage.getSubcategories(category.id);
-        
+
         result.push({
           id: category.id,
           name: category.name,
           icon: category.icon,
           imageUrl: category.imageUrl,
           isActive: category.isActive,
-          children: subcategories.map(sub => ({
+          children: subcategories.map((sub) => ({
             id: sub.id,
             name: sub.name,
             icon: sub.icon,
             parentId: sub.parentId,
             imageUrl: sub.imageUrl,
             isActive: sub.isActive,
-            availableQuestions: sub.availableQuestions || 0
-          }))
+            availableQuestions: sub.availableQuestions || 0,
+          })),
         });
       }
-      
+
       res.json(result);
     } catch (error) {
       console.error("Error fetching categories with children:", error);
@@ -825,7 +825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في جلب الفئات" });
     }
   });
-  
+
   app.get("/api/categories/:id", async (req, res) => {
     try {
       const category = await storage.getCategoryById(Number(req.params.id));
@@ -838,30 +838,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في جلب الفئة" });
     }
   });
-  
+
   app.post("/api/categories", async (req, res) => {
     try {
+      console.log("Received data:", req.body);
       // استخدام البيانات مباشرة من طلب المستخدم بعد التحقق الأساسي
       const { name, icon, imageUrl, isActive } = req.body;
-      
+
       if (!name || !icon) {
         return res.status(400).json({ error: "الاسم والأيقونة مطلوبان" });
       }
-      
+
       // استخدام SQL مباشر لإنشاء الفئة (الآن أصبحت حقول التاريخ من نوع TIMESTAMP)
       const query = `
         INSERT INTO categories (name, icon, image_url, is_active)
         VALUES ($1, $2, $3, $4)
         RETURNING id, name, icon, image_url as "imageUrl", is_active as "isActive", created_at, updated_at
       `;
-      
+
       const result = await pool.query(query, [
-        name, 
-        icon, 
-        imageUrl || null, 
-        isActive === undefined ? true : isActive
+        name,
+        icon,
+        imageUrl || null,
+        isActive === undefined ? true : isActive,
       ]);
-      
+
       if (result.rows.length > 0) {
         // تنسيق البيانات المرسلة للعميل
         const category = {
@@ -869,25 +870,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: result.rows[0].name,
           icon: result.rows[0].icon,
           imageUrl: result.rows[0].imageUrl,
-          isActive: result.rows[0].is_active
+          isActive: result.rows[0].is_active,
         };
-        
+
         console.log("Category created successfully:", category);
         res.status(201).json(category);
       } else {
         res.status(500).json({ error: "لم يتم إنشاء الفئة" });
       }
     } catch (error: any) {
-      console.error("SQL Error creating category:", error);
-      res.status(400).json({ error: "فشل في إنشاء الفئة", details: error.message });
+      console.error("SQL Error creating category:", error, error.message);
+      res
+        .status(400)
+        .json({ error: "فشل في إنشاء الفئة", details: error.message });
     }
   });
-  
+
   app.put("/api/categories/:id", async (req, res) => {
     try {
       const categoryId = Number(req.params.id);
       const categoryData = updateCategorySchema.parse(req.body);
-      const updatedCategory = await storage.updateCategory(categoryId, categoryData);
+      const updatedCategory = await storage.updateCategory(
+        categoryId,
+        categoryData,
+      );
       if (!updatedCategory) {
         return res.status(404).json({ error: "الفئة غير موجودة" });
       }
@@ -897,7 +903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "فشل في تحديث الفئة" });
     }
   });
-  
+
   app.delete("/api/categories/:id", async (req, res) => {
     try {
       const categoryId = Number(req.params.id);
@@ -908,11 +914,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في حذف الفئة" });
     }
   });
-  
+
   // Subcategories Management Endpoints
   app.get("/api/subcategories", async (req, res) => {
     try {
-      const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+      const categoryId = req.query.categoryId
+        ? Number(req.query.categoryId)
+        : undefined;
       const subcategoriesList = await storage.getSubcategories(categoryId);
       res.json(subcategoriesList);
     } catch (error) {
@@ -920,10 +928,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في جلب الفئات الفرعية" });
     }
   });
-  
+
   app.get("/api/subcategories/:id", async (req, res) => {
     try {
-      const subcategory = await storage.getSubcategoryById(Number(req.params.id));
+      const subcategory = await storage.getSubcategoryById(
+        Number(req.params.id),
+      );
       if (!subcategory) {
         return res.status(404).json({ error: "الفئة الفرعية غير موجودة" });
       }
@@ -933,7 +943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في جلب الفئة الفرعية" });
     }
   });
-  
+
   app.post("/api/subcategories", async (req, res) => {
     try {
       const subcategoryData = insertSubcategorySchema.parse(req.body);
@@ -944,12 +954,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "فشل في إنشاء الفئة الفرعية" });
     }
   });
-  
+
   app.put("/api/subcategories/:id", async (req, res) => {
     try {
       const subcategoryId = Number(req.params.id);
       const subcategoryData = updateSubcategorySchema.parse(req.body);
-      const updatedSubcategory = await storage.updateSubcategory(subcategoryId, subcategoryData);
+      const updatedSubcategory = await storage.updateSubcategory(
+        subcategoryId,
+        subcategoryData,
+      );
       if (!updatedSubcategory) {
         return res.status(404).json({ error: "الفئة الفرعية غير موجودة" });
       }
@@ -959,7 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "فشل في تحديث الفئة الفرعية" });
     }
   });
-  
+
   app.delete("/api/subcategories/:id", async (req, res) => {
     try {
       const subcategoryId = Number(req.params.id);
@@ -970,7 +983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في حذف الفئة الفرعية" });
     }
   });
-  
+
   // Questions Management Endpoints
   app.get("/api/questions", async (req, res) => {
     try {
@@ -981,19 +994,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في جلب الأسئلة" });
     }
   });
-  
+
   app.get("/api/questions/category/:categoryId", async (req, res) => {
     try {
       const categoryId = Number(req.params.categoryId);
-      const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
-      const questions = await storage.getQuestionsByCategory(categoryId, subcategoryId);
+      const subcategoryId = req.query.subcategoryId
+        ? Number(req.query.subcategoryId)
+        : undefined;
+      const questions = await storage.getQuestionsByCategory(
+        categoryId,
+        subcategoryId,
+      );
       res.json(questions);
     } catch (error) {
       console.error("Error fetching questions by category:", error);
       res.status(500).json({ error: "فشل في جلب الأسئلة حسب الفئة" });
     }
   });
-  
+
   app.get("/api/questions/:id", async (req, res) => {
     try {
       const question = await storage.getQuestionById(Number(req.params.id));
@@ -1006,7 +1024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "فشل في جلب السؤال" });
     }
   });
-  
+
   app.post("/api/questions", async (req, res) => {
     try {
       const questionData = insertQuestionSchema.parse(req.body);
@@ -1017,12 +1035,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "فشل في إنشاء السؤال" });
     }
   });
-  
+
   app.put("/api/questions/:id", async (req, res) => {
     try {
       const questionId = Number(req.params.id);
       const questionData = updateQuestionSchema.parse(req.body);
-      const updatedQuestion = await storage.updateQuestion(questionId, questionData);
+      const updatedQuestion = await storage.updateQuestion(
+        questionId,
+        questionData,
+      );
       if (!updatedQuestion) {
         return res.status(404).json({ error: "السؤال غير موجود" });
       }
@@ -1032,7 +1053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "فشل في تحديث السؤال" });
     }
   });
-  
+
   app.delete("/api/questions/:id", async (req, res) => {
     try {
       const questionId = Number(req.params.id);

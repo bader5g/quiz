@@ -396,9 +396,8 @@ export default function CategoriesManagement() {
                       </Badge>
                     </div>
                     <div className="mr-auto opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <div
+                        className="inline-flex items-center justify-center gap-2 h-9 rounded-md px-3 whitespace-nowrap text-sm font-medium bg-transparent hover:bg-accent hover:text-accent-foreground cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           showAddChildCategoryForm(category.id || 0);
@@ -406,10 +405,9 @@ export default function CategoriesManagement() {
                       >
                         <FolderPlus className="h-4 w-4 ml-1" />
                         فئة فرعية
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      </div>
+                      <div
+                        className="inline-flex items-center justify-center gap-2 h-9 rounded-md px-3 whitespace-nowrap text-sm font-medium bg-transparent hover:bg-accent hover:text-accent-foreground cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           showEditParentCategoryForm(category);
@@ -417,10 +415,9 @@ export default function CategoriesManagement() {
                       >
                         <Edit className="h-4 w-4 ml-1" />
                         تعديل
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      </div>
+                      <div
+                        className="inline-flex items-center justify-center gap-2 h-9 rounded-md px-3 whitespace-nowrap text-sm font-medium bg-transparent hover:bg-accent hover:text-accent-foreground cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteParentCategory(category.id || 0);
@@ -428,7 +425,7 @@ export default function CategoriesManagement() {
                       >
                         <Trash2 className="h-4 w-4 ml-1 text-destructive" />
                         حذف
-                      </Button>
+                      </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
