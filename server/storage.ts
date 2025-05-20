@@ -560,13 +560,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateSubcategory(id: number, subcategory: any): Promise<any> {
+  async updateSubcategory(id: number, subcategory: UpdateSubcategory): Promise<Subcategory> {
     try {
       const [updatedSubcategory] = await db
         .update(subcategories)
         .set({
-          ...subcategory,
-          updatedAt: new Date().toISOString(),
+          name: subcategory.name,
+          icon: subcategory.icon,
+          parentId: subcategory.parentId,
+          imageUrl: subcategory.imageUrl,
+          isActive: subcategory.isActive
         })
         .where(eq(subcategories.id, id))
         .returning();
@@ -620,9 +623,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createQuestion(question: any): Promise<any> {
+  async createQuestion(question: InsertQuestion): Promise<Question> {
     try {
-      const [createdQuestion] = await db.insert(questions).values(question).returning();
+      // نتعامل مع الحقول ذات الصلة فقط ونترك Drizzle يتعامل مع حقول التاريخ وحقل usageCount
+      const [createdQuestion] = await db.insert(questions).values({
+        text: question.text,
+        answer: question.answer,
+        categoryId: question.categoryId,
+        subcategoryId: question.subcategoryId,
+        difficulty: question.difficulty,
+        imageUrl: question.imageUrl,
+        videoUrl: question.videoUrl,
+        isActive: question.isActive !== undefined ? question.isActive : true,
+        tags: question.tags
+      }).returning();
       return createdQuestion;
     } catch (error) {
       console.error("Error creating question:", error);
@@ -630,13 +644,22 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateQuestion(id: number, question: any): Promise<any> {
+  async updateQuestion(id: number, question: UpdateQuestion): Promise<Question> {
     try {
+      // تحديث الحقول المحددة فقط دون التدخل في حقول التاريخ
       const [updatedQuestion] = await db
         .update(questions)
         .set({
-          ...question,
-          updatedAt: new Date().toISOString(),
+          text: question.text,
+          answer: question.answer,
+          categoryId: question.categoryId,
+          subcategoryId: question.subcategoryId,
+          difficulty: question.difficulty,
+          imageUrl: question.imageUrl,
+          videoUrl: question.videoUrl,
+          isActive: question.isActive,
+          tags: question.tags,
+          usageCount: question.usageCount
         })
         .where(eq(questions.id, id))
         .returning();
