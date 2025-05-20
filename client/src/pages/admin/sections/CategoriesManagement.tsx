@@ -144,6 +144,7 @@ export default function CategoriesManagement() {
     parentForm.reset({
       name: "",
       icon: "",
+      imageUrl: "",
     });
     setEditMode("parent");
     setDialogOpen(true);
@@ -154,6 +155,7 @@ export default function CategoriesManagement() {
       id: category.id,
       name: category.name,
       icon: category.icon,
+      imageUrl: category.imageUrl,
     });
     setEditMode("parent");
     setDialogOpen(true);
@@ -567,44 +569,10 @@ export default function CategoriesManagement() {
               />
               <FormField
                 control={parentForm.control}
-                name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>أيقونة الفئة</FormLabel>
-                    <div className="grid grid-cols-6 gap-2 mb-2">
-                      {availableIcons.map((icon) => (
-                        <button
-                          key={icon.value}
-                          type="button"
-                          className={`h-12 text-xl flex items-center justify-center rounded border 
-                            ${field.value === icon.value ? "bg-blue-100 border-blue-500" : "bg-white border-gray-200"}
-                            focus:outline-none focus:ring-2 focus:ring-blue-400 transition`}
-                          onClick={() =>
-                            parentForm.setValue("icon", icon.value)
-                          }
-                          aria-label={icon.label}
-                        >
-                          {icon.value}
-                        </button>
-                      ))}
-                    </div>
-                    <FormControl>
-                      <Input {...field} placeholder="أيقونة الفئة" />
-                    </FormControl>
-                    <FormDescription>
-                      يمكنك اختيار أيقونة من الأعلى أو كتابة رمز تعبيري
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={parentForm.control}
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>صورة الفئة (اختياري)</FormLabel>
+                    <FormLabel>صورة الفئة</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
@@ -614,7 +582,7 @@ export default function CategoriesManagement() {
                       />
                     </FormControl>
                     <FormDescription>
-                      يمكنك إضافة رابط لصورة الفئة. ستظهر في واجهة اللعبة.
+                      يجب إضافة رابط لصورة الفئة. ستظهر في واجهة اللعبة.
                     </FormDescription>
                     {field.value && (
                       <div className="mt-2">
@@ -635,6 +603,8 @@ export default function CategoriesManagement() {
                   </FormItem>
                 )}
               />
+              
+
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
