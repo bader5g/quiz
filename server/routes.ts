@@ -840,9 +840,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/categories", async (req, res) => {
     try {
-      const categoryData = insertCategorySchema.parse(req.body);
-      const newCategory = await storage.createCategory(categoryData);
-      res.status(201).json(newCategory);
+      // استخدام SQL مباشر لتجاوز مشكلة Drizzle مع حقول التاريخ
+      const { name, icon, imageUrl, isActive } = req.body;
+      
+      const query = `
+        INSERT INTO categories (name, icon, image_url, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        RETURNING id, name, icon, image_url as "imageUrl", is_active as "isActive"
+      `;
+      
+      const result = await pool.query(query, [
+        name, 
+        icon, 
+        imageUrl || null, 
+        isActive === undefined ? true : isActive
+      ]);
+      
+      if (result.rows.length > 0) {
+        res.status(201).json(result.rows[0]);
+      } else {
+        throw new Error("لم يتم إنشاء الفئة");
+      }
     } catch (error) {
       console.error("Error creating category:", error);
       res.status(400).json({ error: "فشل في إنشاء الفئة" });
