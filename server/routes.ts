@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { pool } from "./db";
 import {
   gameSessionSchema,
   updateGameSettingsSchema,
@@ -840,14 +841,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/categories", async (req, res) => {
     try {
-      // استخدام SQL مباشر لتجاوز مشكلة Drizzle مع حقول التاريخ
+      // استخدام البيانات مباشرة من طلب المستخدم بعد التحقق الأساسي
       const { name, icon, imageUrl, isActive } = req.body;
       
+      if (!name || !icon) {
+        return res.status(400).json({ error: "الاسم والأيقونة مطلوبان" });
+      }
+      
+      // استخدام SQL مباشر لإنشاء الفئة
       const query = `
         INSERT INTO categories (name, icon, image_url, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, now(), now())
         RETURNING id, name, icon, image_url as "imageUrl", is_active as "isActive"
       `;
+      
+      console.log("SQL Query:", query);
+      console.log("Parameters:", [name, icon, imageUrl || null, isActive === undefined ? true : isActive]);
       
       const result = await pool.query(query, [
         name, 
@@ -857,13 +866,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
       
       if (result.rows.length > 0) {
+        console.log("Category created successfully:", result.rows[0]);
         res.status(201).json(result.rows[0]);
       } else {
-        throw new Error("لم يتم إنشاء الفئة");
+        console.log("No rows returned after category creation");
+        res.status(500).json({ error: "لم يتم إنشاء الفئة" });
       }
     } catch (error) {
-      console.error("Error creating category:", error);
-      res.status(400).json({ error: "فشل في إنشاء الفئة" });
+      console.error("SQL Error creating category:", error);
+      res.status(400).json({ error: "فشل في إنشاء الفئة", details: error.message });
     }
   });
   
