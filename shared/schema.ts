@@ -214,3 +214,94 @@ export const updateUserStarsSchema = createInsertSchema(userStars).omit({
 export type UserStars = typeof userStars.$inferSelect;
 export type InsertUserStars = z.infer<typeof insertUserStarsSchema>;
 export type UpdateUserStars = z.infer<typeof updateUserStarsSchema>;
+
+// نماذج الفئات والفئات الفرعية والأسئلة
+
+// جدول الفئات
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  icon: text("icon").notNull(),
+  imageUrl: text("image_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type UpdateCategory = z.infer<typeof updateCategorySchema>;
+
+// جدول الفئات الفرعية
+export const subcategories = pgTable("subcategories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  icon: text("icon").notNull(),
+  parentId: integer("parent_id").notNull().references(() => categories.id),
+  imageUrl: text("image_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateSubcategorySchema = createInsertSchema(subcategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Subcategory = typeof subcategories.$inferSelect;
+export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
+export type UpdateSubcategory = z.infer<typeof updateSubcategorySchema>;
+
+// جدول الأسئلة
+export const questions = pgTable("questions", {
+  id: serial("id").primaryKey(),
+  text: text("text").notNull(),
+  answer: text("answer").notNull(),
+  categoryId: integer("category_id").notNull().references(() => categories.id),
+  subcategoryId: integer("subcategory_id").notNull().references(() => subcategories.id),
+  difficulty: integer("difficulty").notNull(),
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  isActive: boolean("is_active").default(true),
+  tags: text("tags"),
+  usageCount: integer("usage_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertQuestionSchema = createInsertSchema(questions).omit({
+  id: true,
+  usageCount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateQuestionSchema = createInsertSchema(questions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Question = typeof questions.$inferSelect;
+export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
+export type UpdateQuestion = z.infer<typeof updateQuestionSchema>;

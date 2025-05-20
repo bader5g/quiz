@@ -40,6 +40,28 @@ export interface IStorage {
   updateGameViewedQuestions(gameId: number, viewedQuestionIds: any[]): Promise<void>; // إضافة وظيفة تحديث الأسئلة المعروضة
   endGame(gameId: number, winnerIndex: number): Promise<void>;
   saveGameState(gameId: number): Promise<void>;
+  
+  // Categories management
+  getCategories(): Promise<any[]>;
+  getCategoryById(id: number): Promise<any | undefined>;
+  createCategory(category: any): Promise<any>;
+  updateCategory(id: number, category: any): Promise<any>;
+  deleteCategory(id: number): Promise<void>;
+  
+  // Subcategories management
+  getSubcategories(categoryId?: number): Promise<any[]>;
+  getSubcategoryById(id: number): Promise<any | undefined>;
+  createSubcategory(subcategory: any): Promise<any>;
+  updateSubcategory(id: number, subcategory: any): Promise<any>;
+  deleteSubcategory(id: number): Promise<void>;
+  
+  // Questions management
+  getQuestions(): Promise<any[]>;
+  getQuestionById(id: number): Promise<any | undefined>;
+  getQuestionsByCategory(categoryId: number, subcategoryId?: number): Promise<any[]>;
+  createQuestion(question: any): Promise<any>;
+  updateQuestion(id: number, question: any): Promise<any>;
+  deleteQuestion(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {

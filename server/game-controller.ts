@@ -1,99 +1,104 @@
-// إذا كنت تستخدم TypeScript أضف في الأعلى:
-// import type { Request, Response } from "express";
+import { Request, Response } from "express";
 import { storage } from "./storage";
+import { GameSession } from "@shared/schema";
 
-// جلب تفاصيل اللعبة
-export async function getGameDetails(req, res) {
+export async function getGameDetails(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     const game = await storage.getGameById(gameId);
-    
+
     if (!game) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
-    
-    // تجهيز البيانات بالتنسيق الذي تتوقعه واجهة المستخدم
-    const teamColors = [
-      "#FF5733", // أحمر برتقالي
-      "#33A8FF", // أزرق
-      "#33FF57", // أخضر
-      "#D433FF", // أرجواني
-      "#FFDA33", // أصفر
-      "#FF33A8", // وردي
-    ];
-    
-    // تنسيق الفرق بإضافة لون لكل فريق والنقاط إذا لم تكن موجودة
-    const formattedTeams = Array.isArray(game.teams) 
-      ? game.teams.map((team, index) => ({
-          name: team.name,
-          score: team.score || 0,
-          color: teamColors[index % teamColors.length]
-        }))
-      : [];
-    
-    // تحويل فئات الأسئلة إلى تنسيق مناسب
-    const formattedCategories = Array.isArray(game.selectedCategories) 
-      ? game.selectedCategories.map(categoryId => ({
-          id: categoryId,
-          name: getCategoryName(categoryId),
-          icon: getCategoryIcon(categoryId)
-        }))
-      : [];
-    
-    // إنشاء مصفوفة الأسئلة باستخدام الدالة المساعدة
-    const formattedQuestions = generateGameQuestions(game);
-    
-    // إعداد الاستجابة بالتنسيق المتوقع
-    const formattedGame = {
+
+    // جلب answerTimes بشكل صحيح
+    const answerTimes =
+      Array.isArray(game.answerTimes) && game.answerTimes.length > 0
+        ? game.answerTimes
+        : [
+            game.answerTimeFirst,
+            game.answerTimeSecond,
+            game.answerTimeThird,
+            game.answerTimeFourth,
+          ].filter(Boolean);
+
+    const gameDetails = {
       id: game.id,
       name: game.gameName,
-      teams: formattedTeams,
-      categories: formattedCategories,
-      questions: formattedQuestions,
+      teams: game.teams.map((team, index) => ({
+        name: team.name,
+        score: team.score || 0,
+        color: getTeamColor(index),
+      })),
+      categories: game.selectedCategories.map((catId) => ({
+        id: catId,
+        name: getCategoryName(catId),
+        icon: getCategoryIcon(catId),
+      })),
+      questions: generateGameQuestions(game),
       currentTeamIndex: game.currentTeamIndex || 0,
-      viewedQuestionIds: game.viewedQuestionIds || []
+      answerTimes, // أضفنا answerTimes هنا
     };
-    
-    res.status(200).json(formattedGame);
+
+    res.status(200).json(gameDetails);
   } catch (error) {
-    console.error("Error getting game details:", error);
-    res.status(500).json({ error: "حدث خطأ أثناء جلب تفاصيل اللعبة" });
+    console.error("Error fetching game details:", error);
+    res.status(500).json({ error: "حدث خطأ أثناء محاولة جلب تفاصيل اللعبة" });
   }
 }
 
-// جلب تفاصيل السؤال
-export async function getQuestionDetails(req, res) {
+export async function getQuestionDetails(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     const questionId = parseInt(req.params.questionId);
 
     const game = await storage.getGameById(gameId);
+    console.log("game object in getQuestionDetails:", game);
+
     if (!game) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
-    // منطق جلب السؤال (يمكنك تعديله حسب هيكل بياناتك)
-    const isImageQuestion = false; // عدل حسب الحاجة
-    const isVideoQuestion = false; // عدل حسب الحاجة
+    const isImageQuestion = questionId % 3 === 1;
+    const isVideoQuestion = questionId % 3 === 2;
 
     const question = {
       id: questionId,
-      text: "نص السؤال هنا",
-      answer: "الإجابة الصحيحة هنا",
-      difficulty: 1,
+      text: isImageQuestion
+        ? `ما اسم هذا المعلم السياحي الشهير؟`
+        : isVideoQuestion
+          ? `ما اسم هذه الرقصة التقليدية؟`
+          : `هذا هو السؤال رقم ${questionId} من الفئة ${getCategoryName(game.selectedCategories[0])}`,
+      answer: isImageQuestion
+        ? `برج إيفل`
+        : isVideoQuestion
+          ? `رقصة التنورة`
+          : `هذه هي الإجابة للسؤال رقم ${questionId}`,
+      difficulty: Math.ceil(Math.random() * 3) as 1 | 2 | 3,
       categoryId: game.selectedCategories[0],
       categoryName: getCategoryName(game.selectedCategories[0]),
       categoryIcon: getCategoryIcon(game.selectedCategories[0]),
       ...(isImageQuestion && {
-        mediaType: "image",
+        mediaType: "image" as const,
         imageUrl:
           "https://images.unsplash.com/photo-1543349689-9a4d426bee8e?q=80&w=1000&auto=format&fit=crop",
       }),
       ...(isVideoQuestion && {
-        mediaType: "video",
+        mediaType: "video" as const,
         videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
       }),
     };
+
+    // جلب answerTimes بشكل صحيح
+    const answerTimes =
+      Array.isArray(game.answerTimes) && game.answerTimes.length > 0
+        ? game.answerTimes
+        : [
+            game.answerTimeFirst,
+            game.answerTimeSecond,
+            game.answerTimeThird,
+            game.answerTimeFourth,
+          ].filter(Boolean);
 
     res.status(200).json({
       question,
@@ -105,6 +110,7 @@ export async function getQuestionDetails(req, res) {
       })),
       firstAnswerTime: game.answerTimeFirst,
       secondAnswerTime: game.answerTimeSecond,
+      answerTimes, // هنا ستجد المصفوفة الصحيحة
       gameId: game.id,
     });
   } catch (error) {
@@ -113,8 +119,7 @@ export async function getQuestionDetails(req, res) {
   }
 }
 
-// تعيين السؤال كـ "تم عرضه"
-export async function markQuestionViewed(req, res) {
+export async function markQuestionViewed(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     const { questionId, categoryId, difficulty } = req.body;
@@ -140,13 +145,10 @@ export async function markQuestionViewed(req, res) {
       gameId,
       generateGameQuestions(updatedGame),
     );
+
     await storage.updateGameViewedQuestions(
       gameId,
       Array.from(viewedQuestionIds),
-    );
-
-    console.log(
-      `تم تعطيل السؤال رقم ${questionId} من الفئة ${categoryId} بصعوبة ${difficulty} - الأسئلة المعروضة: ${Array.from(viewedQuestionIds).join(",")}`,
     );
 
     res.status(200).json({ success: true });
@@ -156,107 +158,63 @@ export async function markQuestionViewed(req, res) {
   }
 }
 
-// دالة تسجيل الإجابة واحتساب النقاط (المحسنة)
-export async function submitAnswer(req, res) {
+export async function submitAnswer(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
-    // استخراج البيانات من الطلب
-    const { questionId, teamIndex, difficulty, isCorrect, categoryId } = req.body;
-    console.log("بيانات الإجابة المستلمة:", JSON.stringify(req.body));
+    const { questionId, teamIndex, categoryId, difficulty, isCorrect } =
+      req.body;
 
-    // جلب بيانات اللعبة
     const game = await storage.getGameById(gameId);
     if (!game) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
-    // التحقق من أن الفرق هي مصفوفة صالحة
-    if (!Array.isArray(game.teams)) {
-      console.error("خطأ: الفرق ليست مصفوفة", JSON.stringify(game.teams));
-      return res.status(500).json({ error: "بنية اللعبة غير صالحة" });
+    if (
+      !Array.isArray(game.teams) ||
+      typeof teamIndex !== "number" ||
+      teamIndex < 0 ||
+      teamIndex >= game.teams.length
+    ) {
+      return res.status(400).json({ error: "مؤشر الفريق غير صالح" });
     }
 
-    // نسخة عميقة من فرق اللعبة لتجنب تعديل البيانات الأصلية
-    const updatedTeams = JSON.parse(JSON.stringify(game.teams));
-    
-    // تحديد عدد النقاط المراد إضافتها (يساوي مستوى صعوبة السؤال)
     const pointsToAdd = typeof difficulty === "number" ? difficulty : 1;
 
-    // إضافة النقاط للفريق المحدد إذا كانت الإجابة صحيحة
-    if (isCorrect && typeof teamIndex === "number" && teamIndex >= 0 && teamIndex < updatedTeams.length) {
-      // طباعة معلومات توضيحية
-      console.log(`إضافة ${pointsToAdd} نقطة للفريق رقم ${teamIndex}`);
-      
-      // إضافة خاصية score للفريق إذا لم تكن موجودة
-      if (updatedTeams[teamIndex].score === undefined) {
-        updatedTeams[teamIndex].score = 0;
-        console.log(`تهيئة نقاط الفريق ${teamIndex} إلى 0`);
-      }
-      
-      // التأكد من أن القيمة رقمية
-      if (typeof updatedTeams[teamIndex].score !== 'number') {
-        const oldScore = updatedTeams[teamIndex].score;
-        updatedTeams[teamIndex].score = parseInt(updatedTeams[teamIndex].score) || 0;
-        console.log(`تحويل نقاط الفريق من ${oldScore} إلى ${updatedTeams[teamIndex].score}`);
-      }
-      
-      // التأكد من العملية الحسابية
-      const oldScore = updatedTeams[teamIndex].score;
-      updatedTeams[teamIndex].score = oldScore + pointsToAdd;
-      
-      // طباعة النتيجة النهائية
-      console.log(`نقاط الفريق بعد الإضافة: ${oldScore} + ${pointsToAdd} = ${updatedTeams[teamIndex].score}`);
-    } else {
-      console.log(`عدم إضافة نقاط - إجابة خاطئة أو بيانات غير صالحة`);
+    const updatedTeams = [...game.teams];
+    if (isCorrect) {
+      updatedTeams[teamIndex] = {
+        ...updatedTeams[teamIndex],
+        score: (updatedTeams[teamIndex].score || 0) + pointsToAdd,
+      };
     }
 
-    // تخزين معلومات السؤال المجاب
-    const catId = categoryId || 0;
-    const questionKey = `${catId}-${difficulty}-${teamIndex}-${questionId}`;
-    
-    // تحديث فرق اللعبة في قاعدة البيانات
-    console.log("تحديث نقاط الفرق:", JSON.stringify(updatedTeams));
+    const questionKey = `${categoryId}-${difficulty}-${teamIndex}-${questionId}`;
+    const answeredQuestions = new Set(game.answeredQuestions || []);
+    answeredQuestions.add(questionKey);
+
+    const updatedGame = {
+      ...game,
+      answeredQuestions: Array.from(answeredQuestions),
+      teams: updatedTeams,
+    };
+
     await storage.updateGameTeams(gameId, updatedTeams);
-    
-    // جلب بيانات اللعبة المحدثة للتحقق من تطبيق التغييرات
-    const updatedGame = await storage.getGameById(gameId);
-    if (updatedGame) {
-      console.log("بيانات اللعبة المحدثة:", JSON.stringify(updatedGame.teams));
-    }
-    
-    // محاولة تحديث سجل الأسئلة المجابة
-    const answeredQuestions = Array.isArray(game.answeredQuestions) 
-      ? [...game.answeredQuestions] 
-      : [];
-    
-    if (!answeredQuestions.includes(questionKey)) {
-      answeredQuestions.push(questionKey);
-    }
-    
-    try {
-      if (typeof storage.updateGameQuestions === 'function') {
-        await storage.updateGameQuestions(gameId, answeredQuestions);
-      }
-    } catch (questionError) {
-      console.log("تحذير: لا يمكن تحديث سجل الأسئلة المجابة", questionError);
-    }
-    
-    // إرجاع استجابة نجاح مع الفرق المحدثة لتحديث واجهة المستخدم مباشرة
-    const responseTeams = updatedGame ? updatedGame.teams : updatedTeams;
-    
-    res.status(200).json({ 
-      success: true,
-      teams: responseTeams,
-      message: isCorrect ? `تم إضافة ${pointsToAdd} نقطة للفريق` : "لم تتم إضافة نقاط"
-    });
+    await storage.updateGameQuestions(
+      gameId,
+      generateGameQuestions(updatedGame),
+    );
+
+    const nextTeamIndex = (game.currentTeamIndex + 1) % game.teams.length;
+    await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
+
+    res.status(200).json({ success: true, teams: updatedTeams });
   } catch (error) {
-    console.error("خطأ في تسجيل الإجابة:", error);
+    console.error("Error submitting answer:", error);
     res.status(500).json({ error: "حدث خطأ أثناء محاولة تسجيل الإجابة" });
   }
 }
 
-// إنهاء اللعبة
-export async function endGame(req, res) {
+export async function endGame(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     const game = await storage.getGameById(gameId);
@@ -284,8 +242,7 @@ export async function endGame(req, res) {
   }
 }
 
-// جلب نتائج اللعبة
-export async function getGameResults(req, res) {
+export async function getGameResults(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     const game = await storage.getGameById(gameId);
@@ -330,8 +287,7 @@ export async function getGameResults(req, res) {
   }
 }
 
-// حفظ حالة اللعبة
-export async function saveGameState(req, res) {
+export async function saveGameState(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     await storage.saveGameState(gameId);
@@ -342,8 +298,7 @@ export async function saveGameState(req, res) {
   }
 }
 
-// تحديث الفريق الحالي في اللعبة
-export async function updateCurrentTeam(req, res) {
+export async function updateCurrentTeam(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     const { teamIndex } = req.body;
@@ -353,9 +308,6 @@ export async function updateCurrentTeam(req, res) {
     }
 
     await storage.updateGameCurrentTeam(gameId, teamIndex);
-    console.log(
-      `تم تحديث الفريق الحالي للعبة ${gameId} إلى الفريق رقم ${teamIndex}`,
-    );
     res.sendStatus(200);
   } catch (error) {
     console.error("خطأ في تحديث الفريق الحالي:", error);
@@ -363,8 +315,7 @@ export async function updateCurrentTeam(req, res) {
   }
 }
 
-// دوال مساعدة (يمكنك نقلها لملف آخر إذا أردت)
-function generateGameQuestions(game) {
+function generateGameQuestions(game: any) {
   const questions = [];
   const answeredQuestions = new Set(game.answeredQuestions || []);
   const viewedQuestionIds = new Set(game.viewedQuestionIds || []);
@@ -375,23 +326,25 @@ function generateGameQuestions(game) {
       for (let difficulty = 1; difficulty <= 3; difficulty++) {
         const currentId = idCounter;
 
-        const isAnsweredByKey = Array.from(answeredQuestions).some((key) => {
-          const matchesNewFormat =
-            key === `${categoryId}-${difficulty}-${teamIndex}-${currentId}`;
-          const matchesOldFormat =
-            key === `${categoryId}-${difficulty}-${teamIndex}`;
-          const matchesWildcard =
-            key === `${categoryId}-*-${teamIndex}-${currentId}`;
-          const matchesPartial = key.startsWith(
-            `${categoryId}-${difficulty}-${teamIndex}`,
-          );
-          return (
-            matchesNewFormat ||
-            matchesOldFormat ||
-            matchesWildcard ||
-            matchesPartial
-          );
-        });
+        const isAnsweredByKey = Array.from(answeredQuestions).some(
+          (key: string) => {
+            const matchesNewFormat =
+              key === `${categoryId}-${difficulty}-${teamIndex}-${currentId}`;
+            const matchesOldFormat =
+              key === `${categoryId}-${difficulty}-${teamIndex}`;
+            const matchesWildcard =
+              key === `${categoryId}-*-${teamIndex}-${currentId}`;
+            const matchesPartial = key.startsWith(
+              `${categoryId}-${difficulty}-${teamIndex}`,
+            );
+            return (
+              matchesNewFormat ||
+              matchesOldFormat ||
+              matchesWildcard ||
+              matchesPartial
+            );
+          },
+        );
 
         const isViewedQuestion = viewedQuestionIds.has(currentId.toString());
 
@@ -410,8 +363,8 @@ function generateGameQuestions(game) {
   return questions;
 }
 
-function getCategoryName(categoryId) {
-  const categoryNames = {
+function getCategoryName(categoryId: number): string {
+  const categoryNames: { [key: number]: string } = {
     1: "علوم",
     2: "تاريخ",
     3: "جغرافيا",
@@ -435,8 +388,8 @@ function getCategoryName(categoryId) {
   return categoryNames[categoryId] || `فئة ${categoryId}`;
 }
 
-function getCategoryIcon(categoryId) {
-  const categoryIcons = {
+function getCategoryIcon(categoryId: number): string {
+  const categoryIcons: { [key: number]: string } = {
     1: "🔬",
     2: "📜",
     3: "🌍",
@@ -455,16 +408,12 @@ function getCategoryIcon(categoryId) {
     22: "🌍",
     23: "🐘",
     24: "🍔",
-    31: "🏛️",
-    32: "🧩",
     33: "🔬",
-    34: "🧪",
-    35: "📱",
   };
   return categoryIcons[categoryId] || "📋";
 }
 
-function getTeamColor(teamIndex) {
+function getTeamColor(teamIndex: number): string {
   const teamColors = ["#2563EB", "#DC2626", "#16A34A", "#9333EA"];
   return teamColors[teamIndex % teamColors.length];
 }
