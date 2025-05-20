@@ -523,7 +523,7 @@ export default function CategoriesManagement() {
           if (!open) setDialogOpen(false);
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {parentForm.getValues("id") ? "تعديل فئة" : "إضافة فئة جديدة"}
@@ -650,7 +650,7 @@ export default function CategoriesManagement() {
           if (!open) setDialogOpen(false);
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {childForm.getValues("id")
