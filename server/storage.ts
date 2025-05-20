@@ -1,5 +1,5 @@
 import { 
-  users, 
+  users, categories, subcategories, questions, gameSettings, siteSettings,
   type User, 
   type InsertUser, 
   type GameSettings, 
@@ -7,8 +7,19 @@ import {
   type GameSession, 
   type InsertGameSession,
   type SiteSettings,
-  type UpdateSiteSettings
+  type UpdateSiteSettings,
+  type Category,
+  type InsertCategory,
+  type UpdateCategory,
+  type Subcategory,
+  type InsertSubcategory,
+  type UpdateSubcategory,
+  type Question,
+  type InsertQuestion,
+  type UpdateQuestion
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -69,6 +80,12 @@ export class MemStorage implements IStorage {
   private gameSettings: GameSettings;
   private siteSettings: SiteSettings;
   private gameSessions: Map<number, GameSession>;
+  private categories: Map<number, any>;
+  private subcategories: Map<number, any>;
+  private questions: Map<number, any>;
+  currentCategoryId: number;
+  currentSubcategoryId: number;
+  currentQuestionId: number;
   currentUserId: number;
   currentSessionId: number;
 
@@ -347,4 +364,334 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  constructor() {}
+
+  // User related methods
+  async getUser(id: number): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error("Error getting user:", error);
+      return undefined;
+    }
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      return undefined;
+    }
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    try {
+      const [createdUser] = await db.insert(users).values(user).returning();
+      return createdUser;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
+  }
+
+  // Game settings related methods
+  async getGameSettings(): Promise<GameSettings | undefined> {
+    try {
+      const [settings] = await db.select().from(gameSettings);
+      return settings;
+    } catch (error) {
+      console.error("Error getting game settings:", error);
+      return undefined;
+    }
+  }
+
+  async updateGameSettings(settings: UpdateGameSettings): Promise<GameSettings> {
+    try {
+      const [updatedSettings] = await db
+        .update(gameSettings)
+        .set({
+          ...settings,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(gameSettings.id, 1))
+        .returning();
+      return updatedSettings;
+    } catch (error) {
+      console.error("Error updating game settings:", error);
+      throw error;
+    }
+  }
+
+  // Site settings related methods
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    try {
+      const [settings] = await db.select().from(siteSettings);
+      return settings;
+    } catch (error) {
+      console.error("Error getting site settings:", error);
+      return undefined;
+    }
+  }
+
+  async updateSiteSettings(settings: UpdateSiteSettings): Promise<SiteSettings> {
+    try {
+      const [updatedSettings] = await db
+        .update(siteSettings)
+        .set({
+          ...settings,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(siteSettings.id, 1))
+        .returning();
+      return updatedSettings;
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      throw error;
+    }
+  }
+
+  // Categories related methods
+  async getCategories(): Promise<any[]> {
+    try {
+      const categoriesData = await db.select().from(categories);
+      return categoriesData;
+    } catch (error) {
+      console.error("Error getting categories:", error);
+      return [];
+    }
+  }
+
+  async getCategoryById(id: number): Promise<any | undefined> {
+    try {
+      const [category] = await db.select().from(categories).where(eq(categories.id, id));
+      return category;
+    } catch (error) {
+      console.error("Error getting category by ID:", error);
+      return undefined;
+    }
+  }
+
+  async createCategory(category: any): Promise<any> {
+    try {
+      const [createdCategory] = await db.insert(categories).values(category).returning();
+      return createdCategory;
+    } catch (error) {
+      console.error("Error creating category:", error);
+      throw error;
+    }
+  }
+
+  async updateCategory(id: number, category: any): Promise<any> {
+    try {
+      const [updatedCategory] = await db
+        .update(categories)
+        .set({
+          ...category,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(categories.id, id))
+        .returning();
+      return updatedCategory;
+    } catch (error) {
+      console.error("Error updating category:", error);
+      throw error;
+    }
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    try {
+      await db.delete(categories).where(eq(categories.id, id));
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      throw error;
+    }
+  }
+
+  // Subcategories related methods
+  async getSubcategories(categoryId?: number): Promise<any[]> {
+    try {
+      if (categoryId) {
+        return await db.select().from(subcategories).where(eq(subcategories.parentId, categoryId));
+      }
+      return await db.select().from(subcategories);
+    } catch (error) {
+      console.error("Error getting subcategories:", error);
+      return [];
+    }
+  }
+
+  async getSubcategoryById(id: number): Promise<any | undefined> {
+    try {
+      const [subcategory] = await db.select().from(subcategories).where(eq(subcategories.id, id));
+      return subcategory;
+    } catch (error) {
+      console.error("Error getting subcategory by ID:", error);
+      return undefined;
+    }
+  }
+
+  async createSubcategory(subcategory: any): Promise<any> {
+    try {
+      const [createdSubcategory] = await db.insert(subcategories).values(subcategory).returning();
+      return createdSubcategory;
+    } catch (error) {
+      console.error("Error creating subcategory:", error);
+      throw error;
+    }
+  }
+
+  async updateSubcategory(id: number, subcategory: any): Promise<any> {
+    try {
+      const [updatedSubcategory] = await db
+        .update(subcategories)
+        .set({
+          ...subcategory,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(subcategories.id, id))
+        .returning();
+      return updatedSubcategory;
+    } catch (error) {
+      console.error("Error updating subcategory:", error);
+      throw error;
+    }
+  }
+
+  async deleteSubcategory(id: number): Promise<void> {
+    try {
+      await db.delete(subcategories).where(eq(subcategories.id, id));
+    } catch (error) {
+      console.error("Error deleting subcategory:", error);
+      throw error;
+    }
+  }
+
+  // Questions related methods
+  async getQuestions(): Promise<any[]> {
+    try {
+      const questionsData = await db.select().from(questions);
+      return questionsData;
+    } catch (error) {
+      console.error("Error getting questions:", error);
+      return [];
+    }
+  }
+
+  async getQuestionById(id: number): Promise<any | undefined> {
+    try {
+      const [question] = await db.select().from(questions).where(eq(questions.id, id));
+      return question;
+    } catch (error) {
+      console.error("Error getting question by ID:", error);
+      return undefined;
+    }
+  }
+
+  async getQuestionsByCategory(categoryId: number, subcategoryId?: number): Promise<any[]> {
+    try {
+      let query = db.select().from(questions).where(eq(questions.categoryId, categoryId));
+      if (subcategoryId) {
+        query = query.where(eq(questions.subcategoryId, subcategoryId));
+      }
+      return await query;
+    } catch (error) {
+      console.error("Error getting questions by category:", error);
+      return [];
+    }
+  }
+
+  async createQuestion(question: any): Promise<any> {
+    try {
+      const [createdQuestion] = await db.insert(questions).values(question).returning();
+      return createdQuestion;
+    } catch (error) {
+      console.error("Error creating question:", error);
+      throw error;
+    }
+  }
+
+  async updateQuestion(id: number, question: any): Promise<any> {
+    try {
+      const [updatedQuestion] = await db
+        .update(questions)
+        .set({
+          ...question,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(questions.id, id))
+        .returning();
+      return updatedQuestion;
+    } catch (error) {
+      console.error("Error updating question:", error);
+      throw error;
+    }
+  }
+
+  async deleteQuestion(id: number): Promise<void> {
+    try {
+      await db.delete(questions).where(eq(questions.id, id));
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      throw error;
+    }
+  }
+
+  // Game sessions related methods
+  async createGameSession(userId: number, session: InsertGameSession): Promise<GameSession> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async getUserGameSessions(userId: number): Promise<GameSession[]> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async getGameSession(id: number): Promise<GameSession | undefined> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  // Game play methods
+  async getGameById(id: number): Promise<GameSession | undefined> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async updateGameTeams(gameId: number, teams: any[]): Promise<void> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async updateGameQuestions(gameId: number, questions: any[]): Promise<void> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async updateGameViewedQuestions(gameId: number, viewedQuestionIds: any[]): Promise<void> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async endGame(gameId: number, winnerIndex: number): Promise<void> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+
+  async saveGameState(gameId: number): Promise<void> {
+    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
+    throw new Error("Method not implemented.");
+  }
+}
+
+// تبديل التخزين من الذاكرة إلى قاعدة البيانات
+export const storage = new DatabaseStorage();

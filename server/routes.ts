@@ -7,6 +7,12 @@ import {
   updateSiteSettingsSchema,
   insertCardPackageSchema,
   updateCardPackageSchema,
+  insertCategorySchema,
+  updateCategorySchema,
+  insertSubcategorySchema,
+  updateSubcategorySchema,
+  insertQuestionSchema,
+  updateQuestionSchema
 } from "@shared/schema";
 import {
   getGameDetails,
@@ -43,59 +49,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // prefix all routes with /api
 
   // Categories with children endpoint
-  app.get("/api/categories-with-children", (_req, res) => {
-    // Sample data based on the requirements
-    const categories = [
-      {
-        id: 1,
-        name: "علوم",
-        icon: "⚗️",
-        children: [
-          { id: 11, name: "كيمياء", icon: "⚗️" },
-          { id: 12, name: "فيزياء", icon: "🔬" },
-          { id: 13, name: "أحياء", icon: "🧬" },
-          { id: 14, name: "فلك", icon: "🔭" },
-        ],
-      },
-      {
-        id: 2,
-        name: "رياضيات",
-        icon: "🧮",
-        children: [
-          { id: 21, name: "جبر", icon: "➗" },
-          { id: 22, name: "هندسة", icon: "📐" },
-          { id: 23, name: "إحصاء", icon: "📊" },
-          { id: 24, name: "حساب", icon: "🔢" },
-        ],
-      },
-      {
-        id: 3,
-        name: "ثقافة عامة",
-        icon: "📚",
-        children: [
-          { id: 31, name: "تاريخ", icon: "🏛️" },
-          { id: 32, name: "جغرافيا", icon: "🌍" },
-          { id: 33, name: "فن", icon: "🎨" },
-          { id: 34, name: "أدب", icon: "📖" },
-          { id: 35, name: "موسيقى", icon: "🎵" },
-          { id: 36, name: "رياضة", icon: "⚽" },
-        ],
-      },
-      {
-        id: 4,
-        name: "تقنية",
-        icon: "💻",
-        children: [
-          { id: 41, name: "برمجة", icon: "👨‍💻" },
-          { id: 42, name: "شبكات", icon: "🌐" },
-          { id: 43, name: "ذكاء صناعي", icon: "🤖" },
-          { id: 44, name: "تطبيقات", icon: "📱" },
-        ],
-      },
-    ];
-
-    // Return the categories
-    res.json(categories);
+  app.get("/api/categories-with-children", async (_req, res) => {
+    try {
+      const categoriesList = await storage.getCategories();
+      const result = [];
+      
+      for (const category of categoriesList) {
+        const subcategories = await storage.getSubcategories(category.id);
+        
+        result.push({
+          id: category.id,
+          name: category.name,
+          icon: category.icon,
+          imageUrl: category.imageUrl,
+          isActive: category.isActive,
+          children: subcategories.map(sub => ({
+            id: sub.id,
+            name: sub.name,
+            icon: sub.icon,
+            parentId: sub.parentId,
+            imageUrl: sub.imageUrl,
+            isActive: sub.isActive,
+            availableQuestions: sub.availableQuestions || 0
+          }))
+        });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching categories with children:", error);
+      res.status(500).json({ error: "فشل في جلب الفئات والفئات الفرعية" });
+    }
   });
 
   // Game settings endpoint
