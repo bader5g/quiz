@@ -853,10 +853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const categoryId = Number(req.params.id);
       const categoryData = updateCategorySchema.parse(req.body);
-      const updatedCategory = await storage.updateCategory(categoryId, {
-        ...categoryData,
-        updatedAt: new Date().toISOString()
-      });
+      const updatedCategory = await storage.updateCategory(categoryId, categoryData);
       if (!updatedCategory) {
         return res.status(404).json({ error: "الفئة غير موجودة" });
       }
@@ -906,11 +903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/subcategories", async (req, res) => {
     try {
       const subcategoryData = insertSubcategorySchema.parse(req.body);
-      const newSubcategory = await storage.createSubcategory({
-        ...subcategoryData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      const newSubcategory = await storage.createSubcategory(subcategoryData);
       res.status(201).json(newSubcategory);
     } catch (error) {
       console.error("Error creating subcategory:", error);
@@ -922,10 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const subcategoryId = Number(req.params.id);
       const subcategoryData = updateSubcategorySchema.parse(req.body);
-      const updatedSubcategory = await storage.updateSubcategory(subcategoryId, {
-        ...subcategoryData,
-        updatedAt: new Date().toISOString()
-      });
+      const updatedSubcategory = await storage.updateSubcategory(subcategoryId, subcategoryData);
       if (!updatedSubcategory) {
         return res.status(404).json({ error: "الفئة الفرعية غير موجودة" });
       }
@@ -986,11 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/questions", async (req, res) => {
     try {
       const questionData = insertQuestionSchema.parse(req.body);
-      const newQuestion = await storage.createQuestion({
-        ...questionData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      const newQuestion = await storage.createQuestion(questionData);
       res.status(201).json(newQuestion);
     } catch (error) {
       console.error("Error creating question:", error);
@@ -1002,10 +988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const questionId = Number(req.params.id);
       const questionData = updateQuestionSchema.parse(req.body);
-      const updatedQuestion = await storage.updateQuestion(questionId, {
-        ...questionData,
-        updatedAt: new Date().toISOString()
-      });
+      const updatedQuestion = await storage.updateQuestion(questionId, questionData);
       if (!updatedQuestion) {
         return res.status(404).json({ error: "السؤال غير موجود" });
       }

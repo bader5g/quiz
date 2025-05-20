@@ -475,9 +475,15 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createCategory(category: any): Promise<any> {
+  async createCategory(category: InsertCategory): Promise<Category> {
     try {
-      const [createdCategory] = await db.insert(categories).values(category).returning();
+      // عدم إضافة حقول التاريخ لأنها ستُضاف تلقائيًا بواسطة Drizzle
+      const [createdCategory] = await db.insert(categories).values({
+        name: category.name,
+        icon: category.icon,
+        imageUrl: category.imageUrl,
+        isActive: category.isActive !== undefined ? category.isActive : true
+      }).returning();
       return createdCategory;
     } catch (error) {
       console.error("Error creating category:", error);
@@ -485,13 +491,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateCategory(id: number, category: any): Promise<any> {
+  async updateCategory(id: number, category: UpdateCategory): Promise<Category> {
     try {
+      // عدم تعديل حقل updatedAt لأنه سيُحدث تلقائياً بواسطة Drizzle
       const [updatedCategory] = await db
         .update(categories)
         .set({
-          ...category,
-          updatedAt: new Date().toISOString(),
+          name: category.name,
+          icon: category.icon,
+          imageUrl: category.imageUrl,
+          isActive: category.isActive
         })
         .where(eq(categories.id, id))
         .returning();
@@ -534,9 +543,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createSubcategory(subcategory: any): Promise<any> {
+  async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
     try {
-      const [createdSubcategory] = await db.insert(subcategories).values(subcategory).returning();
+      // نتعامل مع الحقول ذات الصلة فقط ونترك Drizzle يتعامل مع حقول التاريخ
+      const [createdSubcategory] = await db.insert(subcategories).values({
+        name: subcategory.name,
+        icon: subcategory.icon,
+        parentId: subcategory.parentId,
+        imageUrl: subcategory.imageUrl,
+        isActive: subcategory.isActive !== undefined ? subcategory.isActive : true
+      }).returning();
       return createdSubcategory;
     } catch (error) {
       console.error("Error creating subcategory:", error);
