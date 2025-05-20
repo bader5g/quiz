@@ -841,11 +841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/categories", async (req, res) => {
     try {
       const categoryData = insertCategorySchema.parse(req.body);
-      const newCategory = await storage.createCategory({
-        ...categoryData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      const newCategory = await storage.createCategory(categoryData);
       res.status(201).json(newCategory);
     } catch (error) {
       console.error("Error creating category:", error);
