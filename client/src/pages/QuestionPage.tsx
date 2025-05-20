@@ -73,11 +73,27 @@ export default function QuestionPage() {
   const requestedSubcategoryId = searchParams.get("subcategoryId");
   
   // حالة الفئات والفئات الفرعية والمستويات
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(requestedCategoryId ? parseInt(requestedCategoryId) : null);
-  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(requestedSubcategoryId ? parseInt(requestedSubcategoryId) : null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState(requestedDifficulty);
+  interface Category {
+    id: number;
+    name: string;
+    icon?: string;
+    imageUrl?: string;
+    children?: Subcategory[];
+  }
+  
+  interface Subcategory {
+    id: number;
+    name: string;
+    icon?: string;
+    imageUrl?: string;
+    categoryId: number;
+  }
+  
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(requestedCategoryId ? parseInt(requestedCategoryId) : null);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(requestedSubcategoryId ? parseInt(requestedSubcategoryId) : null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(requestedDifficulty);
 
   const [questionData, setQuestionData] = useState<QuestionDetails | null>(
     null,
@@ -119,14 +135,15 @@ export default function QuestionPage() {
   const fetchCategories = useCallback(async () => {
     try {
       const response = await apiRequest("GET", "/api/categories-with-children");
-      setCategories(response.data || []);
+      const data = await response.json();
+      setCategories(data || []);
     } catch (err) {
       console.error("خطأ في جلب الفئات:", err);
     }
   }, []);
   
   // جلب الفئات الفرعية بناءً على الفئة المختارة
-  const fetchSubcategories = useCallback(async (categoryId) => {
+  const fetchSubcategories = useCallback(async (categoryId: number) => {
     if (!categoryId) {
       setSubcategories([]);
       return;
@@ -134,7 +151,8 @@ export default function QuestionPage() {
     
     try {
       const response = await apiRequest("GET", `/api/subcategories?categoryId=${categoryId}`);
-      setSubcategories(response.data || []);
+      const data = await response.json();
+      setSubcategories(data || []);
     } catch (err) {
       console.error("خطأ في جلب الفئات الفرعية:", err);
     }
@@ -297,6 +315,107 @@ export default function QuestionPage() {
     },
     [toast, questionData, currentTeam, questionTurn],
   );
+
+  // عند تغيير الفئة أو الفئة الفرعية أو المستوى، نعيد توجيه المستخدم
+  const handleFilterChange = () => {
+    let url = `/play/${gameId}/question/${questionId}?difficulty=${selectedDifficulty}`;
+    
+    if (selectedCategoryId) {
+      url += `&categoryId=${selectedCategoryId}`;
+    }
+    
+    if (selectedSubcategoryId) {
+      url += `&subcategoryId=${selectedSubcategoryId}`;
+    }
+    
+    navigate(url);
+  };
+  
+  // مكون اختيار الفئة والفئة الفرعية والمستوى
+  const FilterDialog = () => {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="rounded-full gap-1">
+            <Filter className="h-4 w-4" />
+            <span>فلترة</span>
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center mb-4">اختيار فئة وصعوبة السؤال</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* اختيار الفئة */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">الفئة الرئيسية</label>
+              <Select
+                value={selectedCategoryId?.toString() || ""}
+                onValueChange={(value) => setSelectedCategoryId(parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الفئة الرئيسية" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category: Category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* اختيار الفئة الفرعية */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">الفئة الفرعية</label>
+              <Select
+                value={selectedSubcategoryId?.toString() || ""}
+                onValueChange={(value) => setSelectedSubcategoryId(parseInt(value))}
+                disabled={!selectedCategoryId || subcategories.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الفئة الفرعية" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subcategories.map((subcat: Subcategory) => (
+                    <SelectItem key={subcat.id} value={subcat.id.toString()}>
+                      {subcat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* اختيار المستوى */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">مستوى الصعوبة</label>
+              <Select
+                value={selectedDifficulty.toString()}
+                onValueChange={(value) => setSelectedDifficulty(parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مستوى الصعوبة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">سهل (1 نقطة)</SelectItem>
+                  <SelectItem value="2">متوسط (2 نقطة)</SelectItem>
+                  <SelectItem value="3">صعب (3 نقاط)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-6">
+            <Button onClick={handleFilterChange} className="w-full">
+              تطبيق الفلتر
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   // عند الإجابة
   const submitAnswer = async (isCorrect: boolean, teamIndex?: number) => {
@@ -580,8 +699,12 @@ export default function QuestionPage() {
       </div>
 
       {/* ScoreBoard */}
-      <div className="container mx-auto">
+      <div className="container mx-auto flex justify-between items-center">
+        <div>
+          <FilterDialog />
+        </div>
         <ScoreBoard />
+        <div></div> {/* عنصر فارغ للمحافظة على توازن التصميم */}
       </div>
 
       <div className="container mx-auto py-4 px-4 flex-grow">
@@ -592,7 +715,7 @@ export default function QuestionPage() {
               style={{ backgroundColor: `${currentTeam?.color || "#ddd"}22` }}
             >
               <Badge variant="outline" className="gap-1">
-                <span>{questionData.question.categoryName}</span>
+                <span>{questionData?.question?.categoryName || "الفئة"}</span>
               </Badge>
               <Badge
                 variant="outline"
@@ -606,7 +729,7 @@ export default function QuestionPage() {
                         : "#f4433622",
                 }}
               >
-                {requestedDifficulty} نقاط
+                {questionData?.question?.difficulty || requestedDifficulty} نقاط
               </Badge>
             </div>
             <CardContent className="p-6">
