@@ -52,8 +52,8 @@ import {
 const parentCategorySchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "اسم الفئة يجب أن يحتوي على حرفين على الأقل"),
-  icon: z.string().min(1, "يجب اختيار أيقونة للفئة"),
-  imageUrl: z.string().optional().nullable(),
+  icon: z.string().optional(),
+  imageUrl: z.string().min(1, "يجب إدخال رابط الصورة للفئة"),
 });
 
 const childCategorySchema = z.object({
@@ -187,8 +187,8 @@ export default function CategoriesManagement() {
   const onSubmitParentCategory = async (values: ParentCategory) => {
     try {
       // تحقق من البيانات المدخلة
-      if (!values.name || !values.icon) {
-        throw new Error("يرجى ملء جميع الحقول المطلوبة.");
+      if (!values.name || !values.imageUrl) {
+        throw new Error("يرجى ملء اسم الفئة وإضافة صورة لها.");
       }
 
       if (values.id) {
