@@ -53,6 +53,7 @@ const parentCategorySchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "اسم الفئة يجب أن يحتوي على حرفين على الأقل"),
   icon: z.string().min(1, "يجب اختيار أيقونة للفئة"),
+  imageUrl: z.string().optional().nullable(),
 });
 
 const childCategorySchema = z.object({
@@ -101,6 +102,7 @@ export default function CategoriesManagement() {
     defaultValues: {
       name: "",
       icon: "",
+      imageUrl: "",
     },
   });
 
@@ -582,6 +584,43 @@ export default function CategoriesManagement() {
                     <FormDescription>
                       يمكنك اختيار أيقونة من الأعلى أو كتابة رمز تعبيري
                     </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={parentForm.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>صورة الفئة (اختياري)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="أدخل رابط الصورة هنا" 
+                        onChange={(e) => field.onChange(e.target.value)}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      يمكنك إضافة رابط لصورة الفئة. ستظهر في واجهة اللعبة.
+                    </FormDescription>
+                    {field.value && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-1">معاينة الصورة:</p>
+                        <div className="border rounded-md overflow-hidden w-20 h-20">
+                          <img 
+                            src={field.value} 
+                            alt="معاينة صورة الفئة" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://placehold.co/100x100/gray/white?text=خطأ";
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
