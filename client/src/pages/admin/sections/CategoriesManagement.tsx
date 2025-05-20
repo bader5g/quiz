@@ -246,6 +246,11 @@ export default function CategoriesManagement() {
 
   const onSubmitChildCategory = async (values: ChildCategory) => {
     try {
+      // تحقق من البيانات المدخلة - الصورة ضرورية، الأيقونة اختيارية
+      if (!values.name || !values.imageUrl) {
+        throw new Error("يرجى ملء اسم الفئة الفرعية وإضافة صورة لها.");
+      }
+
       if (values.id) {
         await apiRequest("PATCH", `/api/subcategories/${values.id}`, values);
         setCategories(
@@ -266,6 +271,7 @@ export default function CategoriesManagement() {
           description: "تم تعديل الفئة الفرعية بنجاح",
         });
       } else {
+        console.log("إرسال بيانات الفئة الفرعية:", values);
         const response = await apiRequest("POST", "/api/subcategories", values);
         const newSubcategory = await response.json();
         setCategories(
@@ -285,12 +291,12 @@ export default function CategoriesManagement() {
         });
       }
       setDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving child category:", error);
       toast({
         variant: "destructive",
         title: "خطأ في الحفظ",
-        description: "حدث خطأ أثناء محاولة حفظ الفئة الفرعية",
+        description: error.message || "حدث خطأ أثناء محاولة حفظ الفئة الفرعية",
       });
     }
   };
@@ -453,7 +459,7 @@ export default function CategoriesManagement() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[50px]">الأيقونة</TableHead>
+                            <TableHead className="w-[60px]">الصورة</TableHead>
                             <TableHead>اسم الفئة الفرعية</TableHead>
                             <TableHead className="text-center">
                               عدد الأسئلة
@@ -476,8 +482,19 @@ export default function CategoriesManagement() {
                           ) : (
                             category.children.map((child) => (
                               <TableRow key={child.id}>
-                                <TableCell className="text-lg">
-                                  {child.icon}
+                                <TableCell>
+                                  {child.imageUrl ? (
+                                    <img
+                                      src={child.imageUrl}
+                                      alt={child.name}
+                                      className="h-8 w-8 rounded-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "https://placehold.co/100x100/gray/white?text=خطأ";
+                                      }}
+                                    />
+                                  ) : (
+                                    <span className="text-lg">{child.icon || "🔹"}</span>
+                                  )}
                                 </TableCell>
                                 <TableCell className="font-medium">
                                   {child.name}
