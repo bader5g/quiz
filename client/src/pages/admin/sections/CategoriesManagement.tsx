@@ -59,7 +59,8 @@ const parentCategorySchema = z.object({
 const childCategorySchema = z.object({
   id: z.number().optional(),
   name: z.string().min(2, "اسم الفئة الفرعية يجب أن يحتوي على حرفين على الأقل"),
-  icon: z.string().min(1, "يجب اختيار أيقونة للفئة الفرعية"),
+  icon: z.string().optional(),
+  imageUrl: z.string().min(1, "يجب إدخال رابط الصورة للفئة الفرعية"),
   parentId: z.number(),
   availableQuestions: z.number().default(0),
 });
@@ -165,6 +166,7 @@ export default function CategoriesManagement() {
     childForm.reset({
       name: "",
       icon: "",
+      imageUrl: "",
       parentId,
       availableQuestions: 0,
     });
@@ -178,6 +180,7 @@ export default function CategoriesManagement() {
       id: category.id,
       name: category.name,
       icon: category.icon,
+      imageUrl: category.imageUrl || "",
       parentId: category.parentId,
       availableQuestions: category.availableQuestions,
     });
@@ -666,30 +669,51 @@ export default function CategoriesManagement() {
               />
               <FormField
                 control={childForm.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>صورة الفئة الفرعية</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="أدخل رابط الصورة هنا" 
+                        onChange={(e) => field.onChange(e.target.value)}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      يجب إضافة رابط لصورة الفئة الفرعية. ستظهر في واجهة اللعبة.
+                    </FormDescription>
+                    {field.value && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-1">معاينة الصورة:</p>
+                        <div className="border rounded-md overflow-hidden w-20 h-20">
+                          <img 
+                            src={field.value} 
+                            alt="معاينة صورة الفئة الفرعية" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://placehold.co/100x100/gray/white?text=خطأ";
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={childForm.control}
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>أيقونة الفئة الفرعية</FormLabel>
-                    <div className="grid grid-cols-6 gap-2 mb-2">
-                      {availableIcons.map((icon) => (
-                        <button
-                          key={icon.value}
-                          type="button"
-                          className={`h-12 text-xl flex items-center justify-center rounded border 
-                                              ${field.value === icon.value ? "bg-blue-100 border-blue-500" : "bg-white border-gray-200"}
-                                              focus:outline-none focus:ring-2 focus:ring-blue-400 transition`}
-                          onClick={() => childForm.setValue("icon", icon.value)}
-                          aria-label={icon.label}
-                        >
-                          {icon.value}
-                        </button>
-                      ))}
-                    </div>
+                    <FormLabel>أيقونة الفئة الفرعية (اختياري)</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="أيقونة الفئة الفرعية" />
+                      <Input {...field} placeholder="استخدم رمز الإيموجي 😊" />
                     </FormControl>
                     <FormDescription>
-                      يمكنك اختيار أيقونة من الأعلى أو كتابة رمز تعبيري
+                      يمكنك إضافة رمز تعبيري كاحتياطي إذا تعذر عرض الصورة
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

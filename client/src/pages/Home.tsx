@@ -14,6 +14,7 @@ interface CategoryChild {
   id: number;
   name: string;
   icon: string;
+  imageUrl?: string;
   availableQuestions: number;
 }
 
@@ -256,7 +257,20 @@ export default function Home() {
                               !isDisabled && handleCategoryClick(child)
                             }
                           >
-                            <div className="text-3xl mb-3">{child.icon}</div>
+                            <div className="mb-3">
+                              {child.imageUrl ? (
+                                <img 
+                                  src={child.imageUrl} 
+                                  alt={child.name}
+                                  className="w-12 h-12 rounded-full object-cover mx-auto"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://placehold.co/100x100/gray/white?text=خطأ";
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-3xl">{child.icon}</span>
+                              )}
+                            </div>
                             <div className="text-center font-medium">
                               {child.name}
                             </div>
