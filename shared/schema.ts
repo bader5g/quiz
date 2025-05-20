@@ -224,8 +224,8 @@ export const categories = pgTable("categories", {
   icon: text("icon").notNull(),
   imageUrl: text("image_url"),
   isActive: boolean("is_active").default(true),
-  createdAt: text("created_at").notNull().default(new Date().toISOString()),
-  updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
+  createdAt: text("created_at").notNull().default("2023-01-01T00:00:00.000Z"),
+  updatedAt: text("updated_at").notNull().default("2023-01-01T00:00:00.000Z"),
 });
 
 export const insertCategorySchema = createInsertSchema(categories).omit({
@@ -252,8 +252,8 @@ export const subcategories = pgTable("subcategories", {
   parentId: integer("parent_id").notNull().references(() => categories.id),
   imageUrl: text("image_url"),
   isActive: boolean("is_active").default(true),
-  createdAt: text("created_at").notNull().default(new Date().toISOString()),
-  updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
+  createdAt: text("created_at").notNull().default("2023-01-01T00:00:00.000Z"),
+  updatedAt: text("updated_at").notNull().default("2023-01-01T00:00:00.000Z"),
 });
 
 export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
@@ -285,8 +285,8 @@ export const questions = pgTable("questions", {
   isActive: boolean("is_active").default(true),
   tags: text("tags"),
   usageCount: integer("usage_count").default(0),
-  createdAt: text("created_at").notNull().default(new Date().toISOString()),
-  updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
+  createdAt: text("created_at").notNull().default("2023-01-01T00:00:00.000Z"),
+  updatedAt: text("updated_at").notNull().default("2023-01-01T00:00:00.000Z"),
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({

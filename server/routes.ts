@@ -848,15 +848,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "الاسم والأيقونة مطلوبان" });
       }
       
-      // استخدام SQL مباشر لإنشاء الفئة
+      // استخدام SQL مباشر لإنشاء الفئة (الآن أصبحت حقول التاريخ من نوع TIMESTAMP)
       const query = `
-        INSERT INTO categories (name, icon, image_url, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, now(), now())
-        RETURNING id, name, icon, image_url as "imageUrl", is_active as "isActive"
+        INSERT INTO categories (name, icon, image_url, is_active)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, name, icon, image_url as "imageUrl", is_active as "isActive", created_at, updated_at
       `;
-      
-      console.log("SQL Query:", query);
-      console.log("Parameters:", [name, icon, imageUrl || null, isActive === undefined ? true : isActive]);
       
       const result = await pool.query(query, [
         name, 
@@ -866,13 +863,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
       
       if (result.rows.length > 0) {
-        console.log("Category created successfully:", result.rows[0]);
-        res.status(201).json(result.rows[0]);
+        // تنسيق البيانات المرسلة للعميل
+        const category = {
+          id: result.rows[0].id,
+          name: result.rows[0].name,
+          icon: result.rows[0].icon,
+          imageUrl: result.rows[0].imageUrl,
+          isActive: result.rows[0].is_active
+        };
+        
+        console.log("Category created successfully:", category);
+        res.status(201).json(category);
       } else {
-        console.log("No rows returned after category creation");
         res.status(500).json({ error: "لم يتم إنشاء الفئة" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("SQL Error creating category:", error);
       res.status(400).json({ error: "فشل في إنشاء الفئة", details: error.message });
     }
