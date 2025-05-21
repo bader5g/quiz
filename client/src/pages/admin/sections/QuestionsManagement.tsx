@@ -463,16 +463,67 @@ export default function QuestionsManagement() {
         let categoryId = 0;
         let subcategoryId = 0;
         
-        // البحث عن الفئة الرئيسية
-        const category = categories.find(c => c.name === categoryName);
+        // البحث عن الفئة الرئيسية بشكل مرن
+        // 1. البحث عن تطابق تام
+        let category = categories.find(c => c.name === categoryName);
+        
+        // 2. البحث بتجاهل أل التعريف
+        if (!category) {
+          // إذا بدأ الاسم بـ "ال" نبحث بدونها
+          if (categoryName.startsWith('ال')) {
+            category = categories.find(c => c.name === categoryName.substring(2));
+          } 
+          // وإذا لم يبدأ بـ "ال" نضيفها ونبحث
+          else {
+            category = categories.find(c => c.name === 'ال' + categoryName);
+          }
+        }
+        
+        // 3. البحث بتجاهل الفراغات والأحرف الخاصة
+        if (!category) {
+          // تنظيف الأسماء للمقارنة
+          const cleanName = categoryName.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
+          category = categories.find(c => {
+            const cleanCategoryName = c.name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
+            return cleanCategoryName === cleanName;
+          });
+        }
+        
         if (category) {
           categoryId = category.id;
           
-          // البحث عن الفئة الفرعية إذا وجدت
+          // البحث عن الفئة الفرعية إذا وجدت بشكل مرن
           if (subcategoryName && category.children) {
-            const subcategory = category.children.find(s => s.name === subcategoryName);
+            // 1. البحث عن تطابق تام
+            let subcategory = category.children.find(s => s.name === subcategoryName);
+            
+            // 2. البحث بتجاهل أل التعريف
+            if (!subcategory) {
+              // إذا بدأ الاسم بـ "ال" نبحث بدونها
+              if (subcategoryName.startsWith('ال')) {
+                subcategory = category.children.find(s => s.name === subcategoryName.substring(2));
+              } 
+              // وإذا لم يبدأ بـ "ال" نضيفها ونبحث
+              else {
+                subcategory = category.children.find(s => s.name === 'ال' + subcategoryName);
+              }
+            }
+            
+            // 3. البحث بتجاهل الفراغات والأحرف الخاصة
+            if (!subcategory) {
+              // تنظيف الأسماء للمقارنة
+              const cleanName = subcategoryName.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
+              subcategory = category.children.find(s => {
+                const cleanSubCategoryName = s.name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
+                return cleanSubCategoryName === cleanName;
+              });
+            }
+            
             if (subcategory) {
               subcategoryId = subcategory.id;
+              console.log("تم العثور على الفئة الفرعية:", subcategoryName, "=>", subcategory.name);
+            } else {
+              console.log("لم يتم العثور على الفئة الفرعية:", subcategoryName);
             }
           }
         } else {
