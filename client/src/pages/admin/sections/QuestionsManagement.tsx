@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as XLSX from 'xlsx';
+import { uniqueId } from 'lodash';
 
 import {
   Dialog,
@@ -392,7 +393,7 @@ export default function QuestionsManagement() {
   // تصدير الأسئلة إلى ملف
   const exportQuestions = async (format: 'csv' | 'excel') => {
     try {
-      // تحضير بيانات التصدير - تبسيط البيانات، حذف الحقول غير الضرورية
+      // تحضير بيانات التصدير - تبسيط البيانات، حذف الحقول غير الضرورية للتوافق مع متطلبات الاستيراد
       const exportData = filteredQuestions.map(q => ({
         'نص السؤال': q.text,
         'الإجابة': q.answer,
@@ -402,55 +403,6 @@ export default function QuestionsManagement() {
         'الكلمات المفتاحية': q.keywords || '',
         'رابط الصورة': q.imageUrl || '',
         'رابط الفيديو': q.videoUrl || ''
-      }));
-
-      // إنشاء ورقة عمل
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'الأسئلة');
-
-      // تصدير الملف
-      if (format === 'csv') {
-        XLSX.writeFile(workbook, 'الأسئلة.csv');
-      } else {
-        XLSX.writeFile(workbook, 'الأسئلة.xlsx');
-      }
-
-      toast({
-        title: 'تم التصدير بنجاح',
-        description: `تم تصدير ${exportData.length} سؤال إلى ملف ${format === 'excel' ? 'Excel' : 'CSV'} بنجاح.`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'خطأ في التصدير',
-        description: error.message || 'حدث خطأ أثناء محاولة تصدير الأسئلة.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // تصدير الأسئلة إلى ملف
-  const exportQuestions = async (format: 'csv' | 'excel') => {
-    try {
-      // تحضير بيانات التصدير
-      const exportData = filteredQuestions.map(q => ({
-        'رقم السؤال': q.id,
-        'نص السؤال': q.text,
-        'الإجابة': q.answer,
-        'الفئة': q.categoryName,
-        'الفئة الفرعية': q.subcategoryName || '',
-        'الصعوبة': q.difficulty === 1 ? 'سهل' : q.difficulty === 2 ? 'متوسط' : 'صعب',
-        'الكلمات المفتاحية': q.keywords || '',
-        'رابط الصورة': q.imageUrl || '',
-        'رابط الفيديو': q.videoUrl || '',
-        'عدد مرات الاستخدام': q.usageCount,
-        'تاريخ الإضافة': new Date(q.createdAt).toLocaleDateString('ar', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          calendar: 'gregory'
-        }),
-        'فعّال': q.isActive ? 'نعم' : 'لا'
       }));
 
       // إنشاء ورقة عمل
