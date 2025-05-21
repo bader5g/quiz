@@ -261,17 +261,27 @@ export default function QuestionsManagement() {
   const handleSelectAll = (isSelected: boolean) => {
     if (isSelected) {
       // تحديد جميع الأسئلة في الصفحة الحالية
-      const startIndex = (currentPage - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const currentPageQuestions = filteredQuestions.slice(startIndex, endIndex);
+      const currentPageIds = getCurrentPageQuestions()
+        .filter(q => q.id !== undefined)
+        .map(q => q.id as number);
       
-      const currentIds = new Set<number>(currentPageQuestions.map(q => q.id));
-      setSelectedQuestions(currentIds);
-      setShowBulkActions(currentIds.size > 0);
+      // إضافة الأسئلة المحددة حاليًا إلى المجموعة الجديدة
+      const newSelectedIds = new Set<number>(selectedQuestions);
+      currentPageIds.forEach(id => newSelectedIds.add(id));
+      
+      setSelectedQuestions(newSelectedIds);
+      setShowBulkActions(newSelectedIds.size > 0);
     } else {
-      // إلغاء تحديد جميع الأسئلة
-      setSelectedQuestions(new Set<number>());
-      setShowBulkActions(false);
+      // إلغاء تحديد الأسئلة في الصفحة الحالية فقط
+      const currentPageIds = getCurrentPageQuestions()
+        .filter(q => q.id !== undefined)
+        .map(q => q.id as number);
+      
+      const newSelectedIds = new Set<number>(selectedQuestions);
+      currentPageIds.forEach(id => newSelectedIds.delete(id));
+      
+      setSelectedQuestions(newSelectedIds);
+      setShowBulkActions(newSelectedIds.size > 0);
     }
   };
   
@@ -366,7 +376,7 @@ export default function QuestionsManagement() {
   
   // تطبيق الفلاتر على الأسئلة
   // الحصول على الأسئلة في الصفحة الحالية
-  const getCurrentPageQuestions = () => {
+  const getCurrentPageQuestions = (): QuestionDisplay[] => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return filteredQuestions.slice(startIndex, endIndex);
@@ -584,6 +594,7 @@ export default function QuestionsManagement() {
 
       // حذف السؤال من القائمة المحلية
       setQuestions(questions.filter((q) => q.id !== questionId));
+      setFilteredQuestions(filteredQuestions.filter((q) => q.id !== questionId));
 
       toast({
         title: "تم حذف السؤال",
@@ -595,6 +606,59 @@ export default function QuestionsManagement() {
         description: error.message || "حدث خطأ أثناء محاولة حذف السؤال.",
         variant: "destructive",
       });
+    }
+  };
+  
+  // وظيفة استيراد الأسئلة
+  const handleImportQuestions = async () => {
+    if (!importFile) {
+      toast({
+        title: "خطأ في الاستيراد",
+        description: "الرجاء اختيار ملف Excel (.xlsx) للاستيراد",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setImportLoading(true);
+    
+    try {
+      // إنشاء نموذج FormData لإرسال الملف
+      const formData = new FormData();
+      formData.append('file', importFile);
+      
+      // إرسال الملف للخادم
+      const response = await fetch('/api/import-questions', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "فشلت عملية الاستيراد");
+      }
+      
+      const result = await response.json();
+      
+      setImportDialogOpen(false);
+      setImportFile(null);
+      
+      // إعادة تحميل الأسئلة بعد الاستيراد
+      await fetchQuestions();
+      
+      toast({
+        title: "تم الاستيراد بنجاح",
+        description: `تم استيراد ${result.imported} سؤال بنجاح. ${result.failed || 0} فشل في الاستيراد.`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الاستيراد",
+        description: error.message || "حدث خطأ أثناء محاولة استيراد الأسئلة.",
+        variant: "destructive",
+      });
+    } finally {
+      setImportLoading(false);
     }
   };
 
@@ -866,6 +930,17 @@ export default function QuestionsManagement() {
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
+                    <th className="p-3 text-center w-10">
+                      <Checkbox 
+                        checked={
+                          getCurrentPageQuestions().length > 0 && 
+                          getCurrentPageQuestions().every(q => 
+                            selectedQuestions.has(q.id || 0)
+                          )
+                        }
+                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                      />
+                    </th>
                     <th className="p-3 text-center">#</th>
                     <th className="p-3 text-right">السؤال</th>
                     <th className="p-3 text-right">الإجابة</th>
@@ -878,8 +953,18 @@ export default function QuestionsManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredQuestions.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((question, index) => (
-                  <tr key={question.id} className="border-b hover:bg-muted/20">
+                  {getCurrentPageQuestions().map((question, index) => (
+                  <tr key={question.id} className={`border-b hover:bg-muted/20 ${selectedQuestions.has(question.id || 0) ? 'bg-primary/5' : ''}`}>
+                    <td className="p-3 text-center">
+                      <Checkbox 
+                        checked={selectedQuestions.has(question.id || 0)}
+                        onCheckedChange={(checked) => {
+                          if (question.id) {
+                            handleSelectQuestion(question.id, !!checked);
+                          }
+                        }}
+                      />
+                    </td>
                     <td className="p-3 text-center font-bold">{(currentPage - 1) * pageSize + index + 1}</td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-between gap-2">
