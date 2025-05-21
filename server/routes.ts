@@ -47,13 +47,173 @@ const validateRequest = <T>(schema: z.ZodSchema<T>) => {
   };
 };
 
-// استيراد المكتبات اللازمة
-import axios from "axios";
-import * as XLSX from "xlsx";
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
+
+  // استيراد الأسئلة من ملف
+  app.post("/api/import-questions", async (req, res) => {
+    try {
+      const { questions } = req.body;
+      
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return res.status(400).json({ error: "بيانات الأسئلة غير صالحة" });
+      }
+      
+      const importedQuestions = [];
+      
+      for (const question of questions) {
+        // التأكد من وجود الحقول الإلزامية
+        if (!question.text || !question.answer || !question.categoryId) {
+          continue;
+        }
+        
+        // تعيين الأسئلة المستوردة كغير فعالة افتراضياً
+        question.isActive = false;
+        
+        // إضافة السؤال إلى قاعدة البيانات
+        const newQuestion = await storage.createQuestion(question);
+        importedQuestions.push(newQuestion);
+      }
+      
+      res.status(201).json({ 
+        message: "تم استيراد الأسئلة بنجاح", 
+        imported: importedQuestions.length 
+      });
+    } catch (error) {
+      console.error("خطأ في استيراد الأسئلة:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء استيراد الأسئلة" });
+    }
+  });
+  
+  // استيراد الأسئلة من رابط خارجي
+  app.post("/api/import-questions-from-url", async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ error: "الرابط غير صالح" });
+      }
+      
+      // التحقق مما إذا كان الرابط من Google Sheets
+      let sheetData;
+      
+      try {
+        // الحصول على البيانات من الرابط
+        const response = await axios.get(url);
+        
+        // فحص نوع الاستجابة
+        const contentType = response.headers['content-type'];
+        
+        if (contentType.includes('application/json')) {
+          // إذا كان الرابط يعيد JSON
+          sheetData = response.data;
+        } else if (contentType.includes('text/csv') || 
+                 contentType.includes('application/vnd.ms-excel') || 
+                 contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+          // إذا كان الرابط يعيد ملف CSV/Excel
+          const workbook = XLSX.read(response.data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        } else {
+          throw new Error("تنسيق الملف غير مدعوم");
+        }
+      } catch (error) {
+        return res.status(400).json({ error: "فشل في استيراد البيانات من الرابط المحدد" });
+      }
+      
+      if (!Array.isArray(sheetData) || sheetData.length === 0) {
+        return res.status(400).json({ error: "لم يتم العثور على بيانات صالحة في الرابط" });
+      }
+      
+      // تحويل البيانات إلى تنسيق الأسئلة
+      const questionsToImport = [];
+      
+      for (const row of sheetData) {
+        // البحث عن الفئة الرئيسية والفرعية
+        const categoryName = row['الفئة'] || row['category'] || '';
+        const subcategoryName = row['الفئة الفرعية'] || row['subcategory'] || '';
+        
+        let categoryId = 0;
+        let subcategoryId = 0;
+        
+        // البحث عن معرف الفئة
+        if (categoryName) {
+          const categories = await storage.getCategories();
+          const category = categories.find(c => c.name === categoryName);
+          
+          if (category) {
+            categoryId = category.id;
+            
+            // البحث عن معرف الفئة الفرعية
+            if (subcategoryName) {
+              const subcategories = await storage.getSubcategories(category.id);
+              const subcategory = subcategories.find(s => s.name === subcategoryName);
+              
+              if (subcategory) {
+                subcategoryId = subcategory.id;
+              }
+            }
+          }
+        }
+        
+        // تحديد مستوى الصعوبة
+        let difficulty = 1;
+        const difficultyText = row['الصعوبة'] || row['difficulty'] || '';
+        
+        if (typeof difficultyText === 'string') {
+          if (difficultyText.includes('متوسط')) {
+            difficulty = 2;
+          } else if (difficultyText.includes('صعب')) {
+            difficulty = 3;
+          }
+        } else if (typeof difficultyText === 'number') {
+          difficulty = difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
+        }
+        
+        // تحضير بيانات السؤال
+        const questionText = row['نص السؤال'] || row['السؤال'] || row['question'] || '';
+        const answer = row['الإجابة'] || row['answer'] || '';
+        const imageUrl = row['رابط الصورة'] || row['image'] || '';
+        const videoUrl = row['رابط الفيديو'] || row['video'] || '';
+        const keywords = row['الكلمات المفتاحية'] || row['keywords'] || '';
+        
+        // إضافة السؤال فقط إذا كانت البيانات الإلزامية موجودة
+        if (questionText && answer && categoryId) {
+          questionsToImport.push({
+            text: questionText,
+            answer,
+            categoryId,
+            subcategoryId,
+            difficulty,
+            imageUrl,
+            videoUrl,
+            mediaType: imageUrl ? 'image' : videoUrl ? 'video' : 'none',
+            keywords,
+            isActive: false // الأسئلة المستوردة تكون غير فعالة افتراضياً
+          });
+        }
+      }
+      
+      // إضافة الأسئلة إلى قاعدة البيانات
+      const importedQuestions = [];
+      
+      for (const question of questionsToImport) {
+        const newQuestion = await storage.createQuestion(question);
+        importedQuestions.push(newQuestion);
+      }
+      
+      res.status(201).json({ 
+        message: "تم استيراد الأسئلة بنجاح", 
+        imported: importedQuestions.length 
+      });
+    } catch (error) {
+      console.error("خطأ في استيراد الأسئلة من الرابط:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء استيراد الأسئلة من الرابط" });
+    }
+  });
 
   // Categories with children endpoint
   app.get("/api/categories-with-children", async (_req, res) => {
