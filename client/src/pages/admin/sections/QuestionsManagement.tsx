@@ -42,6 +42,8 @@ const questionSchema = z.object({
   subcategoryId: z.number(),
   difficulty: z.number().min(1).max(3),
   imageUrl: z.string().optional().nullable(),
+  videoUrl: z.string().optional().nullable(),
+  mediaType: z.enum(["image", "video", "none"]).default("none"),
   keywords: z.string().optional(),
   isActive: z.boolean().default(true),
 });
