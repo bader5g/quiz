@@ -112,6 +112,8 @@ export default function QuestionsManagement() {
   const [selectAll, setSelectAll] = useState(false);
   const [bulkActionOpen, setBulkActionOpen] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkCategoryOpen, setBulkCategoryOpen] = useState(false);
+  const [bulkDifficultyOpen, setBulkDifficultyOpen] = useState(false);
   
   // خيارات عرض الجدول
   const [pageSize, setPageSize] = useState<number>(10);
@@ -1315,6 +1317,91 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                         )}
                         إلغاء تفعيل الكل
                       </Button>
+                      <div className="relative">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setBulkCategoryOpen(!bulkCategoryOpen)}
+                          disabled={bulkProcessing}
+                        >
+                          {bulkProcessing ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                          ) : (
+                            <LinkIcon className="h-4 w-4 ml-2" />
+                          )}
+                          نقل إلى فئة
+                        </Button>
+                        {bulkCategoryOpen && (
+                          <div className="absolute left-0 mt-2 w-64 p-2 bg-white rounded-md shadow-lg border z-50">
+                            <div className="pb-2 mb-2 border-b">
+                              <h4 className="font-medium text-primary">اختر الفئة</h4>
+                            </div>
+                            {categories.map((category) => (
+                              <div key={category.id} className="mb-2">
+                                <div
+                                  className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
+                                  onClick={() => handleBulkMoveToCategory(category.id, null)}
+                                >
+                                  {category.name} ({category.availableQuestions || 0})
+                                </div>
+                                <div className="pl-3 mt-1">
+                                  {category.children.map((subcat) => (
+                                    <div
+                                      key={subcat.id}
+                                      className="flex items-center p-1 hover:bg-muted rounded cursor-pointer text-sm"
+                                      onClick={() => handleBulkMoveToCategory(category.id, subcat.id)}
+                                    >
+                                      {subcat.name} ({subcat.availableQuestions || 0})
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="relative">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setBulkDifficultyOpen(!bulkDifficultyOpen)}
+                          disabled={bulkProcessing}
+                        >
+                          {bulkProcessing ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                          ) : (
+                            <ChevronUp className="h-4 w-4 ml-2" />
+                          )}
+                          تغيير الصعوبة
+                        </Button>
+                        {bulkDifficultyOpen && (
+                          <div className="absolute left-0 mt-2 w-40 p-2 bg-white rounded-md shadow-lg border z-50">
+                            <div className="pb-2 mb-2 border-b">
+                              <h4 className="font-medium text-primary">مستوى الصعوبة</h4>
+                            </div>
+                            <div
+                              className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
+                              onClick={() => handleBulkChangeDifficulty(1)}
+                            >
+                              سهل
+                            </div>
+                            <div
+                              className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
+                              onClick={() => handleBulkChangeDifficulty(2)}
+                            >
+                              متوسط
+                            </div>
+                            <div
+                              className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
+                              onClick={() => handleBulkChangeDifficulty(3)}
+                            >
+                              صعب
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
                       <Button
                         variant="destructive"
                         size="sm"
