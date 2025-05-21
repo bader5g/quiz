@@ -724,8 +724,16 @@ export class DatabaseStorage implements IStorage {
 
   // Game play methods
   async getGameById(id: number): Promise<GameSession | undefined> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      const [game] = await db.select().from(gameSessions).where(eq(gameSessions.id, id));
+      if (!game) {
+        return undefined;
+      }
+      return game;
+    } catch (error) {
+      console.error("Error getting game by ID:", error);
+      return undefined;
+    }
   }
 
   async updateGameTeams(gameId: number, teams: any[]): Promise<void> {
