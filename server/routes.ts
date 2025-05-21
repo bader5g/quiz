@@ -275,21 +275,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoriesList = await storage.getCategories();
       const allQuestions = await storage.getQuestions();
       const result = [];
+      
+      // تسجيل للتشخيص
+      console.log(`إجمالي عدد الأسئلة المسترجعة: ${allQuestions.length}`);
+      console.log(`عينة من بيانات السؤال الأول:`, JSON.stringify(allQuestions[0], null, 2));
 
       for (const category of categoriesList) {
         const subcategories = await storage.getSubcategories(category.id);
-
-        // عد فقط الأسئلة التي ليس لها فئة فرعية
+        
+        // تعديل: عد جميع الأسئلة في الفئة بغض النظر عن الفئة الفرعية
         const categoryQuestionsCount = allQuestions.filter(
-          (q) =>
-            q.category_id === category.id &&
-            (!q.subcategory_id || q.subcategory_id === 0),
+          (q) => q.category_id === category.id
         ).length;
+        
+        console.log(`الفئة ${category.name} (ID: ${category.id}) - عدد الأسئلة: ${categoryQuestionsCount}`);
 
         const subcategoriesWithCounts = subcategories.map((sub) => {
           const subcategoryQuestionsCount = allQuestions.filter(
-            (q) => q.subcategory_id === sub.id,
+            (q) => q.subcategory_id === sub.id
           ).length;
+          
+          console.log(`  الفئة الفرعية ${sub.name} (ID: ${sub.id}) - عدد الأسئلة: ${subcategoryQuestionsCount}`);
           return {
             id: sub.id,
             name: sub.name,
