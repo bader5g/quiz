@@ -1657,7 +1657,7 @@ export default function QuestionsManagement() {
                   
                   // تغيير الفئة للأسئلة المحددة باستخدام طلبات متوازية
                   const updatePromises = Array.from(selectedQuestions).map(id => 
-                    apiRequest("PUT", `/api/questions/${id}`, { 
+                    apiRequest("PATCH", `/api/questions/${id}`, { 
                       categoryId: bulkCategoryId, 
                       subcategoryId: bulkSubcategoryId || null 
                     })
@@ -1790,7 +1790,7 @@ export default function QuestionsManagement() {
                   
                   // تغيير مستوى الصعوبة للأسئلة المحددة باستخدام طلبات متوازية
                   const updatePromises = Array.from(selectedQuestions).map(id => 
-                    apiRequest("PUT", `/api/questions/${id}`, { difficulty: bulkDifficulty })
+                    apiRequest("PATCH", `/api/questions/${id}`, { difficulty: bulkDifficulty })
                   );
                   
                   Promise.all(updatePromises)

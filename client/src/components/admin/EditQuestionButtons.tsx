@@ -54,7 +54,7 @@ export function EditTextButton({
     
     setIsSaving(true);
     try {
-      await apiRequest("PUT", `/api/questions/${id}`, { [field]: editValue });
+      await apiRequest("PATCH", `/api/questions/${id}`, { [field]: editValue });
       onUpdate(id, field, editValue);
       setOpen(false);
       toast({
@@ -173,7 +173,7 @@ export function EditCategoryButton({
     
     setIsSaving(true);
     try {
-      await apiRequest("PUT", `/api/questions/${id}`, { 
+      await apiRequest("PATCH", `/api/questions/${id}`, { 
         categoryId: catId,
         subcategoryId: subcatId
       });
@@ -336,7 +336,7 @@ export function EditDifficultyButton({
     
     setIsSaving(true);
     try {
-      await apiRequest("PUT", `/api/questions/${id}`, { difficulty: difficultyLevel });
+      await apiRequest("PATCH", `/api/questions/${id}`, { difficulty: difficultyLevel });
       onUpdate(id, difficultyLevel);
       setOpen(false);
       const difficultyLabels = {

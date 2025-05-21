@@ -1513,6 +1513,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "فشل في تحديث السؤال" });
     }
   });
+  
+  // نقطة نهاية جديدة لتحديثات جزئية للأسئلة (مثل تغيير الفئة أو الصعوبة فقط)
+  app.patch("/api/questions/:id", async (req, res) => {
+    try {
+      const questionId = Number(req.params.id);
+      
+      // التحقق من وجود السؤال
+      const existingQuestion = await storage.getQuestionById(questionId);
+      if (!existingQuestion) {
+        return res.status(404).json({ error: "السؤال غير موجود" });
+      }
+      
+      // دمج الحقول الموجودة مع الحقول المُحدثة
+      const updatedData = {
+        ...existingQuestion,
+        ...req.body,
+        // الحفاظ على الحقول التي لا نريد تغييرها
+        id: existingQuestion.id,
+        createdAt: existingQuestion.createdAt,
+        updatedAt: new Date()
+      };
+      
+      const updatedQuestion = await storage.updateQuestion(
+        questionId,
+        updatedData
+      );
+      
+      res.json(updatedQuestion);
+    } catch (error) {
+      console.error("Error patching question:", error);
+      res.status(400).json({ error: "فشل في تحديث السؤال جزئياً" });
+    }
+  });
 
   app.delete("/api/questions/:id", async (req, res) => {
     try {
