@@ -109,6 +109,10 @@ export default function QuestionsManagement() {
   // بيانات استيراد الأسئلة
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
+  
+  // متغيرات تحميل الوسائط
+  const [mediaPreview, setMediaPreview] = useState<string>("");
+  const [uploading, setUploading] = useState<boolean>(false);
 
   // تهيئة نموذج السؤال
   const form = useForm<Question>({
@@ -1445,6 +1449,276 @@ export default function QuestionsManagement() {
                   </FormItem>
                 )}
               />
+              
+              {/* نوع الوسائط */}
+              <FormField
+                control={form.control}
+                name="mediaType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>نوع الوسائط</FormLabel>
+                    <FormControl>
+                      <select
+                        className="w-full rounded-md border border-input bg-background px-3 py-2"
+                        value={field.value}
+                        onChange={(e) => {
+                          form.setValue("mediaType", e.target.value as "image" | "video" | "none");
+                        }}
+                      >
+                        <option value="none">بدون وسائط</option>
+                        <option value="image">صورة</option>
+                        <option value="video">فيديو</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* حقول الوسائط - تظهر حسب نوع الوسائط المختار */}
+              {form.watch("mediaType") === "image" && (
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رابط الصورة</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            placeholder="أدخل رابط الصورة هنا"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">أو قم بتحميل صورة من جهازك</label>
+                    <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center">
+                      <input
+                        type="file"
+                        id="imageUpload"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            // إظهار معاينة للصورة
+                            const previewURL = URL.createObjectURL(e.target.files[0]);
+                            setMediaPreview(previewURL);
+                            
+                            // إعداد FormData لرفع الصورة
+                            const formData = new FormData();
+                            formData.append("file", e.target.files[0]);
+                            
+                            try {
+                              // عرض حالة التحميل
+                              setUploading(true);
+                              
+                              // رفع الصورة إلى الخادم
+                              const response = await fetch("/api/upload-media", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              
+                              if (!response.ok) {
+                                throw new Error("فشل تحميل الصورة");
+                              }
+                              
+                              const data = await response.json();
+                              // تحديث رابط الصورة في النموذج
+                              form.setValue("imageUrl", data.url);
+                              
+                              toast({
+                                title: "تم التحميل بنجاح",
+                                description: "تم تحميل الصورة بنجاح",
+                              });
+                            } catch (error) {
+                              console.error("Error uploading image:", error);
+                              toast({
+                                title: "خطأ في التحميل",
+                                description: "فشل تحميل الصورة. يرجى المحاولة مرة أخرى أو استخدام رابط بدلاً من ذلك.",
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setUploading(false);
+                            }
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="imageUpload"
+                        className="cursor-pointer block p-4 text-center hover:bg-primary/5 rounded-lg transition-colors"
+                      >
+                        {uploading ? (
+                          <div className="flex flex-col items-center justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                            <span>جاري التحميل...</span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="block font-semibold">انقر لاختيار صورة</span>
+                            <span className="text-sm text-muted-foreground">
+                              (PNG, JPG, WEBP)
+                            </span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                    
+                    {/* معاينة الصورة */}
+                    {mediaPreview && form.watch("mediaType") === "image" && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium mb-2">معاينة الصورة:</p>
+                        <div className="border rounded-lg overflow-hidden">
+                          <img 
+                            src={mediaPreview} 
+                            alt="معاينة الصورة"
+                            className="max-h-[200px] max-w-full object-contain mx-auto"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-red-500"
+                          onClick={() => {
+                            setMediaPreview("");
+                            form.setValue("imageUrl", "");
+                          }}
+                        >
+                          إزالة الصورة
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {form.watch("mediaType") === "video" && (
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="videoUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رابط الفيديو</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            placeholder="أدخل رابط الفيديو هنا"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">أو قم بتحميل فيديو من جهازك</label>
+                    <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center">
+                      <input
+                        type="file"
+                        id="videoUpload"
+                        className="hidden"
+                        accept="video/*"
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            // إظهار معاينة للفيديو
+                            const previewURL = URL.createObjectURL(e.target.files[0]);
+                            setMediaPreview(previewURL);
+                            
+                            // إعداد FormData لرفع الفيديو
+                            const formData = new FormData();
+                            formData.append("file", e.target.files[0]);
+                            
+                            try {
+                              // عرض حالة التحميل
+                              setUploading(true);
+                              
+                              // رفع الفيديو إلى الخادم
+                              const response = await fetch("/api/upload-media", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              
+                              if (!response.ok) {
+                                throw new Error("فشل تحميل الفيديو");
+                              }
+                              
+                              const data = await response.json();
+                              // تحديث رابط الفيديو في النموذج
+                              form.setValue("videoUrl", data.url);
+                              
+                              toast({
+                                title: "تم التحميل بنجاح",
+                                description: "تم تحميل الفيديو بنجاح",
+                              });
+                            } catch (error) {
+                              console.error("Error uploading video:", error);
+                              toast({
+                                title: "خطأ في التحميل",
+                                description: "فشل تحميل الفيديو. يرجى المحاولة مرة أخرى أو استخدام رابط بدلاً من ذلك.",
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setUploading(false);
+                            }
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="videoUpload"
+                        className="cursor-pointer block p-4 text-center hover:bg-primary/5 rounded-lg transition-colors"
+                      >
+                        {uploading ? (
+                          <div className="flex flex-col items-center justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                            <span>جاري التحميل...</span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="block font-semibold">انقر لاختيار فيديو</span>
+                            <span className="text-sm text-muted-foreground">
+                              (MP4, WebM)
+                            </span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                    
+                    {/* معاينة الفيديو */}
+                    {mediaPreview && form.watch("mediaType") === "video" && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium mb-2">معاينة الفيديو:</p>
+                        <div className="border rounded-lg overflow-hidden">
+                          <video 
+                            src={mediaPreview} 
+                            controls
+                            className="max-h-[200px] max-w-full mx-auto"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-red-500"
+                          onClick={() => {
+                            setMediaPreview("");
+                            form.setValue("videoUrl", "");
+                          }}
+                        >
+                          إزالة الفيديو
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {/* الكلمات المفتاحية */}
               <FormField

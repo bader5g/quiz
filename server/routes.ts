@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { pool } from "./db";
 import axios from "axios";
 import * as XLSX from "xlsx";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import {
   gameSessionSchema,
   updateGameSettingsSchema,
@@ -46,6 +49,52 @@ const validateRequest = <T>(schema: z.ZodSchema<T>) => {
     }
   };
 };
+
+// إعداد مجلد لتحميل الملفات
+const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+
+// التأكد من وجود المجلد
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// إعداد multer لتحميل الملفات
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    // توليد اسم فريد للملف مع الاحتفاظ بامتداده الأصلي
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+// فلتر للملفات المسموحة
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  // تحديد أنواع الملفات المسموحة
+  const allowedMimeTypes = [
+    // صور
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    // فيديو
+    'video/mp4', 'video/webm', 'video/quicktime'
+  ];
+  
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('نوع الملف غير مدعوم. الأنواع المدعومة: ' + allowedMimeTypes.join(', ')));
+  }
+};
+
+const upload = multer({ 
+  storage, 
+  fileFilter,
+  limits: { 
+    fileSize: 10 * 1024 * 1024, // 10 ميجابايت كحد أقصى
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
