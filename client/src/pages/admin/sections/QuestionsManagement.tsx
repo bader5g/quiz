@@ -379,6 +379,96 @@ export default function QuestionsManagement() {
       setBulkProcessing(false);
     }
   };
+  
+  // نقل الأسئلة المحددة إلى فئة أخرى
+  const handleBulkMoveToCategory = async (categoryId: number, subcategoryId: number | null) => {
+    if (!selectedQuestions.length) return;
+    
+    try {
+      setBulkProcessing(true);
+      
+      // نقل الأسئلة المحددة واحدة تلو الأخرى
+      for (const questionId of selectedQuestions) {
+        const question = questions.find(q => q.id === questionId);
+        if (question) {
+          const updatedQuestion = { 
+            ...question, 
+            categoryId, 
+            subcategoryId 
+          };
+          await apiRequest("PUT", `/api/questions/${questionId}`, updatedQuestion);
+        }
+      }
+      
+      // تحديث قائمة الأسئلة
+      await fetchQuestions();
+      
+      const categoryName = categories.find(c => c.id === categoryId)?.name || "";
+      const subcategoryName = subcategoryId ? 
+        categories.find(c => c.id === categoryId)?.children.find(s => s.id === subcategoryId)?.name || "" : "";
+      
+      toast({
+        title: "تم نقل الأسئلة",
+        description: `تم نقل ${selectedQuestions.length} سؤال إلى فئة "${categoryName}${subcategoryName ? ` - ${subcategoryName}` : ''}" بنجاح.`,
+      });
+      
+      // إعادة تعيين حالة التحديد
+      setSelectedQuestions([]);
+      setSelectAll(false);
+      setBulkCategoryOpen(false);
+    } catch (error) {
+      console.error("خطأ أثناء نقل الأسئلة المحددة:", error);
+      toast({
+        title: "خطأ في نقل الأسئلة",
+        description: "حدث خطأ أثناء محاولة نقل الأسئلة المحددة.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+  
+  // تغيير مستوى صعوبة الأسئلة المحددة
+  const handleBulkChangeDifficulty = async (difficulty: number) => {
+    if (!selectedQuestions.length) return;
+    
+    try {
+      setBulkProcessing(true);
+      
+      // تغيير مستوى الصعوبة للأسئلة المحددة واحدة تلو الأخرى
+      for (const questionId of selectedQuestions) {
+        const question = questions.find(q => q.id === questionId);
+        if (question) {
+          const updatedQuestion = { ...question, difficulty };
+          await apiRequest("PUT", `/api/questions/${questionId}`, updatedQuestion);
+        }
+      }
+      
+      // تحديث قائمة الأسئلة
+      await fetchQuestions();
+      
+      const difficultyText = difficulty === 1 ? "سهل" : difficulty === 2 ? "متوسط" : "صعب";
+      
+      toast({
+        title: "تم تغيير مستوى الصعوبة",
+        description: `تم تغيير مستوى صعوبة ${selectedQuestions.length} سؤال إلى "${difficultyText}" بنجاح.`,
+      });
+      
+      // إعادة تعيين حالة التحديد
+      setSelectedQuestions([]);
+      setSelectAll(false);
+      setBulkDifficultyOpen(false);
+    } catch (error) {
+      console.error("خطأ أثناء تغيير مستوى صعوبة الأسئلة المحددة:", error);
+      toast({
+        title: "خطأ في تغيير مستوى الصعوبة",
+        description: "حدث خطأ أثناء محاولة تغيير مستوى صعوبة الأسئلة المحددة.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
 
   // عرض نموذج إضافة سؤال جديد
   const showAddQuestionForm = () => {
@@ -463,11 +553,28 @@ export default function QuestionsManagement() {
       const savedQuestion = await response.json();
       
       if (isEditMode) {
-        // تحديث السؤال في القائمة المحلية
+        // تحديث السؤال في القائمة المحلية بدون إعادة تعيين صفحة العرض
         const selectedCategory = categories.find(c => c.id === values.categoryId);
         
-        setQuestions(
-          questions.map((q) =>
+        const updatedQuestions = questions.map((q) =>
+          q.id === values.id
+            ? {
+                ...q,
+                ...values,
+                categoryName: selectedCategory?.name || "",
+                categoryIcon: selectedCategory?.icon || "",
+                subcategoryName: values.subcategoryId && selectedCategory
+                  ? selectedCategory.children.find((s) => s.id === values.subcategoryId)?.name || ""
+                  : "",
+              }
+            : q
+        );
+        
+        setQuestions(updatedQuestions);
+        
+        // تحديث الأسئلة المفلترة بنفس الطريقة للحفاظ على حالة الفلتر والصفحة الحالية
+        setFilteredQuestions(prevFilteredQuestions => 
+          prevFilteredQuestions.map((q) =>
             q.id === values.id
               ? {
                   ...q,
@@ -485,19 +592,22 @@ export default function QuestionsManagement() {
         // إضافة السؤال الجديد للقائمة المحلية
         const selectedCategory = categories.find(c => c.id === savedQuestion.categoryId);
         
-        setQuestions([
-          ...questions,
-          {
-            ...savedQuestion,
-            categoryName: selectedCategory?.name || "",
-            categoryIcon: selectedCategory?.icon || "",
-            subcategoryName: savedQuestion.subcategoryId && selectedCategory
-              ? selectedCategory.children.find((s) => s.id === savedQuestion.subcategoryId)?.name || ""
-              : "",
-            usageCount: 0,
-            createdAt: new Date().toISOString(),
-          },
-        ]);
+        const newQuestion = {
+          ...savedQuestion,
+          categoryName: selectedCategory?.name || "",
+          categoryIcon: selectedCategory?.icon || "",
+          subcategoryName: savedQuestion.subcategoryId && selectedCategory
+            ? selectedCategory.children.find((s) => s.id === savedQuestion.subcategoryId)?.name || ""
+            : "",
+          usageCount: 0,
+          createdAt: new Date().toISOString(),
+        };
+        
+        setQuestions(prev => [...prev, newQuestion]);
+        
+        // في حالة الإضافة الجديدة، نحدث أيضاً القائمة المفلترة إذا كان السؤال الجديد يتوافق مع الفلاتر الحالية
+        // لكن هنا نعيد للصفحة الأولى ليرى المستخدم السؤال الجديد
+        setCurrentPage(1);
       }
 
       toast({
