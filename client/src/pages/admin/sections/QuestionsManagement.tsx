@@ -30,6 +30,34 @@ import {
 // استيراد لتوليد مثال للاستيراد
 import { saveAs } from "file-saver";
 
+// دالة مساعدة للبحث عن فئة باستخدام طرق مطابقة مختلفة
+const findCategoryByName = (name: string, categoriesList: any[]) => {
+  if (!name || !categoriesList || categoriesList.length === 0) return null;
+  
+  // 1. البحث بالتطابق المباشر
+  let category = categoriesList.find(c => c.name.trim() === name.trim());
+  
+  // 2. البحث مع تجاهل أل التعريف
+  if (!category) {
+    if (name.startsWith('ال')) {
+      category = categoriesList.find(c => c.name.trim() === name.substring(2).trim());
+    } else {
+      category = categoriesList.find(c => c.name.trim() === ('ال' + name).trim());
+    }
+  }
+  
+  // 3. البحث مع تجاهل الفراغات والتشكيل
+  if (!category) {
+    const cleanName = name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
+    category = categoriesList.find(c => {
+      const cleanCatName = c.name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
+      return cleanCatName === cleanName;
+    });
+  }
+  
+  return category || null;
+};
+
 // نموذج السؤال
 const questionSchema = z.object({
   id: z.number().optional(),
@@ -544,9 +572,64 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      let parsedData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
       
-      console.log("تم قراءة البيانات من الملف:", jsonData.length, "سجل");
+      console.log("تم قراءة البيانات من الملف:", parsedData.length, "سجل");
+      
+      // التحقق من تطابق الفئات الموجودة في الملف مع الفئات الموجودة في النظام
+      const missingCategoriesArray: string[] = [];
+      const validRows: Record<string, any>[] = [];
+      const invalidRows: Record<string, any>[] = [];
+      
+      // فحص كل سجل في الملف المستورد
+      for (const row of parsedData) {
+        const categoryName = row['الفئة'] as string || '';
+        if (!categoryName) {
+          console.log("سجل بدون فئة، سيتم تخطيه:", row);
+          invalidRows.push(row);
+          continue;
+        }
+        
+        // البحث عن الفئة في النظام
+        const category = findCategoryByName(categoryName, categories);
+        if (!category) {
+          // إذا لم تكن الفئة موجودة وليست مضافة بالفعل للقائمة
+          if (!missingCategoriesArray.includes(categoryName)) {
+            missingCategoriesArray.push(categoryName);
+          }
+          console.log(`الفئة غير موجودة: "${categoryName}"، سيتم تخطي السؤال:`, row['نص السؤال']);
+          invalidRows.push(row);
+        } else {
+          validRows.push(row);
+        }
+      }
+      
+      // إذا وجدت فئات غير متطابقة، قم بإظهار تنبيه للمستخدم
+      if (missingCategoriesArray.length > 0) {
+        const missingCategoriesList = missingCategoriesArray.join('، ');
+        const invalidCount = invalidRows.length;
+        const validCount = validRows.length;
+        
+        toast({
+          title: 'فئات غير متطابقة',
+          description: `هناك ${missingCategoriesArray.length} فئة غير متطابقة: ${missingCategoriesList}. سيتم تخطي ${invalidCount} سؤال وسيتم استيراد ${validCount} سؤال فقط.`,
+          variant: 'warning',
+        });
+        
+        // إذا لم تكن هناك صفوف صالحة، قم بإلغاء الاستيراد
+        if (validRows.length === 0) {
+          toast({
+            title: 'فشل الاستيراد',
+            description: 'لا توجد أسئلة صالحة للاستيراد. تأكد من تطابق الفئات مع الفئات الموجودة في النظام.',
+            variant: 'destructive',
+          });
+          setImporting(false);
+          return;
+        }
+        
+        // استخدام الصفوف الصالحة فقط
+        parsedData = validRows;
+      }
 
       // تحويل البيانات إلى تنسيق الأسئلة
       const questionsData = [];
