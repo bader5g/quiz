@@ -256,11 +256,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Categories with children endpoint
   app.get("/api/categories-with-children", async (_req, res) => {
     try {
+      // جلب كل الفئات والأسئلة مرة واحدة
       const categoriesList = await storage.getCategories();
+      const allQuestions = await storage.getQuestions();
       const result = [];
 
       for (const category of categoriesList) {
         const subcategories = await storage.getSubcategories(category.id);
+        
+        // حساب عدد الأسئلة لكل فئة
+        const categoryQuestionsCount = allQuestions.filter(q => q.categoryId === category.id).length;
+        
+        // تحضير الفئات الفرعية مع عدد الأسئلة لكل منها
+        const subcategoriesWithCounts = subcategories.map((sub) => {
+          // حساب عدد الأسئلة في الفئة الفرعية
+          const subcategoryQuestionsCount = allQuestions.filter(q => q.subcategoryId === sub.id).length;
+          
+          return {
+            id: sub.id,
+            name: sub.name,
+            icon: sub.icon,
+            parentId: sub.parentId,
+            imageUrl: sub.imageUrl,
+            isActive: sub.isActive,
+            availableQuestions: subcategoryQuestionsCount,
+          };
+        });
 
         result.push({
           id: category.id,
@@ -268,15 +289,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           icon: category.icon,
           imageUrl: category.imageUrl,
           isActive: category.isActive,
-          children: subcategories.map((sub) => ({
-            id: sub.id,
-            name: sub.name,
-            icon: sub.icon,
-            parentId: sub.parentId,
-            imageUrl: sub.imageUrl,
-            isActive: sub.isActive,
-            availableQuestions: sub.availableQuestions || 0,
-          })),
+          availableQuestions: categoryQuestionsCount,
+          children: subcategoriesWithCounts,
         });
       }
 
