@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as XLSX from 'xlsx';
 
 import {
   Dialog,
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Upload, Link as LinkIcon, ExternalLink, FileSpreadsheet, FileText } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -71,6 +72,7 @@ export default function QuestionsManagement() {
   const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   
   // خيارات عرض الجدول
   const [pageSize, setPageSize] = useState<number>(10);
@@ -387,18 +389,277 @@ export default function QuestionsManagement() {
     }
   };
 
+  // تصدير الأسئلة إلى ملف
+  const exportQuestions = async (format: 'csv' | 'excel') => {
+    try {
+      // تحضير بيانات التصدير
+      const exportData = filteredQuestions.map(q => ({
+        'رقم السؤال': q.id,
+        'نص السؤال': q.text,
+        'الإجابة': q.answer,
+        'الفئة': q.categoryName,
+        'الفئة الفرعية': q.subcategoryName || '',
+        'الصعوبة': q.difficulty === 1 ? 'سهل' : q.difficulty === 2 ? 'متوسط' : 'صعب',
+        'الكلمات المفتاحية': q.keywords || '',
+        'رابط الصورة': q.imageUrl || '',
+        'رابط الفيديو': q.videoUrl || '',
+        'عدد مرات الاستخدام': q.usageCount,
+        'تاريخ الإضافة': new Date(q.createdAt).toLocaleDateString('ar', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          calendar: 'gregory'
+        }),
+        'فعّال': q.isActive ? 'نعم' : 'لا'
+      }));
+
+      // إنشاء ورقة عمل
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'الأسئلة');
+
+      // تصدير الملف
+      if (format === 'csv') {
+        XLSX.writeFile(workbook, 'الأسئلة.csv');
+      } else {
+        XLSX.writeFile(workbook, 'الأسئلة.xlsx');
+      }
+
+      toast({
+        title: 'تم التصدير بنجاح',
+        description: `تم تصدير ${exportData.length} سؤال إلى ملف ${format === 'excel' ? 'Excel' : 'CSV'} بنجاح.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'خطأ في التصدير',
+        description: error.message || 'حدث خطأ أثناء محاولة تصدير الأسئلة.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // استيراد الأسئلة من ملف
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImporting(true);
+      
+      // قراءة الملف
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      // تحويل البيانات إلى تنسيق الأسئلة
+      const questions = jsonData.map((row: any) => {
+        // تحديد الفئة الرئيسية والفرعية
+        const categoryName = row['الفئة'] || '';
+        const subcategoryName = row['الفئة الفرعية'] || '';
+        
+        let categoryId = 0;
+        let subcategoryId = 0;
+        
+        // البحث عن الفئة الرئيسية
+        const category = categories.find(c => c.name === categoryName);
+        if (category) {
+          categoryId = category.id;
+          
+          // البحث عن الفئة الفرعية إذا وجدت
+          if (subcategoryName) {
+            const subcategory = category.children.find(s => s.name === subcategoryName);
+            if (subcategory) {
+              subcategoryId = subcategory.id;
+            }
+          }
+        }
+        
+        // تحديد مستوى الصعوبة
+        let difficulty = 1;
+        const difficultyText = row['الصعوبة'] || '';
+        if (typeof difficultyText === 'string') {
+          if (difficultyText.includes('متوسط')) {
+            difficulty = 2;
+          } else if (difficultyText.includes('صعب')) {
+            difficulty = 3;
+          }
+        } else if (typeof difficultyText === 'number') {
+          difficulty = difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
+        }
+        
+        // تحديد الحالة
+        let isActive = false; // الأسئلة المستوردة تكون غير فعالة افتراضياً
+        
+        return {
+          text: row['نص السؤال'] || row['السؤال'] || '',
+          answer: row['الإجابة'] || '',
+          categoryId,
+          subcategoryId,
+          difficulty,
+          imageUrl: row['رابط الصورة'] || '',
+          videoUrl: row['رابط الفيديو'] || '',
+          mediaType: row['رابط الصورة'] ? 'image' : row['رابط الفيديو'] ? 'video' : 'none',
+          keywords: row['الكلمات المفتاحية'] || '',
+          isActive,
+        };
+      }).filter((q: any) => q.text && q.answer && q.categoryId); // التأكد من وجود الحقول الإلزامية
+      
+      // إرسال الأسئلة إلى الخادم
+      const response = await apiRequest('POST', '/api/import-questions', { questions });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'فشلت عملية الاستيراد');
+      }
+      
+      const result = await response.json();
+      
+      // تحديث القائمة المحلية
+      fetchQuestions();
+      
+      toast({
+        title: 'تم الاستيراد بنجاح',
+        description: `تم استيراد ${result.imported} سؤال بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
+      });
+      
+      // إعادة تعيين حقل الملف
+      e.target.value = '';
+    } catch (error: any) {
+      toast({
+        title: 'خطأ في الاستيراد',
+        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // استيراد الأسئلة من رابط
+  const importQuestionsFromURL = async (url: string) => {
+    if (!url) return;
+    
+    try {
+      setImporting(true);
+      
+      // إرسال الرابط إلى الخادم
+      const response = await apiRequest('POST', '/api/import-questions-from-url', { url });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'فشلت عملية الاستيراد');
+      }
+      
+      const result = await response.json();
+      
+      // تحديث القائمة المحلية
+      fetchQuestions();
+      
+      toast({
+        title: 'تم الاستيراد بنجاح',
+        description: `تم استيراد ${result.imported} سؤال بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'خطأ في الاستيراد',
+        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة من الرابط.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">إدارة الأسئلة</h2>
-        <Button 
-          onClick={showAddQuestionForm}
-          className="flex items-center gap-1"
-        >
-          <Plus className="h-4 w-4" />
-          <span>إضافة سؤال جديد</span>
-        </Button>
+        <div className="flex gap-2">
+          <div className="dropdown dropdown-end">
+            <Button 
+              variant="outline"
+              className="flex items-center gap-1"
+            >
+              <span>استيراد / تصدير</span>
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+            <div className="dropdown-content bg-background border rounded-md shadow-md p-2 mt-1 w-44 flex flex-col gap-1 absolute right-0 z-10">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => exportQuestions('csv')}
+                className="justify-start"
+              >
+                <FileText className="w-4 h-4 ml-2" />
+                تصدير CSV
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => exportQuestions('excel')}
+                className="justify-start"
+              >
+                <FileSpreadsheet className="w-4 h-4 ml-2" />
+                تصدير Excel
+              </Button>
+              <hr className="my-1" />
+              <label className="cursor-pointer">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="justify-start w-full"
+                  onClick={() => document.getElementById('importFile')?.click()}
+                >
+                  <Upload className="w-4 h-4 ml-2" />
+                  استيراد ملف
+                </Button>
+                <input 
+                  type="file" 
+                  id="importFile" 
+                  accept=".csv,.xlsx,.xls" 
+                  className="hidden" 
+                  onChange={handleImportFile}
+                />
+              </label>
+              <hr className="my-1" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="justify-start"
+                onClick={() => {
+                  const url = prompt('أدخل رابط ملف Google Sheets أو أي رابط متوافق');
+                  if (url) importQuestionsFromURL(url);
+                }}
+              >
+                <ExternalLink className="w-4 h-4 ml-2" />
+                استيراد من رابط
+              </Button>
+              </label>
+            </div>
+          </div>
+          <Button 
+            onClick={showAddQuestionForm}
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>إضافة سؤال جديد</span>
+          </Button>
+        </div>
       </div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .dropdown {
+          position: relative;
+          display: inline-block;
+        }
+        .dropdown-content {
+          display: none;
+        }
+        .dropdown:hover .dropdown-content {
+          display: flex;
+        }
+      `}} />
 
       {/* قسم فلاتر البحث */}
       <div className="mb-6 border rounded-lg p-4 bg-muted/10">
