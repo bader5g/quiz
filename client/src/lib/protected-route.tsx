@@ -1,4 +1,4 @@
-import { useUser } from "@/context/UserContext";
+import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 
@@ -7,10 +7,9 @@ export function ProtectedRoute({
   component: Component,
 }: {
   path: string;
-  component: () => React.JSX.Element;
+  component: React.ComponentType;
 }) {
-  const { isAuthenticated, user } = useUser();
-  const isLoading = false; // We don't have a loading state in UserContext yet
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -22,7 +21,7 @@ export function ProtectedRoute({
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />

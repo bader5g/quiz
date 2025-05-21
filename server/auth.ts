@@ -9,8 +9,6 @@ import { User as SelectUser } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
-const PostgresSessionStore = connectPg(session);
-
 declare global {
   namespace Express {
     interface User extends SelectUser {}
@@ -33,22 +31,24 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const PostgresSessionStore = connectPg(session);
+  
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "jaweb-app-secret-key",
+    secret: process.env.DATABASE_URL || "jaweb-session-secret", // استخدام DATABASE_URL كسر للجلسة بشكل مؤقت
     resave: false,
     saveUninitialized: false,
-    store: new PostgresSessionStore({ 
+    store: new PostgresSessionStore({
       pool,
-      tableName: 'sessions',
-      createTableIfMissing: true
+      createTableIfMissing: true,
+      tableName: 'user_sessions'
     }),
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production"
     }
   };
 
-  app.set("trust proxy", 1);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
@@ -62,22 +62,26 @@ export function setupAuth(app: Express) {
         } else {
           return done(null, user);
         }
-      } catch (error) {
-        return done(error as Error);
+      } catch (err) {
+        return done(err);
       }
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user, done) => {
+    done(null, user.id);
+  });
+  
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
       done(null, user);
-    } catch (error) {
-      done(error);
+    } catch (err) {
+      done(err);
     }
   });
 
+  // تسجيل المستخدم
   app.post("/api/register", async (req, res, next) => {
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
@@ -92,27 +96,29 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err) => {
         if (err) return next(err);
-        return res.status(201).json(user);
+        res.status(201).json(user);
       });
     } catch (error) {
-      console.error("Error during registration:", error);
-      return res.status(500).json({ message: "حدث خطأ أثناء التسجيل" });
+      next(error);
     }
   });
 
+  // تسجيل الدخول
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
+      
       req.login(user, (err) => {
         if (err) return next(err);
-        return res.status(200).json(user);
+        return res.json(user);
       });
     })(req, res, next);
   });
 
+  // تسجيل الخروج
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
@@ -120,6 +126,7 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // الحصول على بيانات المستخدم الحالي
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "غير مصرح" });

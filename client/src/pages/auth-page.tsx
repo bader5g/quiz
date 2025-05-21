@@ -30,10 +30,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  const { user, login } = useUser();
   const [_, navigate] = useLocation();
+  const { toast } = useToast();
+  const { user, loginMutation, registerMutation } = useAuth();
+  const isLoading = loginMutation.isPending || registerMutation.isPending;
 
   // If user is already logged in, redirect to home page
   if (user) {
@@ -55,6 +55,7 @@ export default function AuthPage() {
       password: "",
       name: "",
       email: "",
+      phone: "",
     },
   });
 
@@ -209,6 +210,19 @@ export default function AuthPage() {
                         <FormLabel>البريد الإلكتروني (اختياري)</FormLabel>
                         <FormControl>
                           <Input placeholder="example@domain.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>رقم الهاتف (اختياري)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="05xxxxxxxx" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
