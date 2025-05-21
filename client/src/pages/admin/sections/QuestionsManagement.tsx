@@ -350,6 +350,7 @@ export default function QuestionsManagement() {
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
+                  <th className="p-3 text-center">#</th>
                   <th className="p-3 text-right">السؤال</th>
                   <th className="p-3 text-right">الإجابة</th>
                   <th className="p-3 text-right">الفئة</th>
@@ -361,8 +362,9 @@ export default function QuestionsManagement() {
                 </tr>
               </thead>
               <tbody>
-                {questions.map((question) => (
+                {questions.map((question, index) => (
                   <tr key={question.id} className="border-b hover:bg-muted/20">
+                    <td className="p-3 text-center font-bold">{index + 1}</td>
                     <td className="p-3 text-right">
                       {question.text.length > 60
                         ? question.text.substring(0, 60) + "..."
@@ -374,13 +376,20 @@ export default function QuestionsManagement() {
                         : question.answer}
                     </td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center gap-1 rtl">
-                        <span>{question.categoryIcon}</span>
-                        <span>{question.categoryName}</span>
-                        {question.subcategoryName && (
-                          <span className="text-xs bg-gray-200 px-1 rounded">
-                            {question.subcategoryName}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1 rtl">
+                          <span className="inline-flex items-center justify-center w-6 h-6 text-center rounded-full bg-primary/10 text-primary">
+                            {question.categoryIcon || "📚"}
                           </span>
+                          <span className="font-semibold">{question.categoryName}</span>
+                        </div>
+                        {question.subcategoryName && (
+                          <div className="mr-6 flex items-center gap-1">
+                            <span className="text-xs text-gray-500">الفئة الفرعية:</span>
+                            <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                              {question.subcategoryName}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -393,7 +402,12 @@ export default function QuestionsManagement() {
                     </td>
                     <td className="p-3 text-right">{question.usageCount} مرة</td>
                     <td className="p-3 text-right">
-                      {new Date(question.createdAt).toLocaleDateString("ar-SA")}
+                      {new Date(question.createdAt).toLocaleDateString("ar", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        calendar: "gregory"
+                      })}
                     </td>
                     <td className="p-3 text-right">
                       {question.isActive ? (
