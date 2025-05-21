@@ -450,8 +450,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/create-game", async (req, res) => {
     try {
       // In a real app, you would extract user ID from authenticated session
-      // For now, we'll use a mock user ID
-      const userId = 1; // Mock user ID
+      // For now, we'll use a hard-coded user ID that exists in the database
+      const userId = 2; // تأكد من وجود مستخدم بهذا المعرف في قاعدة البيانات
       console.log("Creating game with data:", req.body);
 
       // Format data from new API format to storage format
@@ -459,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gameName: req.body.gameName,
         teams: req.body.teamNames
           .slice(0, req.body.teamsCount)
-          .map((name: string) => ({ name })),
+          .map((name: string) => ({ name, score: 0 })),
         answerTimeFirst: req.body.answerTimes[0] || 30, // وقت الإجابة الأول
         answerTimeSecond: req.body.answerTimes[1] || 15, // وقت الإجابة الثاني
         selectedCategories: req.body.categories,
