@@ -1233,7 +1233,7 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                   <option value="">كل الفئات</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name}
+                      {category.name} ({category.availableQuestions || questions.filter(q => q.categoryId === category.id).length})
                     </option>
                   ))}
                 </select>
@@ -1257,7 +1257,7 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                       .find((c) => c.id === filterCategoryId)
                       ?.children.map((subcat) => (
                         <option key={subcat.id} value={subcat.id}>
-                          {subcat.name}
+                          {subcat.name} ({subcat.availableQuestions || questions.filter(q => q.subcategoryId === subcat.id).length})
                         </option>
                       ))}
                 </select>
