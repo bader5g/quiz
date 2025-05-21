@@ -100,7 +100,7 @@ export default function Home() {
         title: "تسجيل الدخول مطلوب",
         description: "يرجى تسجيل الدخول لاختيار الفئات",
       });
-      navigate("/login");
+      navigate("/auth");
       return;
     }
 
@@ -304,7 +304,7 @@ export default function Home() {
                   title: "تسجيل الدخول مطلوب",
                   description: "يرجى تسجيل الدخول لاختيار الفئات وبدء اللعبة",
                 });
-                navigate('/login');
+                navigate('/auth');
               } else if (selectedCategories.length >= (gameSettings?.minCategories || 4)) {
                 handleStartGame();
               } else if (selectedCategories.length > 0) {
