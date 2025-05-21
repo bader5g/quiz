@@ -1188,9 +1188,6 @@ export default function QuestionsManagement() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex flex-col gap-1 flex-1">
                           <div className="flex items-center gap-2 rtl">
-                            <span className="inline-flex items-center justify-center w-7 h-7 text-center rounded-full bg-primary/10 text-primary">
-                              {question.categoryIcon || "📚"}
-                            </span>
                             <span className="font-bold text-primary">{question.categoryName}</span>
                           </div>
                           {question.subcategoryName && (
