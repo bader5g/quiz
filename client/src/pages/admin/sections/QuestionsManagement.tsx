@@ -576,15 +576,15 @@ export default function QuestionsManagement() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">إدارة الأسئلة</h2>
         <div className="flex gap-2">
-          <div className="dropdown dropdown-end">
+          <div className="relative dropdown">
             <Button 
               variant="outline"
-              className="flex items-center gap-1"
+              className="flex items-center gap-2"
             >
               <span>استيراد / تصدير</span>
               <ChevronDown className="h-4 w-4" />
             </Button>
-            <div className="dropdown-content bg-background border rounded-md shadow-md p-2 mt-1 w-44 flex flex-col gap-1 absolute right-0 z-10">
+            <div className="hidden dropdown-menu absolute bg-background border rounded-md shadow-md p-2 mt-1 w-56 flex-col gap-1 z-10 right-0">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -604,7 +604,7 @@ export default function QuestionsManagement() {
                 تصدير Excel
               </Button>
               <hr className="my-1" />
-              <label className="cursor-pointer">
+              <label className="cursor-pointer w-full">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -635,7 +635,6 @@ export default function QuestionsManagement() {
                 <ExternalLink className="w-4 h-4 ml-2" />
                 استيراد من رابط
               </Button>
-              </label>
             </div>
           </div>
           <Button 
@@ -653,10 +652,7 @@ export default function QuestionsManagement() {
           position: relative;
           display: inline-block;
         }
-        .dropdown-content {
-          display: none;
-        }
-        .dropdown:hover .dropdown-content {
+        .dropdown:hover .dropdown-menu {
           display: flex;
         }
       `}} />

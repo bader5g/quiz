@@ -45,6 +45,10 @@ const validateRequest = <T>(schema: z.ZodSchema<T>) => {
   };
 };
 
+// استيراد المكتبات اللازمة
+import axios from "axios";
+import * as XLSX from "xlsx";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
