@@ -27,6 +27,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
+// استيراد لتوليد مثال للاستيراد
+import { saveAs } from "file-saver";
+
 // نموذج السؤال
 const questionSchema = z.object({
   id: z.number().optional(),
