@@ -1,29 +1,36 @@
-import { useState } from "react";
-import { Redirect, useLocation } from "wouter";
-import { z } from "zod";
+import { useLocation, Redirect } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/context/UserContext";
-import { insertUserSchema } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 
-// Login schema simplifies the registration schema to just username and password
-const loginSchema = insertUserSchema.pick({
-  username: true,
-  password: true,
+// Define login form schema
+const loginSchema = z.object({
+  username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
+  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
 });
 
-// Registration schema adds validation rules
-const registerSchema = insertUserSchema.extend({
-  password: z.string()
-    .min(8, { message: "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل" })
-    .max(100, { message: "يجب أن تكون كلمة المرور أقل من 100 حرف" }),
-  name: z.string().min(2, { message: "يجب أن يتكون الاسم من حرفين على الأقل" }),
-  email: z.string().email({ message: "يرجى إدخال بريد إلكتروني صالح" }).optional(),
+// Define registration form schema
+const registerSchema = z.object({
+  username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
+  name: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
+  email: z.string().email("يرجى إدخال بريد إلكتروني صالح").optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -60,85 +67,41 @@ export default function AuthPage() {
   });
 
   async function onLoginSubmit(data: LoginFormValues) {
-    setIsLoading(true);
     try {
-      // In a real app, we'd call the login API endpoint here
-      // For now, we'll simulate a successful login with the test user (ID: 2)
-      login({
-        id: 2,
-        username: data.username,
-        name: "مستخدم تجريبي"
-      });
-      
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: "مرحبًا بك مرة أخرى!",
-      });
-      
+      await loginMutation.mutateAsync(data);
       navigate("/");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "فشل تسجيل الدخول",
-        description: "اسم المستخدم أو كلمة المرور غير صحيحة.",
-      });
-    } finally {
-      setIsLoading(false);
+      // Error handling is already done in the mutation
     }
   }
 
   async function onRegisterSubmit(data: RegisterFormValues) {
-    setIsLoading(true);
     try {
-      // In a real app, we'd call the register API endpoint here
-      // For now, we'll simulate a successful registration with the test user
-      login({
-        id: 2,
-        username: data.username,
-        name: data.name
-      });
-      
-      toast({
-        title: "تم إنشاء الحساب بنجاح",
-        description: "مرحبًا بك في تطبيق جاوب!",
-      });
-      
+      await registerMutation.mutateAsync(data);
       navigate("/");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "فشل إنشاء الحساب",
-        description: "حدث خطأ أثناء إنشاء الحساب. الرجاء المحاولة مرة أخرى.",
-      });
-    } finally {
-      setIsLoading(false);
+      // Error handling is already done in the mutation
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col-reverse md:flex-row" dir="rtl">
-      {/* طرف النموذج */}
-      <div className="flex w-full md:w-1/2 items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-primary">
-              مرحبًا بك في جاوب
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              سجل الدخول أو أنشئ حسابًا جديدًا للاستمتاع بتجربة اللعب
-            </p>
+    <div className="flex h-screen">
+      {/* Form Side */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center px-4 md:px-8 lg:px-12 py-6 bg-background">
+        <div className="max-w-md mx-auto w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold tracking-tight">جاوب</h1>
+            <p className="text-muted-foreground mt-2">منصة الألعاب التعليمية المبتكرة</p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">تسجيل الدخول</TabsTrigger>
               <TabsTrigger value="register">إنشاء حساب</TabsTrigger>
             </TabsList>
-            
-            {/* نموذج تسجيل الدخول */}
             <TabsContent value="login">
               <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                   <FormField
                     control={loginForm.control}
                     name="username"
@@ -146,7 +109,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>اسم المستخدم</FormLabel>
                         <FormControl>
-                          <Input placeholder="ادخل اسم المستخدم" {...field} />
+                          <Input placeholder="أدخل اسم المستخدم" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -159,7 +122,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input type="password" placeholder="••••••" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -171,24 +134,9 @@ export default function AuthPage() {
                 </form>
               </Form>
             </TabsContent>
-            
-            {/* نموذج إنشاء حساب */}
             <TabsContent value="register">
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>الاسم الكامل</FormLabel>
-                        <FormControl>
-                          <Input placeholder="ادخل اسمك الكامل" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                   <FormField
                     control={registerForm.control}
                     name="username"
@@ -196,7 +144,20 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>اسم المستخدم</FormLabel>
                         <FormControl>
-                          <Input placeholder="ادخل اسم المستخدم" {...field} />
+                          <Input placeholder="أدخل اسم المستخدم" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الاسم الكامل</FormLabel>
+                        <FormControl>
+                          <Input placeholder="أدخل اسمك الكامل" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -235,7 +196,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input type="password" placeholder="••••••" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -251,41 +212,28 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* قسم العرض */}
-      <div className="relative w-full md:w-1/2 bg-primary-600 flex items-center justify-center p-8">
-        <div className="relative z-10 text-white max-w-md text-center">
-          <h1 className="text-4xl font-bold mb-6">جاوب - لعبة المعرفة العربية</h1>
-          <p className="text-lg mb-8">
-            تحدى أصدقاءك في مسابقة ممتعة من الأسئلة في مختلف المجالات. اختبر معرفتك، تعلم حقائق جديدة، واستمتع بوقتك!
+      {/* Hero Side */}
+      <div className="hidden md:flex md:w-1/2 bg-primary text-primary-foreground">
+        <div className="flex flex-col justify-center items-center p-12 text-center">
+          <h1 className="text-4xl font-extrabold mb-6">مرحباً بك في جاوب!</h1>
+          <p className="text-xl mb-8 max-w-md">
+            منصة الألعاب التعليمية الرائدة. استمتع بتجربة مسابقات ثقافية تفاعلية مع الأصدقاء والعائلة.
           </p>
-          <div className="space-y-4">
+          <div className="space-y-4 text-start w-full max-w-md">
             <div className="flex items-center">
-              <div className="mr-4 p-2 bg-white bg-opacity-20 rounded-full">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                </svg>
-              </div>
-              <p className="text-white text-right">أكثر من 1000 سؤال في مختلف المجالات</p>
+              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center mr-4">1</div>
+              <span>سجل دخولك أو أنشئ حساباً جديداً</span>
             </div>
             <div className="flex items-center">
-              <div className="mr-4 p-2 bg-white bg-opacity-20 rounded-full">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                </svg>
-              </div>
-              <p className="text-white text-right">وضع متعدد اللاعبين للمنافسة مع الأصدقاء</p>
+              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center mr-4">2</div>
+              <span>أنشئ لعبة جديدة واختر الفئات المفضلة لديك</span>
             </div>
             <div className="flex items-center">
-              <div className="mr-4 p-2 bg-white bg-opacity-20 rounded-full">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                </svg>
-              </div>
-              <p className="text-white text-right">اكتسب النقاط وارتق في المستويات</p>
+              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center mr-4">3</div>
+              <span>ادعُ أصدقاءك للمشاركة واستمتع بالمنافسة</span>
             </div>
           </div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-500/90 to-primary-700/90"></div>
       </div>
     </div>
   );
