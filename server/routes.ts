@@ -62,19 +62,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "بيانات الأسئلة غير صالحة" });
       }
       
+      console.log("استلام طلب استيراد الأسئلة:", questions);
+      
       const importedQuestions = [];
       
       for (const question of questions) {
-        // التأكد من وجود الحقول الإلزامية
+        // التأكد من وجود الحقول الإلزامية (فقط السؤال والإجابة والفئة)
         if (!question.text || !question.answer || !question.categoryId) {
+          console.log("تخطي سؤال غير مكتمل:", question);
           continue;
         }
         
-        // تعيين الأسئلة المستوردة كغير فعالة افتراضياً
-        question.isActive = false;
+        // إعداد بيانات السؤال (فقط المطلوبة)
+        const questionData = {
+          text: question.text,
+          answer: question.answer,
+          categoryId: question.categoryId,
+          // إذا كانت هناك فئة فرعية، أضفها
+          subcategoryId: question.subcategoryId || 0,
+          // إضافة الصعوبة (افتراضي: سهل)
+          difficulty: question.difficulty || 1,
+          // إضافة الوسائط إذا وجدت
+          imageUrl: question.imageUrl || '',
+          videoUrl: question.videoUrl || '',
+          mediaType: question.mediaType || 'none',
+          // إضافة الكلمات المفتاحية إذا وجدت
+          keywords: question.keywords || '',
+          // تعيين السؤال كغير فعال افتراضياً
+          isActive: false
+        };
+        
+        console.log("إضافة سؤال جديد:", questionData);
         
         // إضافة السؤال إلى قاعدة البيانات
-        const newQuestion = await storage.createQuestion(question);
+        const newQuestion = await storage.createQuestion(questionData);
         importedQuestions.push(newQuestion);
       }
       
@@ -96,6 +117,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!url) {
         return res.status(400).json({ error: "الرابط غير صالح" });
       }
+      
+      console.log("استلام طلب استيراد الأسئلة من الرابط:", url);
       
       // التحقق مما إذا كان الرابط من Google Sheets
       let sheetData;
@@ -121,12 +144,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error("تنسيق الملف غير مدعوم");
         }
       } catch (error) {
+        console.error("خطأ في الحصول على البيانات من الرابط:", error);
         return res.status(400).json({ error: "فشل في استيراد البيانات من الرابط المحدد" });
       }
       
       if (!Array.isArray(sheetData) || sheetData.length === 0) {
         return res.status(400).json({ error: "لم يتم العثور على بيانات صالحة في الرابط" });
       }
+      
+      console.log("تم الحصول على البيانات من الرابط:", sheetData.length, "سجل");
       
       // تحويل البيانات إلى تنسيق الأسئلة
       const questionsToImport = [];
@@ -180,21 +206,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const videoUrl = row['رابط الفيديو'] || row['video'] || '';
         const keywords = row['الكلمات المفتاحية'] || row['keywords'] || '';
         
-        // إضافة السؤال فقط إذا كانت البيانات الإلزامية موجودة
-        if (questionText && answer && categoryId) {
-          questionsToImport.push({
-            text: questionText,
-            answer,
-            categoryId,
-            subcategoryId,
-            difficulty,
-            imageUrl,
-            videoUrl,
-            mediaType: imageUrl ? 'image' : videoUrl ? 'video' : 'none',
-            keywords,
-            isActive: false // الأسئلة المستوردة تكون غير فعالة افتراضياً
-          });
+        // التحقق من وجود البيانات الإلزامية
+        if (!questionText || !answer || !categoryId) {
+          console.log("تخطي سؤال غير مكتمل من الرابط:", row);
+          continue;
         }
+        
+        // إعداد بيانات السؤال
+        const questionData = {
+          text: questionText,
+          answer,
+          categoryId,
+          subcategoryId: subcategoryId || 0,
+          difficulty,
+          imageUrl,
+          videoUrl,
+          mediaType: imageUrl ? 'image' : videoUrl ? 'video' : 'none',
+          keywords,
+          isActive: false // الأسئلة المستوردة تكون غير فعالة افتراضياً
+        };
+        
+        console.log("إضافة سؤال جديد من الرابط:", questionData);
+        questionsToImport.push(questionData);
+      }
+      
+      // التحقق من وجود أسئلة للاستيراد
+      if (questionsToImport.length === 0) {
+        return res.status(400).json({ error: "لم يتم العثور على أسئلة صالحة للاستيراد" });
       }
       
       // إضافة الأسئلة إلى قاعدة البيانات

@@ -388,6 +388,142 @@ export default function QuestionsManagement() {
       });
     }
   };
+  
+  // تصدير الأسئلة إلى ملف
+
+
+  // استيراد الأسئلة من ملف
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImporting(true);
+      
+      // قراءة الملف
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      // تحويل البيانات إلى تنسيق الأسئلة
+      const questionsToImport = jsonData.map((row: any) => {
+        // تحديد الفئة الرئيسية والفرعية
+        const categoryName = row['الفئة'] || row['category'] || '';
+        const subcategoryName = row['الفئة الفرعية'] || row['subcategory'] || '';
+        
+        let categoryId = 0;
+        let subcategoryId = 0;
+        
+        // البحث عن الفئة الرئيسية
+        const category = categories.find(c => c.name === categoryName);
+        if (category) {
+          categoryId = category.id;
+          
+          // البحث عن الفئة الفرعية إذا وجدت
+          if (subcategoryName && category.children) {
+            const subcategory = category.children.find(s => s.name === subcategoryName);
+            if (subcategory) {
+              subcategoryId = subcategory.id;
+            }
+          }
+        }
+        
+        // تحديد مستوى الصعوبة
+        let difficulty = 1;
+        const difficultyText = row['الصعوبة'] || row['difficulty'] || '';
+        if (typeof difficultyText === 'string') {
+          if (difficultyText.includes('متوسط')) {
+            difficulty = 2;
+          } else if (difficultyText.includes('صعب')) {
+            difficulty = 3;
+          }
+        } else if (typeof difficultyText === 'number') {
+          difficulty = difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
+        }
+        
+        return {
+          text: row['نص السؤال'] || row['السؤال'] || row['question'] || '',
+          answer: row['الإجابة'] || row['answer'] || '',
+          categoryId,
+          subcategoryId,
+          difficulty,
+          imageUrl: row['رابط الصورة'] || row['image'] || '',
+          videoUrl: row['رابط الفيديو'] || row['video'] || '',
+          mediaType: row['رابط الصورة'] ? 'image' : row['رابط الفيديو'] ? 'video' : 'none',
+          keywords: row['الكلمات المفتاحية'] || row['keywords'] || ''
+        };
+      }).filter((q: any) => q.text && q.answer && q.categoryId); // التأكد من وجود الحقول الإلزامية
+      
+      if (questionsToImport.length === 0) {
+        throw new Error('لم يتم العثور على أسئلة صالحة في الملف');
+      }
+      
+      // إرسال الأسئلة إلى الخادم
+      const response = await apiRequest('POST', '/api/import-questions', { questions: questionsToImport });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشلت عملية الاستيراد');
+      }
+      
+      const result = await response.json();
+      
+      // تحديث القائمة المحلية
+      fetchQuestions();
+      
+      toast({
+        title: 'تم الاستيراد بنجاح',
+        description: `تم استيراد ${result.imported} سؤال بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
+      });
+      
+      // إعادة تعيين حقل الملف
+      e.target.value = '';
+    } catch (error: any) {
+      toast({
+        title: 'خطأ في الاستيراد',
+        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // استيراد الأسئلة من رابط
+  const importQuestionsFromURL = async (url: string) => {
+    if (!url) return;
+    
+    try {
+      setImporting(true);
+      
+      // إرسال الرابط إلى الخادم
+      const response = await apiRequest('POST', '/api/import-questions-from-url', { url });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشلت عملية الاستيراد من الرابط');
+      }
+      
+      const result = await response.json();
+      
+      // تحديث القائمة المحلية
+      fetchQuestions();
+      
+      toast({
+        title: 'تم الاستيراد بنجاح',
+        description: `تم استيراد ${result.imported} سؤال من الرابط بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'خطأ في الاستيراد',
+        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة من الرابط.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   // تصدير الأسئلة إلى ملف
   const exportQuestions = async (format: 'csv' | 'excel') => {
@@ -576,7 +712,7 @@ export default function QuestionsManagement() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">إدارة الأسئلة</h2>
         <div className="flex gap-2">
-          <div className="relative dropdown">
+          <div className="relative group">
             <Button 
               variant="outline"
               className="flex items-center gap-2"
@@ -584,7 +720,7 @@ export default function QuestionsManagement() {
               <span>استيراد / تصدير</span>
               <ChevronDown className="h-4 w-4" />
             </Button>
-            <div className="hidden dropdown-menu absolute bg-background border rounded-md shadow-md p-2 mt-1 w-56 flex-col gap-1 z-10 right-0">
+            <div className="hidden group-hover:flex absolute bg-background border rounded-md shadow-md p-2 mt-1 w-56 flex-col gap-1 z-10 right-0">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -646,16 +782,6 @@ export default function QuestionsManagement() {
           </Button>
         </div>
       </div>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        .dropdown {
-          position: relative;
-          display: inline-block;
-        }
-        .dropdown:hover .dropdown-menu {
-          display: flex;
-        }
-      `}} />
 
       {/* قسم فلاتر البحث */}
       <div className="mb-6 border rounded-lg p-4 bg-muted/10">
