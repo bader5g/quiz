@@ -119,6 +119,7 @@ export default function QuestionsManagement() {
   const [filterUsageMax, setFilterUsageMax] = useState<number | null>(null);
   const [filterDateFrom, setFilterDateFrom] = useState<string | null>(null);
   const [filterDateTo, setFilterDateTo] = useState<string | null>(null);
+  const [filterActive, setFilterActive] = useState<string>("all"); // all, active, inactive
   const [showFilters, setShowFilters] = useState(false);
 
   // تهيئة نموذج السؤال
