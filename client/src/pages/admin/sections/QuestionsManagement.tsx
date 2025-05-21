@@ -88,6 +88,11 @@ export default function QuestionsManagement() {
   const [filterDateFrom, setFilterDateFrom] = useState<string | null>(null);
   const [filterDateTo, setFilterDateTo] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // خيارات التحديد الجماعي
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   // تهيئة نموذج السؤال
   const form = useForm<Question>({
@@ -229,7 +234,134 @@ export default function QuestionsManagement() {
     );
   };
   
+  // دوال التحديد الجماعي
+  const handleSelectQuestion = (id: number, isSelected: boolean) => {
+    setSelectedQuestions(prevSelected => {
+      const newSelected = new Set(prevSelected);
+      if (isSelected) {
+        newSelected.add(id);
+      } else {
+        newSelected.delete(id);
+      }
+      
+      // إظهار قائمة الإجراءات الجماعية إذا كان هناك عناصر محددة
+      setShowBulkActions(newSelected.size > 0);
+      
+      return newSelected;
+    });
+  };
+  
+  const handleSelectAll = (isSelected: boolean) => {
+    if (isSelected) {
+      // تحديد جميع الأسئلة في الصفحة الحالية
+      const currentPageQuestions = getCurrentPageQuestions();
+      const currentIds = new Set(currentPageQuestions.map(q => q.id));
+      setSelectedQuestions(currentIds);
+      setShowBulkActions(currentIds.size > 0);
+    } else {
+      // إلغاء تحديد جميع الأسئلة
+      setSelectedQuestions(new Set());
+      setShowBulkActions(false);
+    }
+  };
+  
+  // تنفيذ العمليات الجماعية
+  const handleBulkDelete = async () => {
+    if (selectedQuestions.size === 0) return;
+    
+    if (!confirm(`هل أنت متأكد من رغبتك في حذف ${selectedQuestions.size} سؤال؟`)) {
+      return;
+    }
+    
+    setBulkActionLoading(true);
+    try {
+      // حذف الأسئلة المحددة
+      const deletePromises = Array.from(selectedQuestions).map(id => 
+        apiRequest("DELETE", `/api/questions/${id}`)
+      );
+      
+      await Promise.all(deletePromises);
+      
+      // تحديث قائمة الأسئلة بعد الحذف
+      setQuestions(prevQuestions => 
+        prevQuestions.filter(q => !selectedQuestions.has(q.id))
+      );
+      
+      setFilteredQuestions(prevFilteredQuestions => 
+        prevFilteredQuestions.filter(q => !selectedQuestions.has(q.id))
+      );
+      
+      // إعادة تعيين التحديد
+      setSelectedQuestions(new Set());
+      setShowBulkActions(false);
+      
+      toast({
+        title: "تم الحذف بنجاح",
+        description: `تم حذف ${selectedQuestions.size} سؤال بنجاح`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error deleting questions:", error);
+      toast({
+        title: "خطأ في الحذف",
+        description: "حدث خطأ أثناء محاولة حذف الأسئلة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+  
+  const handleBulkActivate = async (activate: boolean) => {
+    if (selectedQuestions.size === 0) return;
+    
+    setBulkActionLoading(true);
+    try {
+      // تغيير حالة التفعيل للأسئلة المحددة
+      const updatePromises = Array.from(selectedQuestions).map(id => 
+        apiRequest("PUT", `/api/questions/${id}`, { isActive: activate })
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // تحديث قائمة الأسئلة محلياً
+      setQuestions(prevQuestions => 
+        prevQuestions.map(q => 
+          selectedQuestions.has(q.id) ? { ...q, isActive: activate } : q
+        )
+      );
+      
+      setFilteredQuestions(prevFilteredQuestions => 
+        prevFilteredQuestions.map(q => 
+          selectedQuestions.has(q.id) ? { ...q, isActive: activate } : q
+        )
+      );
+      
+      toast({
+        title: activate ? "تم التفعيل بنجاح" : "تم إلغاء التفعيل بنجاح",
+        description: `تم ${activate ? 'تفعيل' : 'إلغاء تفعيل'} ${selectedQuestions.size} سؤال بنجاح`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error updating questions:", error);
+      toast({
+        title: "خطأ في التحديث",
+        description: `حدث خطأ أثناء محاولة ${activate ? 'تفعيل' : 'إلغاء تفعيل'} الأسئلة.`,
+        variant: "destructive",
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+  
   // تطبيق الفلاتر على الأسئلة
+  // الحصول على الأسئلة في الصفحة الحالية
+  const getCurrentPageQuestions = () => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredQuestions.slice(startIndex, endIndex);
+  };
+
   useEffect(() => {
     if (!questions.length) {
       setFilteredQuestions([]);
