@@ -248,9 +248,15 @@ export default function QuestionsManagement() {
       result = result.filter(q => new Date(q.createdAt) <= toDate);
     }
     
+    // فلتر الحالة (فعال/غير فعال)
+    if (filterActive !== 'all') {
+      const isActive = filterActive === 'active';
+      result = result.filter(q => q.isActive === isActive);
+    }
+    
     setFilteredQuestions(result);
     setCurrentPage(1); // إعادة تعيين الصفحة الحالية عند تغيير الفلاتر
-  }, [questions, filterText, filterCategoryId, filterSubcategoryId, filterUsageMin, filterUsageMax, filterDateFrom, filterDateTo]);
+  }, [questions, filterText, filterCategoryId, filterSubcategoryId, filterUsageMin, filterUsageMax, filterDateFrom, filterDateTo, filterActive]);
 
   // عرض نموذج إضافة سؤال جديد
   const showAddQuestionForm = () => {
@@ -1024,6 +1030,20 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                           {subcat.name}
                         </option>
                       ))}
+                </select>
+              </div>
+              
+              {/* فلتر الحالة (فعال/غير فعال) */}
+              <div>
+                <span className="mb-1 block">الحالة</span>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  value={filterActive}
+                  onChange={(e) => setFilterActive(e.target.value)}
+                >
+                  <option value="all">جميع الأسئلة</option>
+                  <option value="active">الأسئلة الفعالة</option>
+                  <option value="inactive">الأسئلة غير الفعالة</option>
                 </select>
               </div>
             </div>
