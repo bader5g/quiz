@@ -265,12 +265,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const subcategories = await storage.getSubcategories(category.id);
         
         // حساب عدد الأسئلة لكل فئة
-        const categoryQuestionsCount = allQuestions.filter(q => q.categoryId === category.id).length;
+        const categoryQuestionsCount = allQuestions.filter(q => q.category_id === category.id).length;
         
         // تحضير الفئات الفرعية مع عدد الأسئلة لكل منها
         const subcategoriesWithCounts = subcategories.map((sub) => {
           // حساب عدد الأسئلة في الفئة الفرعية
-          const subcategoryQuestionsCount = allQuestions.filter(q => q.subcategoryId === sub.id).length;
+          const subcategoryQuestionsCount = allQuestions.filter(q => q.subcategory_id === sub.id).length;
           
           return {
             id: sub.id,
