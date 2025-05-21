@@ -394,7 +394,105 @@ export default function QuestionsManagement() {
   };
   
   // تصدير الأسئلة إلى ملف
-  const exportQuestions = async (format: 'csv' | 'excel') => {
+  // إنشاء نموذج استيراد فارغ مع أمثلة
+const createImportTemplate = async (format: 'csv' | 'excel') => {
+  try {
+    console.log("جاري إنشاء نموذج استيراد الأسئلة");
+    
+    // جمع قائمة بأسماء الفئات المتاحة للمساعدة في الاستيراد
+    const categoryOptions = categories.map(c => c.name).join(', ');
+    
+    // إنشاء بيانات النموذج مع أمثلة
+    const templateData = [
+      {
+        'نص السؤال': 'من الفائز بكأس العالم 2022؟',
+        'الإجابة': 'الأرجنتين',
+        'الفئة': categories.length > 0 ? categories.find(c => c.name === 'كرة قدم')?.name || categories[0].name : 'كرة قدم',
+        'الفئة الفرعية': 'كرة قدم عالمية',
+        'الصعوبة': 'متوسط',
+        'الكلمات المفتاحية': 'كأس العالم,قطر,ميسي',
+        'رابط الصورة': 'https://upload.wikimedia.org/wikipedia/commons/b/b9/Flag_of_Argentina.svg',
+        'رابط الفيديو': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      },
+      {
+        'نص السؤال': 'ما هي عاصمة فرنسا؟',
+        'الإجابة': 'باريس',
+        'الفئة': categories.length > 0 ? categories.find(c => c.name === 'معلومات عامة')?.name || categories[0].name : 'معلومات عامة',
+        'الفئة الفرعية': 'جغرافيا',
+        'الصعوبة': 'سهل',
+        'الكلمات المفتاحية': 'فرنسا,عواصم,أوروبا',
+        'رابط الصورة': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Paris_Night.jpg/1280px-Paris_Night.jpg',
+        'رابط الفيديو': ''
+      },
+      // نموذج فارغ للاستخدام
+      {
+        'نص السؤال': '',
+        'الإجابة': '',
+        'الفئة': '',
+        'الفئة الفرعية': '',
+        'الصعوبة': '',
+        'الكلمات المفتاحية': '',
+        'رابط الصورة': '',
+        'رابط الفيديو': ''
+      }
+    ];
+    
+    // إنشاء ورقة تعليمات
+    const instructionsData = [
+      { 'تعليمات': 'تعليمات استيراد الأسئلة:' },
+      { 'تعليمات': '1. الحقول المطلوبة هي: نص السؤال، الإجابة، الفئة' },
+      { 'تعليمات': '2. الفئات المتاحة حالياً في النظام: ' + categoryOptions },
+      { 'تعليمات': '3. قيم حقل الصعوبة المقبولة: سهل، متوسط، صعب' },
+      { 'تعليمات': '4. لإضافة صورة، ضع رابط الصورة في عمود "رابط الصورة"' },
+      { 'تعليمات': '5. لإضافة فيديو، ضع رابط الفيديو في عمود "رابط الفيديو"' },
+      { 'تعليمات': '6. يمكن إضافة إما صورة أو فيديو للسؤال الواحد، وليس كلاهما' },
+      { 'تعليمات': '7. الأسئلة المستوردة ستكون غير فعالة حتى يتم تفعيلها من لوحة التحكم' }
+    ];
+    
+    // إنشاء ورقة عمل للنموذج وورقة أخرى للتعليمات
+    const worksheetTemplate = XLSX.utils.json_to_sheet(templateData);
+    const worksheetInstructions = XLSX.utils.json_to_sheet(instructionsData);
+    
+    // تعديل عرض الأعمدة
+    const colWidth = [
+      { wch: 40 }, // نص السؤال
+      { wch: 30 }, // الإجابة
+      { wch: 20 }, // الفئة
+      { wch: 20 }, // الفئة الفرعية
+      { wch: 10 }, // الصعوبة
+      { wch: 25 }, // الكلمات المفتاحية
+      { wch: 50 }, // رابط الصورة
+      { wch: 50 }  // رابط الفيديو
+    ];
+    
+    worksheetTemplate['!cols'] = colWidth;
+    
+    // إنشاء الملف
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheetTemplate, 'نموذج الأسئلة');
+    XLSX.utils.book_append_sheet(workbook, worksheetInstructions, 'تعليمات');
+    
+    // تحديد اسم الملف حسب الصيغة
+    const filename = format === 'csv' ? 'نموذج_استيراد_الأسئلة.csv' : 'نموذج_استيراد_الأسئلة.xlsx';
+    
+    // تصدير الملف
+    XLSX.writeFile(workbook, filename);
+    
+    toast({
+      title: 'تم إنشاء نموذج الاستيراد بنجاح',
+      description: `تم إنشاء نموذج فارغ لاستيراد الأسئلة. استخدم هذا النموذج لإعداد ملفات استيراد صحيحة.`,
+    });
+  } catch (error: any) {
+    console.error("خطأ في إنشاء نموذج الاستيراد:", error);
+    toast({
+      title: 'خطأ في إنشاء النموذج',
+      description: error.message || 'حدث خطأ أثناء محاولة إنشاء نموذج الاستيراد.',
+      variant: 'destructive',
+    });
+  }
+};
+
+const exportQuestions = async (format: 'csv' | 'excel') => {
     try {
       // تحضير بيانات التصدير - تبسيط البيانات، حذف الحقول غير الضرورية للتوافق مع متطلبات الاستيراد
       const exportData = filteredQuestions.map(q => ({
@@ -682,6 +780,16 @@ export default function QuestionsManagement() {
               >
                 <FileSpreadsheet className="w-4 h-4 ml-2" />
                 تصدير Excel
+              </Button>
+              <hr className="my-1" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => createImportTemplate('excel')}
+                className="justify-start"
+              >
+                <Download className="w-4 h-4 ml-2" />
+                تنزيل نموذج استيراد
               </Button>
               <hr className="my-1" />
               <label className="cursor-pointer w-full">
