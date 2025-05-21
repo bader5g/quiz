@@ -4,6 +4,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Edit, BarChart2, FolderEdit } from "lucide-react";
+import { EditTextButton, EditCategoryButton, EditDifficultyButton } from "@/components/admin/EditQuestionButtons";
 
 import {
   Dialog,
@@ -56,7 +58,7 @@ interface Category {
 
 interface QuestionDisplay extends Question {
   categoryName: string;
-  subcategoryName: string;
+  subcategoryName: string | null;
   categoryIcon: string;
   usageCount: number;
   createdAt: string;
@@ -159,6 +161,72 @@ export default function QuestionsManagement() {
   useEffect(() => {
     fetchCategories().then(() => fetchQuestions());
   }, []);
+  
+  // وظائف دعم التعديل السريع
+  const handleTextUpdate = (id: number, field: string, value: string) => {
+    // تحديث البيانات محلياً
+    setQuestions(prevQuestions => 
+      prevQuestions.map(q => 
+        q.id === id ? { ...q, [field]: value } : q
+      )
+    );
+    
+    setFilteredQuestions(prevFilteredQuestions => 
+      prevFilteredQuestions.map(q => 
+        q.id === id ? { ...q, [field]: value } : q
+      )
+    );
+  };
+  
+  const handleCategoryUpdate = (id: number, categoryId: number, subcategoryId: number | null, categoryName: string, categoryIcon: string, subcategoryName: string | null) => {
+    // تحديث البيانات محلياً
+    setQuestions(prevQuestions => 
+      prevQuestions.map(q => {
+        if (q.id === id) {
+          return {
+            ...q, 
+            categoryId, 
+            subcategoryId, 
+            categoryName, 
+            categoryIcon, 
+            subcategoryName
+          };
+        }
+        return q;
+      })
+    );
+    
+    setFilteredQuestions(prevFilteredQuestions => 
+      prevFilteredQuestions.map(q => {
+        if (q.id === id) {
+          return {
+            ...q, 
+            categoryId, 
+            subcategoryId, 
+            categoryName, 
+            categoryIcon, 
+            subcategoryName
+          };
+        }
+        return q;
+      })
+    );
+  };
+  
+  const handleDifficultyUpdate = (id: number, difficulty: number) => {
+    // تحديث البيانات محلياً
+    setQuestions(prevQuestions => 
+      prevQuestions.map(q => 
+        q.id === id ? { ...q, difficulty } : q
+      )
+    );
+    
+    setFilteredQuestions(prevFilteredQuestions => 
+      prevFilteredQuestions.map(q => 
+        q.id === id ? { ...q, difficulty } : q
+      )
+    );
+  };
   
   // تطبيق الفلاتر على الأسئلة
   useEffect(() => {
@@ -617,39 +685,77 @@ export default function QuestionsManagement() {
                   <tr key={question.id} className="border-b hover:bg-muted/20">
                     <td className="p-3 text-center font-bold">{(currentPage - 1) * pageSize + index + 1}</td>
                     <td className="p-3 text-right">
-                      {question.text.length > 60
-                        ? question.text.substring(0, 60) + "..."
-                        : question.text}
-                    </td>
-                    <td className="p-3 text-right">
-                      {question.answer.length > 20
-                        ? question.answer.substring(0, 20) + "..."
-                        : question.answer}
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 rtl">
-                          <span className="inline-flex items-center justify-center w-7 h-7 text-center rounded-full bg-primary/10 text-primary">
-                            {question.categoryIcon || "📚"}
-                          </span>
-                          <span className="font-bold text-primary">{question.categoryName}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          {question.text.length > 60
+                            ? question.text.substring(0, 60) + "..."
+                            : question.text}
                         </div>
-                        {question.subcategoryName && (
-                          <div className="mr-2 mt-1 flex items-center gap-1">
-                            <span className="text-xs text-gray-500">الفئة الفرعية:</span>
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
-                              {question.subcategoryName}
-                            </span>
-                          </div>
-                        )}
+                        <EditTextButton 
+                          id={question.id} 
+                          field="text" 
+                          value={question.text} 
+                          onUpdate={handleTextUpdate} 
+                        />
                       </div>
                     </td>
                     <td className="p-3 text-right">
-                      {question.difficulty === 1
-                        ? "سهل"
-                        : question.difficulty === 2
-                          ? "متوسط"
-                          : "صعب"}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          {question.answer.length > 20
+                            ? question.answer.substring(0, 20) + "..."
+                            : question.answer}
+                        </div>
+                        <EditTextButton 
+                          id={question.id} 
+                          field="answer" 
+                          value={question.answer} 
+                          onUpdate={handleTextUpdate} 
+                        />
+                      </div>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-1 flex-1">
+                          <div className="flex items-center gap-2 rtl">
+                            <span className="inline-flex items-center justify-center w-7 h-7 text-center rounded-full bg-primary/10 text-primary">
+                              {question.categoryIcon || "📚"}
+                            </span>
+                            <span className="font-bold text-primary">{question.categoryName}</span>
+                          </div>
+                          {question.subcategoryName && (
+                            <div className="mr-2 mt-1 flex items-center gap-1">
+                              <span className="text-xs text-gray-500">الفئة الفرعية:</span>
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                                {question.subcategoryName}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <EditCategoryButton 
+                          id={question.id}
+                          categoryId={question.categoryId}
+                          subcategoryId={question.subcategoryId}
+                          categories={categories}
+                          onUpdate={handleCategoryUpdate}
+                        />
+                      </div>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          {question.difficulty === 1
+                            ? "سهل"
+                            : question.difficulty === 2
+                              ? "متوسط"
+                              : "صعب"}
+                        </div>
+                        <EditDifficultyButton 
+                          id={question.id}
+                          difficulty={question.difficulty}
+                          onUpdate={handleDifficultyUpdate}
+                        />
+                      </div>
                     </td>
                     <td className="p-3 text-right">{question.usageCount} مرة</td>
                     <td className="p-3 text-right">
