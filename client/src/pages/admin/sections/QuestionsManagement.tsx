@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as XLSX from 'xlsx';
-import { uniqueId } from 'lodash';
+
 
 import {
   Dialog,
@@ -437,18 +437,28 @@ export default function QuestionsManagement() {
 
     try {
       setImporting(true);
+      console.log("بدء عملية استيراد الأسئلة من ملف");
       
       // قراءة الملف
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      
+      console.log("تم قراءة البيانات من الملف:", jsonData.length, "سجل");
 
       // تحويل البيانات إلى تنسيق الأسئلة
-      const questions = jsonData.map((row: any) => {
+      const questionsData = [];
+      
+      for (const row of jsonData) {
         // تحديد الفئة الرئيسية والفرعية
         const categoryName = row['الفئة'] || '';
         const subcategoryName = row['الفئة الفرعية'] || '';
+        
+        if (!categoryName) {
+          console.log("سجل بدون فئة، سيتم تخطيه:", row);
+          continue;
+        }
         
         let categoryId = 0;
         let subcategoryId = 0;
@@ -459,12 +469,24 @@ export default function QuestionsManagement() {
           categoryId = category.id;
           
           // البحث عن الفئة الفرعية إذا وجدت
-          if (subcategoryName) {
+          if (subcategoryName && category.children) {
             const subcategory = category.children.find(s => s.name === subcategoryName);
             if (subcategory) {
               subcategoryId = subcategory.id;
             }
           }
+        } else {
+          console.log("لم يتم العثور على الفئة:", categoryName);
+          continue;
+        }
+        
+        // تحديد النص والإجابة
+        const text = row['نص السؤال'] || row['السؤال'] || '';
+        const answer = row['الإجابة'] || '';
+        
+        if (!text || !answer) {
+          console.log("سجل بدون سؤال أو إجابة، سيتم تخطيه:", row);
+          continue;
         }
         
         // تحديد مستوى الصعوبة
@@ -480,12 +502,10 @@ export default function QuestionsManagement() {
           difficulty = difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
         }
         
-        // تحديد الحالة
-        let isActive = false; // الأسئلة المستوردة تكون غير فعالة افتراضياً
-        
-        return {
-          text: row['نص السؤال'] || row['السؤال'] || '',
-          answer: row['الإجابة'] || '',
+        // إنشاء كائن السؤال
+        const questionData = {
+          text,
+          answer,
           categoryId,
           subcategoryId,
           difficulty,
@@ -493,16 +513,26 @@ export default function QuestionsManagement() {
           videoUrl: row['رابط الفيديو'] || '',
           mediaType: row['رابط الصورة'] ? 'image' : row['رابط الفيديو'] ? 'video' : 'none',
           keywords: row['الكلمات المفتاحية'] || '',
-          isActive,
+          isActive: false // الأسئلة المستوردة تكون غير فعالة افتراضياً
         };
-      }).filter((q: any) => q.text && q.answer && q.categoryId); // التأكد من وجود الحقول الإلزامية
+        
+        questionsData.push(questionData);
+      }
+      
+      console.log("تم تحضير", questionsData.length, "سؤال للاستيراد");
+      
+      // إذا لم تكن هناك أسئلة صالحة
+      if (questionsData.length === 0) {
+        throw new Error('لم يتم العثور على أي أسئلة صالحة في الملف');
+      }
       
       // إرسال الأسئلة إلى الخادم
-      const response = await apiRequest('POST', '/api/import-questions', { questions });
+      const response = await apiRequest('POST', '/api/import-questions', { questions: questionsData });
+      console.log("استجابة الخادم:", response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'فشلت عملية الاستيراد');
+        throw new Error(errorData.error || 'فشلت عملية الاستيراد');
       }
       
       const result = await response.json();
