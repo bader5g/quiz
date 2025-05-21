@@ -613,7 +613,7 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
         toast({
           title: 'فئات غير متطابقة',
           description: `هناك ${missingCategoriesArray.length} فئة غير متطابقة: ${missingCategoriesList}. سيتم تخطي ${invalidCount} سؤال وسيتم استيراد ${validCount} سؤال فقط.`,
-          variant: 'warning',
+          variant: 'destructive',
         });
         
         // إذا لم تكن هناك صفوف صالحة، قم بإلغاء الاستيراد
@@ -634,7 +634,7 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
       // تحويل البيانات إلى تنسيق الأسئلة
       const questionsData = [];
       
-      for (const row of jsonData) {
+      for (const row of parsedData) {
         // تحديد الفئة الرئيسية والفرعية
         const categoryName = row['الفئة'] || '';
         const subcategoryName = row['الفئة الفرعية'] || '';
