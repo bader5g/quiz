@@ -697,21 +697,33 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log("تم إنشاء جلسة لعبة جديدة:", session);
       
-      const [gameSession] = await db
-        .insert(gameSessions)
-        .values({
-          userId: userId,
-          gameName: session.gameName,
-          teams: session.teams,
-          answerTimeFirst: session.answerTimeFirst,
-          answerTimeSecond: session.answerTimeSecond,
-          selectedCategories: session.selectedCategories,
-          createdAt: new Date().toISOString()
-        })
-        .returning();
+      // استخدام استعلام SQL مباشر لإنشاء جلسة اللعبة
+      const result = await db.execute(
+        sql`INSERT INTO game_sessions (user_id, game_name, teams, answer_time_first, answer_time_second, selected_categories, created_at)
+            VALUES (${userId}, ${session.gameName}, ${JSON.stringify(session.teams)}, ${session.answerTimeFirst}, ${session.answerTimeSecond}, ${JSON.stringify(session.selectedCategories)}, ${new Date().toISOString()})
+            RETURNING *`
+      );
       
+      if (!result || !result.rows || result.rows.length === 0) {
+        throw new Error("فشل في إنشاء جلسة اللعبة");
+      }
+      
+      const gameSession = result.rows[0];
       console.log("تم حفظ جلسة اللعبة في قاعدة البيانات:", gameSession);
-      return gameSession;
+      
+      // تحويل المفاتيح من snake_case إلى camelCase
+      const formattedSession: GameSession = {
+        id: gameSession.id,
+        userId: gameSession.user_id,
+        gameName: gameSession.game_name,
+        teams: gameSession.teams,
+        answerTimeFirst: gameSession.answer_time_first,
+        answerTimeSecond: gameSession.answer_time_second,
+        selectedCategories: gameSession.selected_categories,
+        createdAt: gameSession.created_at
+      };
+      
+      return formattedSession;
     } catch (error) {
       console.error("خطأ في إنشاء جلسة اللعبة:", error);
       throw error;
@@ -741,11 +753,21 @@ export class DatabaseStorage implements IStorage {
   // Game play methods
   async getGameById(id: number): Promise<GameSession | undefined> {
     try {
-      const [game] = await db.select().from(gameSessions).where(eq(gameSessions.id, id));
-      if (!game) {
+      console.log(`محاولة جلب اللعبة برقم ${id} من قاعدة البيانات`);
+      
+      // استخدام استعلام SQL صريح للتأكد من عمل الاستعلام
+      const result = await db.execute(
+        sql`SELECT * FROM game_sessions WHERE id = ${id} LIMIT 1`
+      );
+      
+      if (!result || !result.rows || result.rows.length === 0) {
+        console.log(`لم يتم العثور على لعبة برقم ${id}`);
         return undefined;
       }
-      return game;
+      
+      const game = result.rows[0];
+      console.log(`تم العثور على اللعبة:`, JSON.stringify(game, null, 2));
+      return game as GameSession;
     } catch (error) {
       console.error("Error getting game by ID:", error);
       return undefined;
