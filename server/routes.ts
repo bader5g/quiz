@@ -7,6 +7,7 @@ import * as XLSX from "xlsx";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { setupAuth } from "./auth";
 import {
   gameSessionSchema,
   updateGameSettingsSchema,
@@ -97,6 +98,8 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
   // put application routes here
   // prefix all routes with /api
 
