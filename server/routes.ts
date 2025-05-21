@@ -305,19 +305,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const category of categoriesList) {
         const subcategories = await storage.getSubcategories(category.id);
         
-        // تعديل: عد جميع الأسئلة في الفئة بغض النظر عن الفئة الفرعية - مع المقارنة كنص
+        // تعديل: عد جميع الأسئلة في الفئة
+        // تحويل الرقم إلى كائن String ثم تحويله مرة أخرى إلى Number للمقارنة
         const categoryQuestionsCount = allQuestions.filter(
-          (q) => Number(q.categoryId) === Number(category.id)
+          (q) => String(q.categoryId) === String(category.id)
         ).length;
         
         console.log(`الفئة ${category.name} (ID: ${category.id}, نوع: ${typeof category.id}) - عدد الأسئلة: ${categoryQuestionsCount}`);
 
         const subcategoriesWithCounts = subcategories.map((sub) => {
-          const subcategoryQuestionsCount = allQuestions.filter(
-            (q) => Number(q.subcategoryId) === Number(sub.id)
-          ).length;
+          // تعداد الأسئلة لهذه الفئة الفرعية - استخدام String() للمقارنة
+          const questionsForSub = allQuestions.filter(q => String(q.subcategoryId) === String(sub.id));
+          const subcategoryQuestionsCount = questionsForSub.length;
           
-          console.log(`  الفئة الفرعية ${sub.name} (ID: ${sub.id}) - عدد الأسئلة: ${subcategoryQuestionsCount}`);
+          console.log(`  الفئة الفرعية ${sub.name} (ID: ${sub.id}, نوع: ${typeof sub.id}) - عدد الأسئلة: ${subcategoryQuestionsCount}`);
+          
+          // طباعة أول سؤالين (إن وجدوا) للتحقق
+          if (questionsForSub.length > 0) {
+            console.log(`  أمثلة للأسئلة في ${sub.name}:`, questionsForSub.slice(0, 2).map(q => q.text.substring(0, 30)));
+          }
           return {
             id: sub.id,
             name: sub.name,
