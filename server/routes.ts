@@ -98,8 +98,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up authentication
-  setupAuth(app);
+  // Authentication routes are now set up in index.ts
   // put application routes here
   // prefix all routes with /api
 
