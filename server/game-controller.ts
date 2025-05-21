@@ -5,41 +5,70 @@ import { GameSession } from "@shared/schema";
 export async function getGameDetails(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
+    console.log("Getting game details for ID:", gameId);
+    
     const game = await storage.getGameById(gameId);
+    console.log("Game data retrieved:", JSON.stringify(game, null, 2));
 
     if (!game) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
+    // تحويل البيانات المخزنة في قاعدة البيانات إلى الشكل المطلوب
+    // التعامل مع البيانات المخزنة في حقول نصية JSON
+    let teams = [];
+    try {
+      teams = typeof game.teams === 'string' ? JSON.parse(game.teams) : (Array.isArray(game.teams) ? game.teams : []);
+    } catch (e) {
+      console.error("Error parsing teams:", e);
+      teams = [];
+    }
+
+    let selectedCategories = [];
+    try {
+      selectedCategories = typeof game.selectedCategories === 'string' ? 
+        JSON.parse(game.selectedCategories) : 
+        (Array.isArray(game.selectedCategories) ? game.selectedCategories : []);
+    } catch (e) {
+      console.error("Error parsing selectedCategories:", e);
+      selectedCategories = [];
+    }
+
+    let questions = [];
+    try {
+      questions = typeof game.questions === 'string' ? 
+        JSON.parse(game.questions) : 
+        (Array.isArray(game.questions) ? game.questions : []);
+    } catch (e) {
+      console.error("Error parsing questions:", e);
+      questions = [];
+    }
+
     // جلب answerTimes بشكل صحيح
-    const answerTimes =
-      Array.isArray(game.answerTimes) && game.answerTimes.length > 0
-        ? game.answerTimes
-        : [
-            game.answerTimeFirst,
-            game.answerTimeSecond,
-            game.answerTimeThird,
-            game.answerTimeFourth,
-          ].filter(Boolean);
+    const answerTimes = [
+      game.answerTimeFirst || 30,
+      game.answerTimeSecond || 15,
+    ];
 
     const gameDetails = {
       id: game.id,
       name: game.gameName,
-      teams: game.teams.map((team, index) => ({
+      teams: teams.map((team, index) => ({
         name: team.name,
         score: team.score || 0,
         color: getTeamColor(index),
       })),
-      categories: game.selectedCategories.map((catId) => ({
+      categories: selectedCategories.map((catId) => ({
         id: catId,
         name: getCategoryName(catId),
         icon: getCategoryIcon(catId),
       })),
-      questions: generateGameQuestions(game),
-      currentTeamIndex: game.currentTeamIndex || 0,
-      answerTimes, // أضفنا answerTimes هنا
+      questions: questions.length > 0 ? questions : generateGameQuestions(game),
+      currentTeamIndex: game.currentTeam || 0,
+      answerTimes,
     };
 
+    console.log("Sending game details:", JSON.stringify(gameDetails, null, 2));
     res.status(200).json(gameDetails);
   } catch (error) {
     console.error("Error fetching game details:", error);

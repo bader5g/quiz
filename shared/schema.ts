@@ -118,7 +118,16 @@ export const gameSessions = pgTable("game_sessions", {
   teams: jsonb("teams").notNull(),
   answerTimeFirst: integer("answer_time_first").notNull(),
   answerTimeSecond: integer("answer_time_second").notNull(),
+  answerTimeThird: integer("answer_time_third"),
+  answerTimeFourth: integer("answer_time_fourth"),
   selectedCategories: jsonb("selected_categories").notNull(),
+  currentTeam: integer("current_team").default(0),
+  questions: jsonb("questions").default('[]'),
+  viewedQuestions: jsonb("viewed_questions").default('[]'),
+  isCompleted: boolean("is_completed").default(false),
+  winnerIndex: integer("winner_index"),
+  completedAt: text("completed_at"),
+  lastUpdated: text("last_updated").default(new Date().toISOString()),
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
 });
 
