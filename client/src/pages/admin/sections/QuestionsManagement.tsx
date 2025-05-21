@@ -23,7 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -74,10 +75,21 @@ export default function QuestionsManagement() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [questions, setQuestions] = useState<QuestionDisplay[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<QuestionDisplay[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // فلاتر البحث
+  const [filterText, setFilterText] = useState("");
+  const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
+  const [filterSubcategoryId, setFilterSubcategoryId] = useState<number | null>(null);
+  const [filterUsageMin, setFilterUsageMin] = useState<number | null>(null);
+  const [filterUsageMax, setFilterUsageMax] = useState<number | null>(null);
+  const [filterDateFrom, setFilterDateFrom] = useState<string | null>(null);
+  const [filterDateTo, setFilterDateTo] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   // تهيئة نموذج السؤال
   const form = useForm<Question>({
@@ -151,6 +163,61 @@ export default function QuestionsManagement() {
   useEffect(() => {
     fetchCategories().then(() => fetchQuestions());
   }, []);
+  
+  // تطبيق الفلاتر على الأسئلة
+  useEffect(() => {
+    if (!questions.length) {
+      setFilteredQuestions([]);
+      return;
+    }
+    
+    let result = [...questions];
+    
+    // فلتر النص
+    if (filterText) {
+      const searchText = filterText.toLowerCase();
+      result = result.filter(q => 
+        q.text.toLowerCase().includes(searchText) || 
+        q.answer.toLowerCase().includes(searchText) ||
+        (q.keywords && q.keywords.toLowerCase().includes(searchText))
+      );
+    }
+    
+    // فلتر الفئة الرئيسية
+    if (filterCategoryId) {
+      result = result.filter(q => q.categoryId === filterCategoryId);
+    }
+    
+    // فلتر الفئة الفرعية
+    if (filterSubcategoryId) {
+      result = result.filter(q => q.subcategoryId === filterSubcategoryId);
+    }
+    
+    // فلتر عدد مرات الاستخدام (الحد الأدنى)
+    if (filterUsageMin !== null) {
+      result = result.filter(q => q.usageCount >= filterUsageMin);
+    }
+    
+    // فلتر عدد مرات الاستخدام (الحد الأقصى)
+    if (filterUsageMax !== null) {
+      result = result.filter(q => q.usageCount <= filterUsageMax);
+    }
+    
+    // فلتر التاريخ (من)
+    if (filterDateFrom) {
+      const fromDate = new Date(filterDateFrom);
+      result = result.filter(q => new Date(q.createdAt) >= fromDate);
+    }
+    
+    // فلتر التاريخ (إلى)
+    if (filterDateTo) {
+      const toDate = new Date(filterDateTo);
+      toDate.setHours(23, 59, 59, 999); // نهاية اليوم
+      result = result.filter(q => new Date(q.createdAt) <= toDate);
+    }
+    
+    setFilteredQuestions(result);
+  }, [questions, filterText, filterCategoryId, filterSubcategoryId, filterUsageMin, filterUsageMax, filterDateFrom, filterDateTo]);
 
   // عرض نموذج إضافة سؤال جديد
   const showAddQuestionForm = () => {
@@ -334,6 +401,172 @@ export default function QuestionsManagement() {
           <Plus className="h-4 w-4" />
           <span>إضافة سؤال جديد</span>
         </Button>
+      </div>
+
+      {/* قسم فلاتر البحث */}
+      <div className="mb-6 border rounded-lg p-4 bg-muted/10">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-semibold">فلاتر البحث والتصفية</h3>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            {showFilters ? (
+              <>
+                <ChevronUp className="h-4 w-4 ml-1" />
+                إخفاء الفلاتر
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 ml-1" />
+                إظهار الفلاتر
+              </>
+            )}
+          </Button>
+        </div>
+        
+        {showFilters && (
+          <div className="p-4 rounded-lg border">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {/* فلتر البحث النصي */}
+              <div>
+                <label className="mb-1 block">بحث في النص</label>
+                <Input
+                  placeholder="اكتب نص للبحث..."
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              
+              {/* فلتر الفئة الرئيسية */}
+              <div>
+                <label className="mb-1 block">الفئة الرئيسية</label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  value={filterCategoryId || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFilterCategoryId(value ? parseInt(value) : null);
+                    setFilterSubcategoryId(null); // إعادة تعيين الفئة الفرعية
+                  }}
+                >
+                  <option value="">كل الفئات</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* فلتر الفئة الفرعية */}
+              <div>
+                <Label className="mb-1 block">الفئة الفرعية</Label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  value={filterSubcategoryId || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFilterSubcategoryId(value ? parseInt(value) : null);
+                  }}
+                  disabled={!filterCategoryId}
+                >
+                  <option value="">كل الفئات الفرعية</option>
+                  {filterCategoryId &&
+                    categories
+                      .find((c) => c.id === filterCategoryId)
+                      ?.children.map((subcat) => (
+                        <option key={subcat.id} value={subcat.id}>
+                          {subcat.name}
+                        </option>
+                      ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* فلتر التاريخ (من) */}
+              <div>
+                <Label className="mb-1 block">من تاريخ</Label>
+                <Input
+                  type="date"
+                  value={filterDateFrom || ""}
+                  onChange={(e) => setFilterDateFrom(e.target.value || null)}
+                  className="w-full"
+                />
+              </div>
+              
+              {/* فلتر التاريخ (إلى) */}
+              <div>
+                <Label className="mb-1 block">إلى تاريخ</Label>
+                <Input
+                  type="date"
+                  value={filterDateTo || ""}
+                  onChange={(e) => setFilterDateTo(e.target.value || null)}
+                  className="w-full"
+                />
+              </div>
+              
+              {/* فلتر عدد مرات الاستخدام (الحد الأدنى) */}
+              <div>
+                <Label className="mb-1 block">الاستخدام (الحد الأدنى)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="أدنى استخدام"
+                  value={filterUsageMin !== null ? filterUsageMin : ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFilterUsageMin(value ? parseInt(value) : null);
+                  }}
+                  className="w-full"
+                />
+              </div>
+              
+              {/* فلتر عدد مرات الاستخدام (الحد الأقصى) */}
+              <div>
+                <Label className="mb-1 block">الاستخدام (الحد الأقصى)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="أقصى استخدام"
+                  value={filterUsageMax !== null ? filterUsageMax : ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFilterUsageMax(value ? parseInt(value) : null);
+                  }}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-4 gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFilterText("");
+                  setFilterCategoryId(null);
+                  setFilterSubcategoryId(null);
+                  setFilterUsageMin(null);
+                  setFilterUsageMax(null);
+                  setFilterDateFrom(null);
+                  setFilterDateTo(null);
+                }}
+              >
+                إعادة تعيين الفلاتر
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* عرض نتائج الفلترة */}
+        {questions.length > 0 && (
+          <div className="mt-2 text-sm">
+            تم العثور على <span className="font-bold">{filteredQuestions.length}</span> سؤال من إجمالي <span className="font-bold">{questions.length}</span>
+          </div>
+        )}
       </div>
 
       {loading ? (
