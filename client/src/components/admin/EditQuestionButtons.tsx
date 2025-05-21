@@ -192,8 +192,9 @@ export function EditCategoryButton({
       
       setOpen(false);
       toast({
-        title: "تم التعديل",
-        description: "تم تعديل الفئة بنجاح",
+        title: "تم التعديل بنجاح",
+        description: `تم تعديل الفئة إلى "${category?.name || ''}"${subcategory ? ` - "${subcategory?.name || ''}"` : ''}`,
+        variant: "default",
       });
     } catch (error) {
       console.error("Error updating category:", error);
@@ -338,9 +339,16 @@ export function EditDifficultyButton({
       await apiRequest("PUT", `/api/questions/${id}`, { difficulty: difficultyLevel });
       onUpdate(id, difficultyLevel);
       setOpen(false);
+      const difficultyLabels = {
+        "1": "سهل",
+        "2": "متوسط",
+        "3": "صعب"
+      };
+      
       toast({
-        title: "تم التعديل",
-        description: "تم تعديل مستوى الصعوبة بنجاح",
+        title: "تم التعديل بنجاح",
+        description: `تم تعديل مستوى الصعوبة إلى "${difficultyLabels[difficultyLevel.toString()] || difficultyLevel}"`,
+        variant: "default",
       });
     } catch (error) {
       console.error("Error updating difficulty:", error);
