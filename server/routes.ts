@@ -293,6 +293,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("توزيع الأسئلة حسب الفئة:", categoryDistribution);
       console.log("توزيع الأسئلة حسب الفئة الفرعية:", subcategoryDistribution);
+      
+      // دعنا نتحقق بشكل مباشر من أول 5 أسئلة
+      console.log("أول 5 أسئلة:", allQuestions.slice(0, 5).map(q => ({
+        id: q.id, 
+        text: q.text.substring(0, 30), 
+        categoryId: q.categoryId, 
+        subcategoryId: q.subcategoryId
+      })));
 
       for (const category of categoriesList) {
         const subcategories = await storage.getSubcategories(category.id);
