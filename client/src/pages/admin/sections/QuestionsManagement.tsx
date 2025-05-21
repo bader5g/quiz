@@ -1432,6 +1432,71 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                 )}
               />
               
+              {/* رابط الصورة */}
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رابط الصورة</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="أدخل رابط الصورة (اختياري)"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {field.value && (
+                      <div className="mt-2">
+                        <img 
+                          src={field.value} 
+                          alt="معاينة الصورة" 
+                          className="max-h-40 max-w-full object-contain rounded-md border"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=صورة+غير+متوفرة';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </FormItem>
+                )}
+              />
+              
+              {/* رابط الفيديو */}
+              <FormField
+                control={form.control}
+                name="videoUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رابط الفيديو</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="أدخل رابط الفيديو (اختياري)"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {field.value && (
+                      <div className="mt-2">
+                        <video 
+                          src={field.value} 
+                          controls 
+                          className="max-h-40 max-w-full rounded-md border"
+                          onError={(e) => {
+                            const video = e.target as HTMLVideoElement;
+                            video.style.display = 'none';
+                            const errorDiv = document.createElement('div');
+                            errorDiv.textContent = 'تعذر تحميل الفيديو';
+                            errorDiv.className = 'p-2 bg-red-100 text-red-800 rounded-md text-center';
+                            video.parentNode?.appendChild(errorDiv);
+                          }}
+                        />
+                      </div>
+                    )}
+                  </FormItem>
+                )}
+              />
+              
               {/* حقل الحالة */}
               <FormField
                 control={form.control}
