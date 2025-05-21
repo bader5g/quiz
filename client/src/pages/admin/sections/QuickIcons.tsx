@@ -102,7 +102,7 @@ export function QuickCategoryIcon({ id, categoryId, subcategoryId, categories, o
     
     setIsSaving(true);
     try {
-      await apiRequest("PUT", `/api/questions/${id}`, { 
+      await apiRequest("PATCH", `/api/questions/${id}`, { 
         categoryId: catId,
         subcategoryId: subcatId
       });
@@ -222,7 +222,7 @@ export function QuickDifficultyIcon({ id, difficulty, onUpdate }) {
     
     setIsSaving(true);
     try {
-      await apiRequest("PUT", `/api/questions/${id}`, { difficulty: newDifficulty });
+      await apiRequest("PATCH", `/api/questions/${id}`, { difficulty: newDifficulty });
       onUpdate(id, newDifficulty);
       setOpen(false);
       toast({
