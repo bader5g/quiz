@@ -128,6 +128,14 @@ export default function QuestionsManagement() {
   const [showQuickDifficultyModal, setShowQuickDifficultyModal] = useState(false);
   
   // نموذج تعديل الفئات السريع
+  const quickCategoryForm = useForm({
+    defaultValues: {
+      categoryId: 0,
+      subcategoryId: undefined as number | undefined,
+    }
+  });
+  
+  // نموذج تعديل الفئات السريع
   const setEditForm = useForm({
     defaultValues: {
       categoryId: 0,
@@ -460,151 +468,31 @@ export default function QuestionsManagement() {
         }
       }
       
-  // وظائف التعديل السريع
-  const handleQuickEdit = (id: number, field: string, value: string | number) => {
-    setQuickEditId(id);
-    setQuickEditField(field);
-    setQuickEditValue(value);
-    setShowQuickEditModal(true);
-  };
-
-  const handleQuickCategoryEdit = (id: number, categoryId: number, subcategoryId: number | null) => {
-    setQuickEditId(id);
-    setEditForm.reset({
-      categoryId,
-      subcategoryId: subcategoryId || undefined,
-    });
-    setShowQuickCategoryModal(true);
-  };
-
-  const handleQuickDifficultyEdit = (id: number, difficulty: number) => {
-    setQuickEditId(id);
-    setQuickEditValue(difficulty);
-    setShowQuickDifficultyModal(true);
-  };
-
-  const saveQuickEdit = async () => {
-    if (!quickEditId || !quickEditField || quickEditValue === null) return;
-    
-    try {
-      await apiRequest("PUT", `/api/questions/${quickEditId}`, {
-        [quickEditField]: quickEditValue,
-      });
-      
-      // تحديث القائمة المحلية بدون إعادة جلب كل الأسئلة
-      setQuestions(questions.map(q => 
-        q.id === quickEditId 
-          ? { ...q, [quickEditField]: quickEditValue }
-          : q
-      ));
-      
-      setFilteredQuestions(filteredQuestions.map(q => 
-        q.id === quickEditId 
-          ? { ...q, [quickEditField]: quickEditValue }
-          : q
-      ));
-      
-      toast({
-        title: "تم التعديل",
-        description: "تم تعديل المعلومات بنجاح",
-      });
-      
-      setShowQuickEditModal(false);
-      setQuickEditId(null);
-      setQuickEditField(null);
-      setQuickEditValue(null);
-    } catch (error) {
-      console.error("Error updating question:", error);
-      toast({
-        title: "خطأ أثناء التعديل",
-        description: "حدث خطأ أثناء محاولة تعديل السؤال",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const saveQuickCategoryEdit = async () => {
-    if (!quickEditId) return;
-    
-    try {
-      const values = setEditForm.getValues();
-      
-      await apiRequest("PUT", `/api/questions/${quickEditId}`, {
-        categoryId: values.categoryId,
-        subcategoryId: values.subcategoryId,
-      });
-      
-      // تحديث البيانات المحلية
-      const updatedQuestion = { ...questions.find(q => q.id === quickEditId)! };
-      const category = categories.find(c => c.id === values.categoryId);
-      const subcategory = category?.children.find(s => s.id === values.subcategoryId);
-      
-      updatedQuestion.categoryId = values.categoryId;
-      updatedQuestion.subcategoryId = values.subcategoryId;
-      updatedQuestion.categoryName = category?.name || '';
-      updatedQuestion.subcategoryName = subcategory?.name || null;
-      
-      setQuestions(questions.map(q => q.id === quickEditId ? updatedQuestion : q));
-      setFilteredQuestions(filteredQuestions.map(q => q.id === quickEditId ? updatedQuestion : q));
-      
-      toast({
-        title: "تم التعديل",
-        description: "تم تعديل الفئة بنجاح",
-      });
-      
-      setShowQuickCategoryModal(false);
-      setQuickEditId(null);
-    } catch (error) {
-      console.error("Error updating category:", error);
-      toast({
-        title: "خطأ أثناء التعديل",
-        description: "حدث خطأ أثناء محاولة تعديل الفئة",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const saveQuickDifficultyEdit = async () => {
-    if (!quickEditId || quickEditValue === null) return;
-    
-    try {
-      await apiRequest("PUT", `/api/questions/${quickEditId}`, {
-        difficulty: quickEditValue,
-      });
-      
-      // تحديث البيانات المحلية
-      setQuestions(questions.map(q => 
-        q.id === quickEditId 
-          ? { ...q, difficulty: quickEditValue as number }
-          : q
-      ));
-      
-      setFilteredQuestions(filteredQuestions.map(q => 
-        q.id === quickEditId 
-          ? { ...q, difficulty: quickEditValue as number }
-          : q
-      ));
-      
-      toast({
-        title: "تم التعديل",
-        description: "تم تعديل مستوى الصعوبة بنجاح",
-      });
-      
-      setShowQuickDifficultyModal(false);
-      setQuickEditId(null);
-      setQuickEditValue(null);
-    } catch (error) {
-      console.error("Error updating difficulty:", error);
-      toast({
-        title: "خطأ أثناء التعديل",
-        description: "حدث خطأ أثناء محاولة تعديل مستوى الصعوبة",
-        variant: "destructive",
-      });
-    }
-  };
-      
       // تحديث قائمة الأسئلة
       await fetchQuestions();
+      
+      const difficultyText = difficulty === 1 ? "سهل" : difficulty === 2 ? "متوسط" : "صعب";
+      
+      toast({
+        title: "تم تغيير مستوى الصعوبة",
+        description: `تم تغيير مستوى صعوبة ${selectedQuestions.length} سؤال إلى "${difficultyText}" بنجاح.`,
+      });
+      
+      // إعادة تعيين حالة التحديد
+      setSelectedQuestions([]);
+      setSelectAll(false);
+      setBulkDifficultyOpen(false);
+    } catch (error) {
+      console.error("خطأ أثناء تغيير مستوى الصعوبة للأسئلة المحددة:", error);
+      toast({
+        title: "خطأ في تغيير مستوى الصعوبة",
+        description: "حدث خطأ أثناء محاولة تغيير مستوى الصعوبة للأسئلة المحددة.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
       
       const difficultyText = difficulty === 1 ? "سهل" : difficulty === 2 ? "متوسط" : "صعب";
       
