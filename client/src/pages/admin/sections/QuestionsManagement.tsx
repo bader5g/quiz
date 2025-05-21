@@ -1,11 +1,9 @@
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as XLSX from 'xlsx';
-
 
 import {
   Dialog,
@@ -17,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Upload, Link as LinkIcon, ExternalLink, FileSpreadsheet, FileText, CheckCircle, XCircle, X, Edit, FolderEdit, BarChart2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -26,38 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-// استيراد لتوليد مثال للاستيراد
-import { saveAs } from "file-saver";
-
-// دالة مساعدة للبحث عن فئة باستخدام طرق مطابقة مختلفة
-// دالة مساعدة للبحث عن فئة باستخدام طرق مطابقة مختلفة
-const findCategoryByName = (name: string, categoriesList: any[]) => {
-  if (!name || !categoriesList || categoriesList.length === 0) return null;
-  
-  // 1. البحث بالتطابق المباشر
-  let category = categoriesList.find(c => c.name.trim() === name.trim());
-  
-  // 2. البحث مع تجاهل أل التعريف
-  if (!category) {
-    if (name.startsWith('ال')) {
-      category = categoriesList.find(c => c.name.trim() === name.substring(2).trim());
-    } else {
-      category = categoriesList.find(c => c.name.trim() === ('ال' + name).trim());
-    }
-  }
-  
-  // 3. البحث مع تجاهل الفراغات والتشكيل
-  if (!category) {
-    const cleanName = name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
-    category = categoriesList.find(c => {
-      const cleanCatName = c.name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
-      return cleanCatName === cleanName;
-    });
-  }
-  
-  return category || null;
-};
 
 // نموذج السؤال
 const questionSchema = z.object({
@@ -105,43 +71,10 @@ export default function QuestionsManagement() {
   const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [importing, setImporting] = useState(false);
-  
-  // تحديد الأسئلة للعمليات الجماعية
-  const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
-  const [bulkActionOpen, setBulkActionOpen] = useState(false);
-  const [bulkProcessing, setBulkProcessing] = useState(false);
-  const [bulkCategoryOpen, setBulkCategoryOpen] = useState(false);
-  const [bulkDifficultyOpen, setBulkDifficultyOpen] = useState(false);
   
   // خيارات عرض الجدول
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  
-  // متغيرات التعديل السريع
-  const [quickEditId, setQuickEditId] = useState<number | null>(null);
-  const [quickEditField, setQuickEditField] = useState<string | null>(null);
-  const [quickEditValue, setQuickEditValue] = useState<string | number | null>(null);
-  const [showQuickEditModal, setShowQuickEditModal] = useState(false);
-  const [showQuickCategoryModal, setShowQuickCategoryModal] = useState(false);
-  const [showQuickDifficultyModal, setShowQuickDifficultyModal] = useState(false);
-  
-  // نموذج تعديل الفئات السريع
-  const quickCategoryForm = useForm({
-    defaultValues: {
-      categoryId: 0,
-      subcategoryId: undefined as number | undefined,
-    }
-  });
-  
-  // نموذج تعديل الفئات السريع
-  const setEditForm = useForm({
-    defaultValues: {
-      categoryId: 0,
-      subcategoryId: undefined as number | undefined,
-    }
-  });
   
   // فلاتر البحث
   const [filterText, setFilterText] = useState("");
@@ -151,7 +84,6 @@ export default function QuestionsManagement() {
   const [filterUsageMax, setFilterUsageMax] = useState<number | null>(null);
   const [filterDateFrom, setFilterDateFrom] = useState<string | null>(null);
   const [filterDateTo, setFilterDateTo] = useState<string | null>(null);
-  const [filterActive, setFilterActive] = useState<string>("all"); // all, active, inactive
   const [showFilters, setShowFilters] = useState(false);
 
   // تهيئة نموذج السؤال
@@ -280,242 +212,9 @@ export default function QuestionsManagement() {
       result = result.filter(q => new Date(q.createdAt) <= toDate);
     }
     
-    // فلتر الحالة (فعال/غير فعال)
-    if (filterActive !== 'all') {
-      const isActive = filterActive === 'active';
-      result = result.filter(q => q.isActive === isActive);
-    }
-    
     setFilteredQuestions(result);
     setCurrentPage(1); // إعادة تعيين الصفحة الحالية عند تغيير الفلاتر
-    setSelectedQuestions([]); // إعادة تعيين الأسئلة المحددة عند تغيير الفلاتر
-    setSelectAll(false); // إعادة تعيين حالة تحديد الكل
-  }, [questions, filterText, filterCategoryId, filterSubcategoryId, filterUsageMin, filterUsageMax, filterDateFrom, filterDateTo, filterActive]);
-  
-  // معالجة تحديد/إلغاء تحديد سؤال
-  const handleSelectQuestion = (questionId: number) => {
-    setSelectedQuestions(prev => {
-      if (prev.includes(questionId)) {
-        // إلغاء تحديد السؤال
-        const newSelected = prev.filter(id => id !== questionId);
-        setSelectAll(false); // إعادة تعيين حالة تحديد الكل
-        return newSelected;
-      } else {
-        // تحديد السؤال
-        return [...prev, questionId];
-      }
-    });
-  };
-  
-  // معالجة تحديد/إلغاء تحديد كل الأسئلة
-  const handleSelectAll = () => {
-    const newSelectAll = !selectAll;
-    setSelectAll(newSelectAll);
-    
-    if (newSelectAll) {
-      // تحديد كل الأسئلة المعروضة في الصفحة الحالية
-      const currentPageIds = filteredQuestions
-        .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-        .map(q => q.id as number);
-      setSelectedQuestions(currentPageIds);
-    } else {
-      // إلغاء تحديد كل الأسئلة
-      setSelectedQuestions([]);
-    }
-  };
-  
-  // معالجة عملية حذف الأسئلة المحددة
-  const handleBulkDelete = async () => {
-    if (!selectedQuestions.length) return;
-    
-    if (!confirm(`هل أنت متأكد أنك تريد حذف ${selectedQuestions.length} سؤال محدد؟`)) {
-      return;
-    }
-    
-    try {
-      setBulkProcessing(true);
-      
-      // حذف الأسئلة المحددة واحدة تلو الأخرى
-      for (const questionId of selectedQuestions) {
-        await apiRequest("DELETE", `/api/questions/${questionId}`);
-      }
-      
-      // تحديث قائمة الأسئلة بعد الحذف
-      await fetchQuestions();
-      
-      toast({
-        title: "تم بنجاح",
-        description: `تم حذف ${selectedQuestions.length} سؤال بنجاح.`,
-      });
-      
-      // إعادة تعيين حالة التحديد
-      setSelectedQuestions([]);
-      setSelectAll(false);
-      setBulkActionOpen(false);
-    } catch (error) {
-      console.error("خطأ أثناء الحذف الجماعي:", error);
-      toast({
-        title: "خطأ في الحذف",
-        description: "حدث خطأ أثناء محاولة حذف الأسئلة المحددة.",
-        variant: "destructive",
-      });
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-  
-  // معالجة تغيير حالة التفعيل للأسئلة المحددة
-  const handleBulkToggleActive = async (activate: boolean) => {
-    if (!selectedQuestions.length) return;
-    
-    try {
-      setBulkProcessing(true);
-      
-      // تغيير حالة التفعيل للأسئلة المحددة واحدة تلو الأخرى
-      for (const questionId of selectedQuestions) {
-        const question = questions.find(q => q.id === questionId);
-        if (question) {
-          const updatedQuestion = { ...question, isActive: activate };
-          await apiRequest("PUT", `/api/questions/${questionId}`, updatedQuestion);
-        }
-      }
-      
-      // تحديث قائمة الأسئلة بعد التعديل
-      await fetchQuestions();
-      
-      toast({
-        title: "تم بنجاح",
-        description: `تم ${activate ? 'تفعيل' : 'إلغاء تفعيل'} ${selectedQuestions.length} سؤال بنجاح.`,
-      });
-      
-      // إعادة تعيين حالة التحديد
-      setSelectedQuestions([]);
-      setSelectAll(false);
-      setBulkActionOpen(false);
-    } catch (error) {
-      console.error(`خطأ أثناء ${activate ? 'تفعيل' : 'إلغاء تفعيل'} الأسئلة المحددة:`, error);
-      toast({
-        title: `خطأ في ${activate ? 'التفعيل' : 'إلغاء التفعيل'}`,
-        description: `حدث خطأ أثناء محاولة ${activate ? 'تفعيل' : 'إلغاء تفعيل'} الأسئلة المحددة.`,
-        variant: "destructive",
-      });
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-  
-  // نقل الأسئلة المحددة إلى فئة أخرى
-  const handleBulkMoveToCategory = async (categoryId: number, subcategoryId: number | null) => {
-    if (!selectedQuestions.length) return;
-    
-    try {
-      setBulkProcessing(true);
-      
-      // نقل الأسئلة المحددة واحدة تلو الأخرى
-      for (const questionId of selectedQuestions) {
-        const question = questions.find(q => q.id === questionId);
-        if (question) {
-          const updatedQuestion = { 
-            ...question, 
-            categoryId, 
-            subcategoryId 
-          };
-          await apiRequest("PUT", `/api/questions/${questionId}`, updatedQuestion);
-        }
-      }
-      
-      // تحديث قائمة الأسئلة
-      await fetchQuestions();
-      
-      const categoryName = categories.find(c => c.id === categoryId)?.name || "";
-      const subcategoryName = subcategoryId ? 
-        categories.find(c => c.id === categoryId)?.children.find(s => s.id === subcategoryId)?.name || "" : "";
-      
-      toast({
-        title: "تم نقل الأسئلة",
-        description: `تم نقل ${selectedQuestions.length} سؤال إلى فئة "${categoryName}${subcategoryName ? ` - ${subcategoryName}` : ''}" بنجاح.`,
-      });
-      
-      // إعادة تعيين حالة التحديد
-      setSelectedQuestions([]);
-      setSelectAll(false);
-      setBulkCategoryOpen(false);
-    } catch (error) {
-      console.error("خطأ أثناء نقل الأسئلة المحددة:", error);
-      toast({
-        title: "خطأ في نقل الأسئلة",
-        description: "حدث خطأ أثناء محاولة نقل الأسئلة المحددة.",
-        variant: "destructive",
-      });
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-  
-  // تغيير مستوى صعوبة الأسئلة المحددة
-  const handleBulkChangeDifficulty = async (difficulty: number) => {
-    if (!selectedQuestions.length) return;
-    
-    try {
-      setBulkProcessing(true);
-      
-      // تغيير مستوى الصعوبة للأسئلة المحددة واحدة تلو الأخرى
-      for (const questionId of selectedQuestions) {
-        const question = questions.find(q => q.id === questionId);
-        if (question) {
-          const updatedQuestion = { ...question, difficulty };
-          await apiRequest("PUT", `/api/questions/${questionId}`, updatedQuestion);
-        }
-      }
-      
-      // تحديث قائمة الأسئلة
-      await fetchQuestions();
-      
-      const difficultyText = difficulty === 1 ? "سهل" : difficulty === 2 ? "متوسط" : "صعب";
-      
-      toast({
-        title: "تم تغيير مستوى الصعوبة",
-        description: `تم تغيير مستوى صعوبة ${selectedQuestions.length} سؤال إلى "${difficultyText}" بنجاح.`,
-      });
-      
-      // إعادة تعيين حالة التحديد
-      setSelectedQuestions([]);
-      setSelectAll(false);
-      setBulkDifficultyOpen(false);
-    } catch (error) {
-      console.error("خطأ أثناء تغيير مستوى الصعوبة للأسئلة المحددة:", error);
-      toast({
-        title: "خطأ في تغيير مستوى الصعوبة",
-        description: "حدث خطأ أثناء محاولة تغيير مستوى الصعوبة للأسئلة المحددة.",
-        variant: "destructive",
-      });
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-      
-      const difficultyText = difficulty === 1 ? "سهل" : difficulty === 2 ? "متوسط" : "صعب";
-      
-      toast({
-        title: "تم تغيير مستوى الصعوبة",
-        description: `تم تغيير مستوى صعوبة ${selectedQuestions.length} سؤال إلى "${difficultyText}" بنجاح.`,
-      });
-      
-      // إعادة تعيين حالة التحديد
-      setSelectedQuestions([]);
-      setSelectAll(false);
-      setBulkDifficultyOpen(false);
-    } catch (error) {
-      console.error("خطأ أثناء تغيير مستوى صعوبة الأسئلة المحددة:", error);
-      toast({
-        title: "خطأ في تغيير مستوى الصعوبة",
-        description: "حدث خطأ أثناء محاولة تغيير مستوى صعوبة الأسئلة المحددة.",
-        variant: "destructive",
-      });
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
+  }, [questions, filterText, filterCategoryId, filterSubcategoryId, filterUsageMin, filterUsageMax, filterDateFrom, filterDateTo]);
 
   // عرض نموذج إضافة سؤال جديد
   const showAddQuestionForm = () => {
@@ -600,36 +299,20 @@ export default function QuestionsManagement() {
       const savedQuestion = await response.json();
       
       if (isEditMode) {
-        // تحديث السؤال في القائمة المحلية بدون إعادة تعيين صفحة العرض
-        const selectedCategory = categories.find(c => c.id === values.categoryId);
-        
-        const updatedQuestions = questions.map((q) =>
-          q.id === values.id
-            ? {
-                ...q,
-                ...values,
-                categoryName: selectedCategory?.name || "",
-                categoryIcon: selectedCategory?.icon || "",
-                subcategoryName: values.subcategoryId && selectedCategory
-                  ? selectedCategory.children.find((s) => s.id === values.subcategoryId)?.name || ""
-                  : "",
-              }
-            : q
-        );
-        
-        setQuestions(updatedQuestions);
-        
-        // تحديث الأسئلة المفلترة بنفس الطريقة للحفاظ على حالة الفلتر والصفحة الحالية
-        setFilteredQuestions(prevFilteredQuestions => 
-          prevFilteredQuestions.map((q) =>
+        // تحديث السؤال في القائمة المحلية
+        setQuestions(
+          questions.map((q) =>
             q.id === values.id
               ? {
                   ...q,
                   ...values,
-                  categoryName: selectedCategory?.name || "",
-                  categoryIcon: selectedCategory?.icon || "",
-                  subcategoryName: values.subcategoryId && selectedCategory
-                    ? selectedCategory.children.find((s) => s.id === values.subcategoryId)?.name || ""
+                  categoryName: findCategoryName(values.categoryId),
+                  categoryIcon: findCategoryIcon(values.categoryId),
+                  subcategoryName: values.subcategoryId
+                    ? categories
+                        .find((c) => c.id === values.categoryId)
+                        ?.children.find((s) => s.id === values.subcategoryId)
+                        ?.name || ""
                     : "",
                 }
               : q
@@ -637,24 +320,22 @@ export default function QuestionsManagement() {
         );
       } else {
         // إضافة السؤال الجديد للقائمة المحلية
-        const selectedCategory = categories.find(c => c.id === savedQuestion.categoryId);
-        
-        const newQuestion = {
-          ...savedQuestion,
-          categoryName: selectedCategory?.name || "",
-          categoryIcon: selectedCategory?.icon || "",
-          subcategoryName: savedQuestion.subcategoryId && selectedCategory
-            ? selectedCategory.children.find((s) => s.id === savedQuestion.subcategoryId)?.name || ""
-            : "",
-          usageCount: 0,
-          createdAt: new Date().toISOString(),
-        };
-        
-        setQuestions(prev => [...prev, newQuestion]);
-        
-        // في حالة الإضافة الجديدة، نحدث أيضاً القائمة المفلترة إذا كان السؤال الجديد يتوافق مع الفلاتر الحالية
-        // لكن هنا نعيد للصفحة الأولى ليرى المستخدم السؤال الجديد
-        setCurrentPage(1);
+        setQuestions([
+          ...questions,
+          {
+            ...savedQuestion,
+            categoryName: findCategoryName(savedQuestion.categoryId),
+            categoryIcon: findCategoryIcon(savedQuestion.categoryId),
+            subcategoryName: savedQuestion.subcategoryId
+              ? categories
+                  .find((c) => c.id === savedQuestion.categoryId)
+                  ?.children.find((s) => s.id === savedQuestion.subcategoryId)
+                  ?.name || ""
+              : "",
+            usageCount: 0,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
       }
 
       toast({
@@ -705,527 +386,18 @@ export default function QuestionsManagement() {
       });
     }
   };
-  
-  // تصدير الأسئلة إلى ملف
-  // إنشاء نموذج استيراد فارغ مع أمثلة
-const createImportTemplate = async (format: 'csv' | 'excel') => {
-  try {
-    console.log("جاري إنشاء نموذج استيراد الأسئلة");
-    
-    // جمع قائمة بأسماء الفئات المتاحة للمساعدة في الاستيراد
-    const categoryOptions = categories.map(c => c.name).join(', ');
-    const currentCategories = categories.map(c => c.name);
-    
-    // البحث عن فئة كرة قدم أو رياضة
-    let sportsCategory = categories.find(c => c.name === 'كرة قدم')?.name || 
-                         categories.find(c => c.name === 'رياضة')?.name || 
-                         (categories.length > 0 ? categories[0].name : 'كرة قدم');
-    
-    // تحديد فئة فرعية ذات صلة بكرة القدم
-    let footballSubcategory = '';
-    const sportsCat = categories.find(c => c.name === sportsCategory);
-    if (sportsCat && sportsCat.children && sportsCat.children.length > 0) {
-      footballSubcategory = sportsCat.children.find(s => s.name.includes('قدم') || s.name.includes('عالم'))?.name || 
-                           sportsCat.children[0].name;
-    }
-    
-    // إنشاء بيانات النموذج مع أمثلة باستخدام الفئات الموجودة فعلياً في النظام
-    const templateData = [
-      {
-        'نص السؤال': 'من الفائز بكأس العالم 2022؟',
-        'الإجابة': 'الأرجنتين',
-        'الفئة': sportsCategory,
-        'الفئة الفرعية': footballSubcategory,
-        'الصعوبة': 'متوسط',
-        'الكلمات المفتاحية': 'كأس العالم,قطر,ميسي',
-        'رابط الصورة': 'https://upload.wikimedia.org/wikipedia/commons/b/b9/Flag_of_Argentina.svg',
-        'رابط الفيديو': ''
-      },
-      {
-        'نص السؤال': 'من هو أول لاعب في التاريخ يسجل هاتريك في نهائيات كأس العالم؟',
-        'الإجابة': 'بيرت باتيناود',
-        'الفئة': sportsCategory,
-        'الفئة الفرعية': footballSubcategory,
-        'الصعوبة': 'صعب',
-        'الكلمات المفتاحية': 'كأس العالم,هاتريك,تاريخ',
-        'رابط الصورة': '',
-        'رابط الفيديو': ''
-      },
-      {
-        'نص السؤال': 'ما هي عاصمة فرنسا؟',
-        'الإجابة': 'باريس',
-        'الفئة': categories.find(c => c.name.includes('معلومات') || c.name.includes('جغرافيا'))?.name || sportsCategory,
-        'الفئة الفرعية': '',
-        'الصعوبة': 'سهل',
-        'الكلمات المفتاحية': 'فرنسا,عواصم,أوروبا',
-        'رابط الصورة': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Paris_Night.jpg/1280px-Paris_Night.jpg',
-        'رابط الفيديو': ''
-      },
-      // نموذج فارغ للاستخدام
-      {
-        'نص السؤال': '',
-        'الإجابة': '',
-        'الفئة': '',
-        'الفئة الفرعية': '',
-        'الصعوبة': '',
-        'الكلمات المفتاحية': '',
-        'رابط الصورة': '',
-        'رابط الفيديو': ''
-      }
-    ];
-    
-    // إنشاء ورقة تعليمات
-    const instructionsData = [
-      { 'تعليمات': 'تعليمات استيراد الأسئلة:' },
-      { 'تعليمات': '1. الحقول المطلوبة هي: نص السؤال، الإجابة، الفئة' },
-      { 'تعليمات': '2. الفئات المتاحة حالياً في النظام: ' + categoryOptions },
-      { 'تعليمات': '3. يجب أن تكون الفئات مطابقة بالضبط للفئات الموجودة في النظام، وإلا لن يتم استيراد السؤال' },
-      { 'تعليمات': '4. قيم حقل الصعوبة المقبولة: سهل، متوسط، صعب' },
-      { 'تعليمات': '5. لإضافة صورة، ضع رابط الصورة في عمود "رابط الصورة"' },
-      { 'تعليمات': '6. لإضافة فيديو، ضع رابط الفيديو في عمود "رابط الفيديو"' },
-      { 'تعليمات': '7. يمكن إضافة إما صورة أو فيديو للسؤال الواحد، وليس كلاهما' },
-      { 'تعليمات': '8. الأسئلة المستوردة ستكون غير فعالة حتى يتم تفعيلها من لوحة التحكم' }
-    ];
-    
-    // إنشاء ورقة عمل للنموذج وورقة أخرى للتعليمات
-    const worksheetTemplate = XLSX.utils.json_to_sheet(templateData);
-    const worksheetInstructions = XLSX.utils.json_to_sheet(instructionsData);
-    
-    // تعديل عرض الأعمدة
-    const colWidth = [
-      { wch: 40 }, // نص السؤال
-      { wch: 30 }, // الإجابة
-      { wch: 20 }, // الفئة
-      { wch: 20 }, // الفئة الفرعية
-      { wch: 10 }, // الصعوبة
-      { wch: 25 }, // الكلمات المفتاحية
-      { wch: 50 }, // رابط الصورة
-      { wch: 50 }  // رابط الفيديو
-    ];
-    
-    worksheetTemplate['!cols'] = colWidth;
-    
-    // إنشاء الملف
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheetTemplate, 'نموذج الأسئلة');
-    XLSX.utils.book_append_sheet(workbook, worksheetInstructions, 'تعليمات');
-    
-    // تحديد اسم الملف حسب الصيغة
-    const filename = format === 'csv' ? 'نموذج_استيراد_الأسئلة.csv' : 'نموذج_استيراد_الأسئلة.xlsx';
-    
-    // تصدير الملف
-    XLSX.writeFile(workbook, filename);
-    
-    toast({
-      title: 'تم إنشاء نموذج الاستيراد بنجاح',
-      description: `تم إنشاء نموذج فارغ لاستيراد الأسئلة. استخدم هذا النموذج لإعداد ملفات استيراد صحيحة.`,
-    });
-  } catch (error: any) {
-    console.error("خطأ في إنشاء نموذج الاستيراد:", error);
-    toast({
-      title: 'خطأ في إنشاء النموذج',
-      description: error.message || 'حدث خطأ أثناء محاولة إنشاء نموذج الاستيراد.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const exportQuestions = async (format: 'csv' | 'excel') => {
-    try {
-      // تحضير بيانات التصدير - تبسيط البيانات، حذف الحقول غير الضرورية للتوافق مع متطلبات الاستيراد
-      const exportData = filteredQuestions.map(q => ({
-        'نص السؤال': q.text,
-        'الإجابة': q.answer,
-        'الفئة': q.categoryName,
-        'الفئة الفرعية': q.subcategoryName || '',
-        'الصعوبة': q.difficulty === 1 ? 'سهل' : q.difficulty === 2 ? 'متوسط' : 'صعب',
-        'الكلمات المفتاحية': q.keywords || '',
-        'رابط الصورة': q.imageUrl || '',
-        'رابط الفيديو': q.videoUrl || ''
-      }));
-
-      // إنشاء ورقة عمل
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'الأسئلة');
-
-      // تصدير الملف
-      if (format === 'csv') {
-        XLSX.writeFile(workbook, 'الأسئلة.csv');
-      } else {
-        XLSX.writeFile(workbook, 'الأسئلة.xlsx');
-      }
-
-      toast({
-        title: 'تم التصدير بنجاح',
-        description: `تم تصدير ${exportData.length} سؤال إلى ملف ${format === 'excel' ? 'Excel' : 'CSV'} بنجاح.`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'خطأ في التصدير',
-        description: error.message || 'حدث خطأ أثناء محاولة تصدير الأسئلة.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // استيراد الأسئلة من ملف
-  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setImporting(true);
-      console.log("بدء عملية استيراد الأسئلة من ملف");
-      
-      // قراءة الملف
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      let parsedData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
-      
-      console.log("تم قراءة البيانات من الملف:", parsedData.length, "سجل");
-      
-      // التحقق من تطابق الفئات الموجودة في الملف مع الفئات الموجودة في النظام
-      const missingCategoriesArray: string[] = [];
-      const validRows: Record<string, any>[] = [];
-      const invalidRows: Record<string, any>[] = [];
-      
-      // فحص كل سجل في الملف المستورد
-      for (const row of parsedData) {
-        const categoryName = row['الفئة'] as string || '';
-        if (!categoryName) {
-          console.log("سجل بدون فئة، سيتم تخطيه:", row);
-          invalidRows.push(row);
-          continue;
-        }
-        
-        // البحث عن الفئة في النظام
-        const category = findCategoryByName(categoryName, categories);
-        if (!category) {
-          // إذا لم تكن الفئة موجودة وليست مضافة بالفعل للقائمة
-          if (!missingCategoriesArray.includes(categoryName)) {
-            missingCategoriesArray.push(categoryName);
-          }
-          console.log(`الفئة غير موجودة: "${categoryName}"، سيتم تخطي السؤال:`, row['نص السؤال']);
-          invalidRows.push(row);
-        } else {
-          validRows.push(row);
-        }
-      }
-      
-      // إذا وجدت فئات غير متطابقة، قم بإظهار تنبيه للمستخدم
-      if (missingCategoriesArray.length > 0) {
-        const missingCategoriesList = missingCategoriesArray.join('، ');
-        const invalidCount = invalidRows.length;
-        const validCount = validRows.length;
-        
-        toast({
-          title: 'فئات غير متطابقة',
-          description: `هناك ${missingCategoriesArray.length} فئة غير متطابقة: ${missingCategoriesList}. سيتم تخطي ${invalidCount} سؤال وسيتم استيراد ${validCount} سؤال فقط.`,
-          variant: 'destructive',
-        });
-        
-        // إذا لم تكن هناك صفوف صالحة، قم بإلغاء الاستيراد
-        if (validRows.length === 0) {
-          toast({
-            title: 'فشل الاستيراد',
-            description: 'لا توجد أسئلة صالحة للاستيراد. تأكد من تطابق الفئات مع الفئات الموجودة في النظام.',
-            variant: 'destructive',
-          });
-          setImporting(false);
-          return;
-        }
-        
-        // استخدام الصفوف الصالحة فقط
-        parsedData = validRows;
-      }
-
-      // تحويل البيانات إلى تنسيق الأسئلة
-      const questionsData = [];
-      
-      for (const row of parsedData) {
-        // تحديد الفئة الرئيسية والفرعية
-        const categoryName = row['الفئة'] || '';
-        const subcategoryName = row['الفئة الفرعية'] || '';
-        
-        if (!categoryName) {
-          console.log("سجل بدون فئة، سيتم تخطيه:", row);
-          continue;
-        }
-        
-        let categoryId = 0;
-        let subcategoryId = 0;
-        
-        // البحث عن الفئة الرئيسية بشكل مرن
-        // 1. البحث عن تطابق تام
-        let category = categories.find(c => c.name === categoryName);
-        
-        // 2. البحث بتجاهل أل التعريف
-        if (!category) {
-          // إذا بدأ الاسم بـ "ال" نبحث بدونها
-          if (categoryName.startsWith('ال')) {
-            category = categories.find(c => c.name === categoryName.substring(2));
-          } 
-          // وإذا لم يبدأ بـ "ال" نضيفها ونبحث
-          else {
-            category = categories.find(c => c.name === 'ال' + categoryName);
-          }
-        }
-        
-        // 3. البحث بتجاهل الفراغات والأحرف الخاصة
-        if (!category) {
-          // تنظيف الأسماء للمقارنة
-          const cleanName = categoryName.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
-          category = categories.find(c => {
-            const cleanCategoryName = c.name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
-            return cleanCategoryName === cleanName;
-          });
-        }
-        
-        if (category) {
-          categoryId = category.id;
-          
-          // البحث عن الفئة الفرعية إذا وجدت بشكل مرن
-          if (subcategoryName && category.children) {
-            // 1. البحث عن تطابق تام
-            let subcategory = category.children.find(s => s.name === subcategoryName);
-            
-            // 2. البحث بتجاهل أل التعريف
-            if (!subcategory) {
-              // إذا بدأ الاسم بـ "ال" نبحث بدونها
-              if (subcategoryName.startsWith('ال')) {
-                subcategory = category.children.find(s => s.name === subcategoryName.substring(2));
-              } 
-              // وإذا لم يبدأ بـ "ال" نضيفها ونبحث
-              else {
-                subcategory = category.children.find(s => s.name === 'ال' + subcategoryName);
-              }
-            }
-            
-            // 3. البحث بتجاهل الفراغات والأحرف الخاصة
-            if (!subcategory) {
-              // تنظيف الأسماء للمقارنة
-              const cleanName = subcategoryName.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
-              subcategory = category.children.find(s => {
-                const cleanSubCategoryName = s.name.replace(/\s+/g, '').replace(/[ًٌٍَُِّْ]/g, '');
-                return cleanSubCategoryName === cleanName;
-              });
-            }
-            
-            if (subcategory) {
-              subcategoryId = subcategory.id;
-              console.log("تم العثور على الفئة الفرعية:", subcategoryName, "=>", subcategory.name);
-            } else {
-              console.log("لم يتم العثور على الفئة الفرعية:", subcategoryName);
-            }
-          }
-        } else {
-          console.log("لم يتم العثور على الفئة:", categoryName);
-          continue;
-        }
-        
-        // تحديد النص والإجابة
-        const text = row['نص السؤال'] || row['السؤال'] || '';
-        const answer = row['الإجابة'] || '';
-        
-        if (!text || !answer) {
-          console.log("سجل بدون سؤال أو إجابة، سيتم تخطيه:", row);
-          continue;
-        }
-        
-        // تحديد مستوى الصعوبة
-        let difficulty = 1;
-        const difficultyText = row['الصعوبة'] || '';
-        if (typeof difficultyText === 'string') {
-          if (difficultyText.includes('متوسط')) {
-            difficulty = 2;
-          } else if (difficultyText.includes('صعب')) {
-            difficulty = 3;
-          }
-        } else if (typeof difficultyText === 'number') {
-          difficulty = difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
-        }
-        
-        // إنشاء كائن السؤال
-        const questionData = {
-          text,
-          answer,
-          categoryId,
-          subcategoryId,
-          difficulty,
-          imageUrl: row['رابط الصورة'] || '',
-          videoUrl: row['رابط الفيديو'] || '',
-          mediaType: row['رابط الصورة'] ? 'image' : row['رابط الفيديو'] ? 'video' : 'none',
-          keywords: row['الكلمات المفتاحية'] || '',
-          isActive: false // الأسئلة المستوردة تكون غير فعالة افتراضياً
-        };
-        
-        questionsData.push(questionData);
-      }
-      
-      console.log("تم تحضير", questionsData.length, "سؤال للاستيراد");
-      
-      // إذا لم تكن هناك أسئلة صالحة
-      if (questionsData.length === 0) {
-        throw new Error('لم يتم العثور على أي أسئلة صالحة في الملف');
-      }
-      
-      // إرسال الأسئلة إلى الخادم
-      const response = await apiRequest('POST', '/api/import-questions', { questions: questionsData });
-      console.log("استجابة الخادم:", response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'فشلت عملية الاستيراد');
-      }
-      
-      const result = await response.json();
-      
-      // تحديث القائمة المحلية
-      fetchQuestions();
-      
-      toast({
-        title: 'تم الاستيراد بنجاح',
-        description: `تم استيراد ${result.imported} سؤال بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
-      });
-      
-      // إعادة تعيين حقل الملف
-      e.target.value = '';
-    } catch (error: any) {
-      toast({
-        title: 'خطأ في الاستيراد',
-        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة.',
-        variant: 'destructive',
-      });
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  // استيراد الأسئلة من رابط
-  const importQuestionsFromURL = async (url: string) => {
-    if (!url) return;
-    
-    try {
-      setImporting(true);
-      console.log("بدء عملية استيراد الأسئلة من الرابط:", url);
-      
-      // إرسال الرابط إلى الخادم
-      const response = await apiRequest('POST', '/api/import-questions-from-url', { url });
-      console.log("استجابة الخادم:", response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'فشلت عملية الاستيراد من الرابط');
-      }
-      
-      const result = await response.json();
-      console.log("نتيجة الاستيراد:", result);
-      
-      // تحديث القائمة المحلية
-      fetchQuestions();
-      
-      toast({
-        title: 'تم الاستيراد بنجاح',
-        description: `تم استيراد ${result.imported} سؤال من الرابط بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
-      });
-    } catch (error: any) {
-      console.error("خطأ في استيراد الأسئلة من الرابط:", error);
-      toast({
-        title: 'خطأ في الاستيراد',
-        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة من الرابط.',
-        variant: 'destructive',
-      });
-    } finally {
-      setImporting(false);
-    }
-  };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">إدارة الأسئلة</h2>
-        <div className="flex gap-2">
-          <div className="relative group">
-            <Button 
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <span>استيراد / تصدير</span>
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-            <div className="hidden group-hover:flex absolute bg-background border rounded-md shadow-md p-2 mt-1 w-56 flex-col gap-1 z-10 right-0">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => exportQuestions('csv')}
-                className="justify-start"
-              >
-                <FileText className="w-4 h-4 ml-2" />
-                تصدير CSV
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => exportQuestions('excel')}
-                className="justify-start"
-              >
-                <FileSpreadsheet className="w-4 h-4 ml-2" />
-                تصدير Excel
-              </Button>
-              <hr className="my-1" />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => createImportTemplate('excel')}
-                className="justify-start"
-              >
-                <Download className="w-4 h-4 ml-2" />
-                تنزيل نموذج استيراد
-              </Button>
-              <hr className="my-1" />
-              <label className="cursor-pointer w-full">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="justify-start w-full"
-                  onClick={() => document.getElementById('importFile')?.click()}
-                >
-                  <Upload className="w-4 h-4 ml-2" />
-                  استيراد ملف
-                </Button>
-                <input 
-                  type="file" 
-                  id="importFile" 
-                  accept=".csv,.xlsx,.xls" 
-                  className="hidden" 
-                  onChange={handleImportFile}
-                />
-              </label>
-              <hr className="my-1" />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="justify-start"
-                onClick={() => {
-                  const url = prompt('أدخل رابط ملف Google Sheets أو أي رابط متوافق');
-                  if (url) importQuestionsFromURL(url);
-                }}
-              >
-                <ExternalLink className="w-4 h-4 ml-2" />
-                استيراد من رابط
-              </Button>
-            </div>
-          </div>
-          <Button 
-            onClick={showAddQuestionForm}
-            className="flex items-center gap-1"
-          >
-            <Plus className="h-4 w-4" />
-            <span>إضافة سؤال جديد</span>
-          </Button>
-        </div>
+        <Button 
+          onClick={showAddQuestionForm}
+          className="flex items-center gap-1"
+        >
+          <Plus className="h-4 w-4" />
+          <span>إضافة سؤال جديد</span>
+        </Button>
       </div>
 
       {/* قسم فلاتر البحث */}
@@ -1280,7 +452,7 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                   <option value="">كل الفئات</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name} ({category.availableQuestions || questions.filter(q => q.categoryId === category.id).length})
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -1304,23 +476,9 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                       .find((c) => c.id === filterCategoryId)
                       ?.children.map((subcat) => (
                         <option key={subcat.id} value={subcat.id}>
-                          {subcat.name} ({subcat.availableQuestions || questions.filter(q => q.subcategoryId === subcat.id).length})
+                          {subcat.name}
                         </option>
                       ))}
-                </select>
-              </div>
-              
-              {/* فلتر الحالة (فعال/غير فعال) */}
-              <div>
-                <span className="mb-1 block">الحالة</span>
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  value={filterActive}
-                  onChange={(e) => setFilterActive(e.target.value)}
-                >
-                  <option value="all">جميع الأسئلة</option>
-                  <option value="active">الأسئلة الفعالة</option>
-                  <option value="inactive">الأسئلة غير الفعالة</option>
                 </select>
               </div>
             </div>
@@ -1440,164 +598,9 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
           
           <div className="border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
-              {/* قسم أزرار العمليات الجماعية */}
-              {selectedQuestions.length > 0 && (
-                <div className="mb-3 p-3 bg-muted/20 border rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">
-                      تم تحديد {selectedQuestions.length} سؤال
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleBulkToggleActive(true)}
-                        disabled={bulkProcessing}
-                      >
-                        {bulkProcessing ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 ml-2" />
-                        )}
-                        تفعيل الكل
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleBulkToggleActive(false)}
-                        disabled={bulkProcessing}
-                      >
-                        {bulkProcessing ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        ) : (
-                          <XCircle className="h-4 w-4 ml-2" />
-                        )}
-                        إلغاء تفعيل الكل
-                      </Button>
-                      <div className="relative">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setBulkCategoryOpen(!bulkCategoryOpen)}
-                          disabled={bulkProcessing}
-                        >
-                          {bulkProcessing ? (
-                            <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                          ) : (
-                            <LinkIcon className="h-4 w-4 ml-2" />
-                          )}
-                          نقل إلى فئة
-                        </Button>
-                        {bulkCategoryOpen && (
-                          <div className="absolute left-0 mt-2 w-64 p-2 bg-white rounded-md shadow-lg border z-50">
-                            <div className="pb-2 mb-2 border-b">
-                              <h4 className="font-medium text-primary">اختر الفئة</h4>
-                            </div>
-                            {categories.map((category) => (
-                              <div key={category.id} className="mb-2">
-                                <div
-                                  className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
-                                  onClick={() => handleBulkMoveToCategory(category.id, null)}
-                                >
-                                  {category.name} ({category.availableQuestions || 0})
-                                </div>
-                                <div className="pl-3 mt-1">
-                                  {category.children.map((subcat) => (
-                                    <div
-                                      key={subcat.id}
-                                      className="flex items-center p-1 hover:bg-muted rounded cursor-pointer text-sm"
-                                      onClick={() => handleBulkMoveToCategory(category.id, subcat.id)}
-                                    >
-                                      {subcat.name} ({subcat.availableQuestions || 0})
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="relative">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setBulkDifficultyOpen(!bulkDifficultyOpen)}
-                          disabled={bulkProcessing}
-                        >
-                          {bulkProcessing ? (
-                            <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                          ) : (
-                            <ChevronUp className="h-4 w-4 ml-2" />
-                          )}
-                          تغيير الصعوبة
-                        </Button>
-                        {bulkDifficultyOpen && (
-                          <div className="absolute left-0 mt-2 w-40 p-2 bg-white rounded-md shadow-lg border z-50">
-                            <div className="pb-2 mb-2 border-b">
-                              <h4 className="font-medium text-primary">مستوى الصعوبة</h4>
-                            </div>
-                            <div
-                              className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
-                              onClick={() => handleBulkChangeDifficulty(1)}
-                            >
-                              سهل
-                            </div>
-                            <div
-                              className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
-                              onClick={() => handleBulkChangeDifficulty(2)}
-                            >
-                              متوسط
-                            </div>
-                            <div
-                              className="flex items-center p-2 hover:bg-muted rounded cursor-pointer"
-                              onClick={() => handleBulkChangeDifficulty(3)}
-                            >
-                              صعب
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleBulkDelete}
-                        disabled={bulkProcessing}
-                      >
-                        {bulkProcessing ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        ) : (
-                          <Trash2 className="h-4 w-4 ml-2" />
-                        )}
-                        حذف المحدد
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedQuestions([]);
-                          setSelectAll(false);
-                        }}
-                      >
-                        <X className="h-4 w-4 ml-2" />
-                        إلغاء التحديد
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="p-3 text-center w-10">
-                      <Checkbox 
-                        checked={selectAll}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="تحديد الكل"
-                      />
-                    </th>
                     <th className="p-3 text-center">#</th>
                     <th className="p-3 text-right">السؤال</th>
                     <th className="p-3 text-right">الإجابة</th>
@@ -1610,91 +613,43 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredQuestions.slice(
-                    (currentPage - 1) * pageSize,
-                    currentPage * pageSize
-                  ).map((question, index) => (
-                  <tr key={question.id} className={`border-b hover:bg-muted/20 ${selectedQuestions.includes(question.id) ? 'bg-muted/30' : ''}`}>
-                    <td className="p-3 text-center">
-                      <Checkbox 
-                        checked={selectedQuestions.includes(question.id)}
-                        onCheckedChange={() => handleSelectQuestion(question.id)}
-                        aria-label={`تحديد السؤال رقم ${question.id}`}
-                      />
-                    </td>
+                  {filteredQuestions.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((question, index) => (
+                  <tr key={question.id} className="border-b hover:bg-muted/20">
                     <td className="p-3 text-center font-bold">{(currentPage - 1) * pageSize + index + 1}</td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex-1">
-                          {question.text.length > 60
-                            ? question.text.substring(0, 60) + "..."
-                            : question.text}
-                        </div>
-                        <button 
-                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-                          onClick={() => handleQuickEdit(question.id, 'text', question.text)}
-                          title="تعديل السؤال"
-                        >
-                          <Edit className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      </div>
+                      {question.text.length > 60
+                        ? question.text.substring(0, 60) + "..."
+                        : question.text}
                     </td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex-1">
-                          {question.answer.length > 20
-                            ? question.answer.substring(0, 20) + "..."
-                            : question.answer}
-                        </div>
-                        <button 
-                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-                          onClick={() => handleQuickEdit(question.id, 'answer', question.answer)}
-                          title="تعديل الإجابة"
-                        >
-                          <Edit className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      </div>
+                      {question.answer.length > 20
+                        ? question.answer.substring(0, 20) + "..."
+                        : question.answer}
                     </td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-1 flex-1">
-                          <div className="font-bold text-primary">
-                            {question.categoryName}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 rtl">
+                          <span className="inline-flex items-center justify-center w-7 h-7 text-center rounded-full bg-primary/10 text-primary">
+                            {question.categoryIcon || "📚"}
+                          </span>
+                          <span className="font-bold text-primary">{question.categoryName}</span>
+                        </div>
+                        {question.subcategoryName && (
+                          <div className="mr-2 mt-1 flex items-center gap-1">
+                            <span className="text-xs text-gray-500">الفئة الفرعية:</span>
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                              {question.subcategoryName}
+                            </span>
                           </div>
-                          {question.subcategoryName && (
-                            <div className="mt-1">
-                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                {question.subcategoryName}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <button 
-                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-                          onClick={() => handleQuickCategoryEdit(question.id, question.categoryId, question.subcategoryId)}
-                          title="تغيير الفئة"
-                        >
-                          <FolderEdit className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
+                        )}
                       </div>
                     </td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex-1">
-                          {question.difficulty === 1
-                            ? "سهل"
-                            : question.difficulty === 2
-                              ? "متوسط"
-                              : "صعب"}
-                        </div>
-                        <button 
-                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-                          onClick={() => handleQuickDifficultyEdit(question.id, question.difficulty)}
-                          title="تغيير مستوى الصعوبة"
-                        >
-                          <BarChart2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      </div>
+                      {question.difficulty === 1
+                        ? "سهل"
+                        : question.difficulty === 2
+                          ? "متوسط"
+                          : "صعب"}
                     </td>
                     <td className="p-3 text-right">{question.usageCount} مرة</td>
                     <td className="p-3 text-right">
@@ -1937,71 +892,6 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                 )}
               />
               
-              {/* رابط الصورة */}
-              <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رابط الصورة</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="أدخل رابط الصورة (اختياري)"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    {field.value && (
-                      <div className="mt-2">
-                        <img 
-                          src={field.value} 
-                          alt="معاينة الصورة" 
-                          className="max-h-40 max-w-full object-contain rounded-md border"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=صورة+غير+متوفرة';
-                          }}
-                        />
-                      </div>
-                    )}
-                  </FormItem>
-                )}
-              />
-              
-              {/* رابط الفيديو */}
-              <FormField
-                control={form.control}
-                name="videoUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رابط الفيديو</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="أدخل رابط الفيديو (اختياري)"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    {field.value && (
-                      <div className="mt-2">
-                        <video 
-                          src={field.value} 
-                          controls 
-                          className="max-h-40 max-w-full rounded-md border"
-                          onError={(e) => {
-                            const video = e.target as HTMLVideoElement;
-                            video.style.display = 'none';
-                            const errorDiv = document.createElement('div');
-                            errorDiv.textContent = 'تعذر تحميل الفيديو';
-                            errorDiv.className = 'p-2 bg-red-100 text-red-800 rounded-md text-center';
-                            video.parentNode?.appendChild(errorDiv);
-                          }}
-                        />
-                      </div>
-                    )}
-                  </FormItem>
-                )}
-              />
-              
               {/* حقل الحالة */}
               <FormField
                 control={form.control}
@@ -2036,195 +926,6 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
               </div>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* نوافذ التعديل السريع */}
-      {/* نافذة التعديل السريع للنص */}
-      <Dialog open={showQuickEditModal} onOpenChange={setShowQuickEditModal}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>تعديل سريع للنص</DialogTitle>
-          </DialogHeader>
-          <div className="p-4">
-            {quickEditField === 'text' ? (
-              <div>
-                <label className="mb-2 block">نص السؤال</label>
-                <Textarea 
-                  value={quickEditValue as string || ''} 
-                  onChange={(e) => setQuickEditValue(e.target.value)}
-                  rows={4}
-                  className="w-full"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="mb-2 block">الإجابة</label>
-                <Input 
-                  value={quickEditValue as string || ''} 
-                  onChange={(e) => setQuickEditValue(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            )}
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowQuickEditModal(false);
-                  setQuickEditId(null);
-                  setQuickEditField(null);
-                  setQuickEditValue(null);
-                }}
-              >
-                إلغاء
-              </Button>
-              <Button onClick={saveQuickEdit}>حفظ</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* نافذة التعديل السريع للفئة */}
-      <Dialog open={showQuickCategoryModal} onOpenChange={setShowQuickCategoryModal}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>تغيير الفئة والفئة الفرعية</DialogTitle>
-          </DialogHeader>
-          <div className="p-4">
-            <Form {...setEditForm}>
-              <form className="space-y-4">
-                <FormField
-                  control={setEditForm.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الفئة</FormLabel>
-                      <select
-                        className="w-full rounded-md border border-input bg-background px-3 py-2"
-                        value={field.value}
-                        onChange={(e) => {
-                          field.onChange(parseInt(e.target.value));
-                          setEditForm.setValue("subcategoryId", undefined);
-                        }}
-                      >
-                        <option value="" disabled>اختر الفئة...</option>
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={setEditForm.control}
-                  name="subcategoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الفئة الفرعية</FormLabel>
-                      <select
-                        className="w-full rounded-md border border-input bg-background px-3 py-2"
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                        disabled={!setEditForm.watch("categoryId")}
-                      >
-                        <option value="">بدون فئة فرعية</option>
-                        {setEditForm.watch("categoryId") &&
-                          categories
-                            .find((c) => c.id === setEditForm.watch("categoryId"))
-                            ?.children.map((subcat) => (
-                              <option key={subcat.id} value={subcat.id}>
-                                {subcat.name}
-                              </option>
-                            ))}
-                      </select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowQuickCategoryModal(false);
-                  setQuickEditId(null);
-                }}
-              >
-                إلغاء
-              </Button>
-              <Button onClick={saveQuickCategoryEdit}>حفظ</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* نافذة التعديل السريع لمستوى الصعوبة */}
-      <Dialog open={showQuickDifficultyModal} onOpenChange={setShowQuickDifficultyModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>تغيير مستوى الصعوبة</DialogTitle>
-          </DialogHeader>
-          <div className="p-4">
-            <div className="space-y-4">
-              <div className="flex flex-col gap-3">
-                <label className="mb-2 block">مستوى الصعوبة</label>
-                <div className="flex flex-col gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="quickDifficulty"
-                      value={1}
-                      checked={(quickEditValue as number) === 1}
-                      onChange={() => setQuickEditValue(1)}
-                      className="h-4 w-4"
-                    />
-                    <span>سهل</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="quickDifficulty"
-                      value={2}
-                      checked={(quickEditValue as number) === 2}
-                      onChange={() => setQuickEditValue(2)}
-                      className="h-4 w-4"
-                    />
-                    <span>متوسط</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="quickDifficulty"
-                      value={3}
-                      checked={(quickEditValue as number) === 3}
-                      onChange={() => setQuickEditValue(3)}
-                      className="h-4 w-4"
-                    />
-                    <span>صعب</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowQuickDifficultyModal(false);
-                  setQuickEditId(null);
-                  setQuickEditValue(null);
-                }}
-              >
-                إلغاء
-              </Button>
-              <Button onClick={saveQuickDifficultyEdit}>حفظ</Button>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
     </div>
