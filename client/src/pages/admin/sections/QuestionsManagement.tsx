@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -489,8 +489,10 @@ export default function QuestionsManagement() {
                     render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormLabel>الفئة</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
+                        <select
+                          className="form-select w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 cursor-pointer"
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleCategoryChange(value);
                             field.onChange(value === "none" ? 0 : parseInt(value));
                           }}
@@ -500,23 +502,16 @@ export default function QuestionsManagement() {
                               : "none"
                           }
                         >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="اختر فئة" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">اختر فئة</SelectItem>
-                            {categories.map((category) => (
-                              <SelectItem
-                                key={category.id}
-                                value={category.id.toString()}
-                              >
-                                {category.icon || ""} {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <option value="none">اختر فئة</option>
+                          {categories.map((category) => (
+                            <option
+                              key={category.id}
+                              value={category.id.toString()}
+                            >
+                              {category.icon || ""} {category.name}
+                            </option>
+                          ))}
+                        </select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -527,17 +522,18 @@ export default function QuestionsManagement() {
                     render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormLabel>الفئة الفرعية</FormLabel>
-                        <Select
+                        <select
+                          className="form-select w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 cursor-pointer"
                           disabled={
                             !(
                               form.getValues("categoryId") &&
                               form.getValues("categoryId") > 0
                             )
                           }
-                          onValueChange={(value) =>
+                          onChange={(e) =>
                             form.setValue(
                               "subcategoryId",
-                              value === "none" ? 0 : parseInt(value),
+                              e.target.value === "none" ? 0 : parseInt(e.target.value),
                             )
                           }
                           value={
@@ -546,42 +542,33 @@ export default function QuestionsManagement() {
                               : "none"
                           }
                         >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="اختر الفئة الفرعية" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">
-                              اختر الفئة الفرعية
-                            </SelectItem>
-                            {form.getValues("categoryId") &&
-                            form.getValues("categoryId") > 0
-                              ? (() => {
-                                  const selectedCat = categories.find(
-                                    (c) => c.id === form.getValues("categoryId")
-                                  );
-                                  console.log("الفئة المحددة في عنصر الاختيار:", selectedCat);
-                                  
-                                  // التحقق من وجود الفئة المحددة وأن لديها فئات فرعية
-                                  if (selectedCat && selectedCat.children && selectedCat.children.length > 0) {
-                                    console.log("عرض الفئات الفرعية:", selectedCat.children);
-                                    return selectedCat.children.map((subcat) => (
-                                      <SelectItem
-                                        key={subcat.id}
-                                        value={subcat.id.toString()}
-                                      >
-                                        {subcat.icon || ""} {subcat.name}
-                                      </SelectItem>
-                                    ));
-                                  } else {
-                                    console.log("لا توجد فئات فرعية للفئة المحددة");
-                                    return <SelectItem value="0">لا توجد فئات فرعية</SelectItem>;
-                                  }
-                                })()
-                              : null}
-                          </SelectContent>
-                        </Select>
+                          <option value="none">اختر الفئة الفرعية</option>
+                          {form.getValues("categoryId") &&
+                          form.getValues("categoryId") > 0 && 
+                            (() => {
+                              const selectedCat = categories.find(
+                                (c) => c.id === form.getValues("categoryId")
+                              );
+                              
+                              if (selectedCat && selectedCat.children && selectedCat.children.length > 0) {
+                                return selectedCat.children.map((subcat) => (
+                                  <option
+                                    key={subcat.id}
+                                    value={subcat.id.toString()}
+                                  >
+                                    {subcat.icon || ""} {subcat.name}
+                                  </option>
+                                ));
+                              } else {
+                                return (
+                                  <option value="0" disabled>
+                                    لا توجد فئات فرعية
+                                  </option>
+                                );
+                              }
+                            })()
+                          }
+                        </select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -595,23 +582,17 @@ export default function QuestionsManagement() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>الصعوبة</FormLabel>
-                      <Select
-                        onValueChange={(value) =>
-                          field.onChange(parseInt(value))
+                      <select
+                        className="form-select w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 cursor-pointer"
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
                         }
                         value={field.value.toString()}
                       >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="اختر مستوى الصعوبة" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="1">سهل (1 نقطة)</SelectItem>
-                          <SelectItem value="2">متوسط (2 نقطة)</SelectItem>
-                          <SelectItem value="3">صعب (3 نقاط)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <option value="1">سهل (1 نقطة)</option>
+                        <option value="2">متوسط (2 نقطة)</option>
+                        <option value="3">صعب (3 نقاط)</option>
+                      </select>
                       <FormMessage />
                     </FormItem>
                   )}
