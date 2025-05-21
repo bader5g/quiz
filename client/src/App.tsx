@@ -25,7 +25,7 @@ function Router() {
   return (
     <Switch>
       {/* Add pages below */}
-      <ProtectedRoute path="/" component={Home} />
+      <Route path="/" component={Home} />
       {/* Login and Register routes */}
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/play/:gameId" component={PlayPage} />
