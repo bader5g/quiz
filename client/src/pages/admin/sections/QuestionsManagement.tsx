@@ -670,9 +670,26 @@ export default function QuestionsManagement() {
   const onSubmitQuestion = async (values: Question) => {
     try {
       setSaving(true);
+      
+      // التأكد من قيم الوسائط قبل الإرسال
+      if (values.mediaType === "none") {
+        // عند اختيار بدون وسائط، تأكد من إزالة أي روابط للصور أو الفيديو
+        values.imageUrl = "";
+        values.videoUrl = "";
+      } else if (values.mediaType === "image") {
+        // عند اختيار صورة، تأكد من إزالة أي روابط للفيديو
+        values.videoUrl = "";
+      } else if (values.mediaType === "video") {
+        // عند اختيار فيديو، تأكد من إزالة أي روابط للصور
+        values.imageUrl = "";
+      }
+      
       // حفظ البيانات عبر API
       const url = isEditMode ? `/api/questions/${values.id}` : "/api/questions";
       const method = isEditMode ? "PUT" : "POST";
+
+      // طباعة البيانات قبل الإرسال للتأكد من صحتها
+      console.log("بيانات السؤال المراد حفظها:", values);
 
       const response = await apiRequest(method, url, values);
       
