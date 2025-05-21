@@ -89,6 +89,8 @@ export default function QuestionsManagement() {
       subcategoryId: 0,
       difficulty: 1,
       imageUrl: "",
+      videoUrl: "",
+      mediaType: "none",
       keywords: "",
       isActive: true,
     },
@@ -159,6 +161,8 @@ export default function QuestionsManagement() {
       subcategoryId: 0,
       difficulty: 1,
       imageUrl: "",
+      videoUrl: "",
+      mediaType: "none",
       keywords: "",
       isActive: true,
     });
@@ -204,6 +208,8 @@ export default function QuestionsManagement() {
       subcategoryId: question.subcategoryId || 0,
       difficulty: question.difficulty,
       imageUrl: question.imageUrl || "",
+      videoUrl: question.videoUrl || "",
+      mediaType: question.imageUrl ? "image" : question.videoUrl ? "video" : "none",
       keywords: question.keywords || "",
       isActive: question.isActive,
     });
@@ -600,25 +606,129 @@ export default function QuestionsManagement() {
                   )}
                 />
 
-                {/* رابط الصورة */}
+                {/* نوع الوسائط (صورة أو فيديو) */}
                 <FormField
                   control={form.control}
-                  name="imageUrl"
+                  name="mediaType"
                   render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>رابط الصورة (اختياري)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="أدخل رابط صورة للسؤال (اختياري)"
-                          className="text-xs"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
+                    <FormItem>
+                      <FormLabel>نوع الوسائط المرفقة</FormLabel>
+                      <div className="flex flex-col gap-4">
+                        <select
+                          className="form-select w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 cursor-pointer"
+                          onChange={(e) => field.onChange(e.target.value)}
+                          value={field.value}
+                        >
+                          <option value="none">بدون وسائط</option>
+                          <option value="image">صورة</option>
+                          <option value="video">فيديو</option>
+                        </select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {/* رابط الصورة */}
+                {form.watch("mediaType") === "image" && (
+                  <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>رابط الصورة</FormLabel>
+                        <div className="space-y-2">
+                          <FormControl>
+                            <Input
+                              placeholder="أدخل رابط صورة للسؤال"
+                              className="text-xs"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <div className="flex flex-col gap-2">
+                            <label className="text-sm text-muted-foreground">أو قم بتحميل صورة</label>
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              className="text-xs"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  // عادة هنا سنقوم برفع الصورة إلى خدمة استضافة ثم وضع الرابط في field.onChange
+                                  // ولكن كمثال سنستخدم URL.createObjectURL
+                                  const imageUrl = URL.createObjectURL(file);
+                                  field.onChange(imageUrl);
+                                  
+                                  // ملاحظة: في التطبيق الحقيقي يجب إرسال الملف للخادم
+                                  toast({
+                                    title: "تم تحميل الصورة",
+                                    description: "يرجى ملاحظة أن هذا رابط مؤقت. في البيئة الحقيقية، سيتم رفع الصورة للخادم."
+                                  });
+                                }
+                              }}
+                            />
+                          </div>
+                          {field.value && (
+                            <div className="mt-2 border rounded-md p-2">
+                              <p className="text-sm mb-1">معاينة الصورة:</p>
+                              <img 
+                                src={field.value} 
+                                alt="معاينة" 
+                                className="max-h-40 object-contain mx-auto"
+                                onError={() => {
+                                  toast({
+                                    title: "خطأ في تحميل الصورة",
+                                    description: "تعذر تحميل الصورة. تأكد من أن الرابط صحيح ومتاح.",
+                                    variant: "destructive"
+                                  });
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* رابط الفيديو */}
+                {form.watch("mediaType") === "video" && (
+                  <FormField
+                    control={form.control}
+                    name="videoUrl"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>رابط الفيديو</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="أدخل رابط فيديو للسؤال (مثال: رابط يوتيوب)"
+                            className="text-xs"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        {field.value && (
+                          <div className="mt-2 border rounded-md p-2">
+                            <p className="text-sm mb-1">معاينة (إذا كان الرابط من يوتيوب):</p>
+                            <iframe 
+                              width="100%" 
+                              height="200" 
+                              src={field.value.includes('youtube.com') ? field.value.replace('watch?v=', 'embed/') : field.value} 
+                              title="مشغل فيديو"
+                              className="object-contain mx-auto"
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen
+                            ></iframe>
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 {/* الكلمات المفتاحية */}
                 <FormField
