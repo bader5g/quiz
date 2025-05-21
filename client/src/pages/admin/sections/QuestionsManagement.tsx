@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient"; // تأكد من أن هذا هو المسار الصحيح
+import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,27 +23,27 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import {
-  Form as FormComponent,
+  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"; // تأكد من استيراد Form بشكل صحيح
+} from "@/components/ui/form";
 
-// مخطط التحقق من السؤال
+// نموذج السؤال
 const questionSchema = z.object({
   id: z.number().optional(),
-  text: z.string().min(3, "نص السؤال يجب أن يحتوي على 3 أحرف على الأقل"),
+  text: z.string().min(5, "نص السؤال مطلوب ويجب أن يكون على الأقل 5 أحرف"),
   answer: z.string().min(1, "الإجابة مطلوبة"),
-  categoryId: z.number().min(1, "يجب اختيار فئة"),
-  subcategoryId: z.number().min(1, "يجب اختيار فئة فرعية"),
+  categoryId: z.number().min(1, "يرجى اختيار فئة"),
+  subcategoryId: z.number(),
   difficulty: z.number().min(1).max(3),
   imageUrl: z.string().optional().nullable(),
+  keywords: z.string().optional(),
   isActive: z.boolean().default(true),
-  tags: z.string().optional(),
 });
 
 type Question = z.infer<typeof questionSchema>;
@@ -70,163 +70,380 @@ interface QuestionDisplay extends Question {
 
 export default function QuestionsManagement() {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [questions, setQuestions] = useState<QuestionDisplay[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // نموذج السؤال
+  // تهيئة نموذج السؤال
   const form = useForm<Question>({
     resolver: zodResolver(questionSchema),
     defaultValues: {
       text: "",
       answer: "",
-      categoryId: undefined,
-      subcategoryId: undefined,
+      categoryId: 0,
+      subcategoryId: 0,
       difficulty: 1,
       imageUrl: "",
+      keywords: "",
       isActive: true,
-      tags: "",
     },
   });
 
-  // جلب الفئات من API
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await apiRequest("GET", "/categories"); // تأكد من أن هذا هو المسار الصحيح لجلب الفئات
-        if (!response.ok) {
-          throw new Error("فشل في جلب الفئات");
-        }
+  // جلب الأسئلة من API
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest("GET", "/api/questions");
+      if (response.ok) {
         const data = await response.json();
-        console.log("الفئات المستلمة:", data); // تحقق من البيانات
-        setCategories(data);
-      } catch (error) {
-        console.error("خطأ في جلب الفئات:", error);
-        toast({
-          variant: "destructive",
-          title: "خطأ في جلب الفئات",
-          description: "حدث خطأ أثناء محاولة جلب الفئات.",
-        });
-      } finally {
-        setLoading(false);
+        setQuestions(data || []);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching questions:", err);
+      toast({
+        title: "خطأ في جلب الأسئلة",
+        description: "حدث خطأ أثناء محاولة جلب الأسئلة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchCategories();
+  // جلب الفئات من API
+  const fetchCategories = async () => {
+    try {
+      console.log("جاري جلب الفئات...");
+      const response = await apiRequest("GET", "/api/categories-with-children");
+      console.log("استجابة الخادم:", response.status);
+      
+      // تسجيل محتوى الرد للتشخيص
+      const responseText = await response.text();
+      console.log("محتوى الرد:", responseText);
+      
+      // تحويل النص إلى JSON (اختياري إذا كان النص صالح JSON)
+      let data = [];
+      try {
+        if (responseText) {
+          data = JSON.parse(responseText);
+        }
+      } catch (e) {
+        console.error("خطأ في تحليل JSON:", e);
+        data = [];
+      }
+      
+      console.log("بيانات الفئات:", data);
+      setCategories(data || []);
+    } catch (err) {
+      console.error("خطأ في جلب الفئات:", err);
+      setCategories([]); // تعيين مصفوفة فارغة في حالة الخطأ
+    }
+  };
+
+  // تحميل البيانات عند بدء التطبيق
+  useEffect(() => {
+    fetchCategories().then(() => fetchQuestions());
   }, []);
 
+  // عرض نموذج إضافة سؤال جديد
   const showAddQuestionForm = () => {
-    form.reset();
+    form.reset({
+      text: "",
+      answer: "",
+      categoryId: 0,
+      subcategoryId: 0,
+      difficulty: 1,
+      imageUrl: "",
+      keywords: "",
+      isActive: true,
+    });
     setIsEditMode(false);
     setDialogOpen(true);
   };
 
+  // البحث عن اسم الفئة بواسطة معرفها
+  const findCategoryName = (categoryId: number): string => {
+    const category = categories.find((c) => c.id === categoryId);
+    return category ? category.name : "غير معروف";
+  };
+
+  // البحث عن أيقونة الفئة بواسطة معرفها
+  const findCategoryIcon = (categoryId: number): string => {
+    const category = categories.find((c) => c.id === categoryId);
+    return category ? category.icon : "❓";
+  };
+
+  // معالجة تغيير الفئة
+  const handleCategoryChange = (categoryId: string) => {
+    console.log("تم اختيار الفئة:", categoryId);
+    const catId = categoryId === "none" ? 0 : parseInt(categoryId);
+    form.setValue("categoryId", catId);
+    form.setValue("subcategoryId", 0);
+    
+    if (catId > 0) {
+      const selectedCategory = categories.find(c => c.id === catId);
+      console.log("الفئة المحددة:", selectedCategory);
+      if (selectedCategory && selectedCategory.children) {
+        console.log("الفئات الفرعية المتاحة:", selectedCategory.children);
+      }
+    }
+  };
+
+  // عرض نموذج تعديل سؤال
+  const showEditQuestionForm = (question: QuestionDisplay) => {
+    form.reset({
+      id: question.id,
+      text: question.text,
+      answer: question.answer,
+      categoryId: question.categoryId,
+      subcategoryId: question.subcategoryId || 0,
+      difficulty: question.difficulty,
+      imageUrl: question.imageUrl || "",
+      keywords: question.keywords || "",
+      isActive: question.isActive,
+    });
+    setIsEditMode(true);
+    setDialogOpen(true);
+  };
+
+  // إرسال نموذج السؤال (إضافة أو تعديل)
   const onSubmitQuestion = async (values: Question) => {
     try {
       setSaving(true);
-      // هنا يمكنك إضافة منطق لحفظ السؤال عبر API
-      setQuestions((prev) => [
-        ...prev,
-        {
-          ...values,
-          id: prev.length + 1,
-          categoryName: findCategoryName(values.categoryId),
-          subcategoryName: findSubcategoryName(
-            values.categoryId,
-            values.subcategoryId,
-          ),
-          categoryIcon: findCategoryIcon(values.categoryId),
-          usageCount: 0,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      // حفظ البيانات عبر API
+      const url = isEditMode ? `/api/questions/${values.id}` : "/api/questions";
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await apiRequest(method, url, values);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "فشلت عملية الحفظ");
+      }
+
+      const savedQuestion = await response.json();
+      
+      if (isEditMode) {
+        // تحديث السؤال في القائمة المحلية
+        setQuestions(
+          questions.map((q) =>
+            q.id === values.id
+              ? {
+                  ...q,
+                  ...values,
+                  categoryName: findCategoryName(values.categoryId),
+                  categoryIcon: findCategoryIcon(values.categoryId),
+                  subcategoryName: values.subcategoryId
+                    ? categories
+                        .find((c) => c.id === values.categoryId)
+                        ?.children.find((s) => s.id === values.subcategoryId)
+                        ?.name || ""
+                    : "",
+                }
+              : q
+          )
+        );
+      } else {
+        // إضافة السؤال الجديد للقائمة المحلية
+        setQuestions([
+          ...questions,
+          {
+            ...savedQuestion,
+            categoryName: findCategoryName(savedQuestion.categoryId),
+            categoryIcon: findCategoryIcon(savedQuestion.categoryId),
+            subcategoryName: savedQuestion.subcategoryId
+              ? categories
+                  .find((c) => c.id === savedQuestion.categoryId)
+                  ?.children.find((s) => s.id === savedQuestion.subcategoryId)
+                  ?.name || ""
+              : "",
+            usageCount: 0,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+      }
+
       toast({
-        title: "تمت الإضافة بنجاح",
-        description: "تم إضافة السؤال بنجاح",
+        title: isEditMode ? "تم تحديث السؤال" : "تمت إضافة السؤال",
+        description: isEditMode
+          ? "تم تحديث بيانات السؤال بنجاح."
+          : "تمت إضافة السؤال الجديد بنجاح.",
       });
+
       setDialogOpen(false);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
       toast({
-        variant: "destructive",
         title: "خطأ في الحفظ",
-        description: "حدث خطأ أثناء محاولة حفظ السؤال",
+        description: error.message || "حدث خطأ أثناء محاولة حفظ السؤال.",
+        variant: "destructive",
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const findCategoryName = (categoryId?: number): string => {
-    const category = categories.find((c) => c.id === categoryId);
-    return category ? category.name : "غير معروف";
-  };
+  // حذف سؤال
+  const deleteQuestion = async (questionId: number) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا السؤال؟")) {
+      return;
+    }
 
-  const findSubcategoryName = (
-    categoryId?: number,
-    subcategoryId?: number,
-  ): string => {
-    const category = categories.find((c) => c.id === categoryId);
-    if (!category) return "غير معروف";
-    const subcategory = category.children.find((s) => s.id === subcategoryId);
-    return subcategory ? subcategory.name : "غير معروف";
-  };
+    try {
+      const response = await apiRequest("DELETE", `/api/questions/${questionId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "فشلت عملية الحذف");
+      }
 
-  const findCategoryIcon = (categoryId?: number): string => {
-    const category = categories.find((c) => c.id === categoryId);
-    return category ? category.icon : "❓";
-  };
+      // حذف السؤال من القائمة المحلية
+      setQuestions(questions.filter((q) => q.id !== questionId));
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="mr-2">جاري تحميل الفئات...</span>
-      </div>
-    );
-  }
+      toast({
+        title: "تم حذف السؤال",
+        description: "تم حذف السؤال بنجاح.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الحذف",
+        description: error.message || "حدث خطأ أثناء محاولة حذف السؤال.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium">إدارة الأسئلة</h3>
-          <p className="text-sm text-muted-foreground">
-            إضافة وتعديل وإدارة أسئلة اللعبة
-          </p>
-        </div>
-        <Button onClick={showAddQuestionForm}>
-          <Plus className="h-4 w-4 ml-2" />
-          إضافة سؤال جديد
+        <h2 className="text-2xl font-bold">إدارة الأسئلة</h2>
+        <Button 
+          onClick={showAddQuestionForm}
+          className="flex items-center gap-1"
+        >
+          <Plus className="h-4 w-4" />
+          <span>إضافة سؤال جديد</span>
         </Button>
       </div>
 
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : questions.length === 0 ? (
+        <div className="text-center p-8 border rounded-lg bg-muted/30">
+          <p className="text-lg">لا توجد أسئلة. أضف سؤالاً جديداً.</p>
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="p-3 text-right">السؤال</th>
+                  <th className="p-3 text-right">الإجابة</th>
+                  <th className="p-3 text-right">الفئة</th>
+                  <th className="p-3 text-right">الصعوبة</th>
+                  <th className="p-3 text-right">الاستخدام</th>
+                  <th className="p-3 text-right">التاريخ</th>
+                  <th className="p-3 text-right">الحالة</th>
+                  <th className="p-3 text-right">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {questions.map((question) => (
+                  <tr key={question.id} className="border-b hover:bg-muted/20">
+                    <td className="p-3 text-right">
+                      {question.text.length > 60
+                        ? question.text.substring(0, 60) + "..."
+                        : question.text}
+                    </td>
+                    <td className="p-3 text-right">
+                      {question.answer.length > 20
+                        ? question.answer.substring(0, 20) + "..."
+                        : question.answer}
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center gap-1 rtl">
+                        <span>{question.categoryIcon}</span>
+                        <span>{question.categoryName}</span>
+                        {question.subcategoryName && (
+                          <span className="text-xs bg-gray-200 px-1 rounded">
+                            {question.subcategoryName}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3 text-right">
+                      {question.difficulty === 1
+                        ? "سهل"
+                        : question.difficulty === 2
+                          ? "متوسط"
+                          : "صعب"}
+                    </td>
+                    <td className="p-3 text-right">{question.usageCount} مرة</td>
+                    <td className="p-3 text-right">
+                      {new Date(question.createdAt).toLocaleDateString("ar-SA")}
+                    </td>
+                    <td className="p-3 text-right">
+                      {question.isActive ? (
+                        <span className="text-green-600">مفعل</span>
+                      ) : (
+                        <span className="text-red-600">معطل</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => showEditQuestionForm(question)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => deleteQuestion(question.id!)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* مربع حوار إضافة/تعديل سؤال */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent
-          className="max-w-sm w-full p-0 rounded-2xl shadow-lg border-0 animate-slideInUp"
-          style={{ overflow: "visible" }}
-        >
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-base">
-              {isEditMode ? "تعديل السؤال" : "إضافة سؤال جديد"}
+            <DialogTitle>
+              {isEditMode ? "تعديل سؤال" : "إضافة سؤال جديد"}
             </DialogTitle>
-            <DialogDescription className="text-xs mt-1">
+            <DialogDescription>
               {isEditMode
-                ? 'قم بتعديل بيانات السؤال ثم انقر "حفظ التعديلات"'
-                : 'يرجى إدخال بيانات السؤال الجديد كاملة ثم اضغط "إضافة السؤال"'}
+                ? "قم بتعديل بيانات السؤال أدناه."
+                : "أدخل تفاصيل السؤال الجديد أدناه."}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="px-4 py-2 max-h-[55vh] overflow-y-auto">
+          <div className="px-4 py-2 max-h-[80vh] overflow-y-auto">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmitQuestion)}
                 className="space-y-3"
                 id="question-form"
               >
+                {/* نص السؤال */}
                 <FormField
                   control={form.control}
                   name="text"
@@ -235,8 +452,8 @@ export default function QuestionsManagement() {
                       <FormLabel>نص السؤال</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="اكتب نص السؤال هنا"
-                          className="resize-none min-h-[60px] text-sm"
+                          placeholder="أدخل نص السؤال هنا..."
+                          className="min-h-24"
                           {...field}
                         />
                       </FormControl>
@@ -245,6 +462,7 @@ export default function QuestionsManagement() {
                   )}
                 />
 
+                {/* الإجابة الصحيحة */}
                 <FormField
                   control={form.control}
                   name="answer"
@@ -252,10 +470,10 @@ export default function QuestionsManagement() {
                     <FormItem>
                       <FormLabel>الإجابة الصحيحة</FormLabel>
                       <FormControl>
-                        <Input
+                        <Textarea
+                          placeholder="أدخل الإجابة الصحيحة..."
+                          className="min-h-12"
                           {...field}
-                          placeholder="الإجابة الصحيحة"
-                          className="text-sm"
                         />
                       </FormControl>
                       <FormMessage />
@@ -263,6 +481,7 @@ export default function QuestionsManagement() {
                   )}
                 />
 
+                {/* الفئة والفئة الفرعية */}
                 <div className="flex gap-2">
                   <FormField
                     control={form.control}
@@ -272,12 +491,14 @@ export default function QuestionsManagement() {
                         <FormLabel>الفئة</FormLabel>
                         <Select
                           onValueChange={(value) => {
-                            const catId =
-                              value === "none" ? undefined : parseInt(value);
-                            field.onChange(catId);
-                            form.setValue("subcategoryId", undefined); // Reset subcategory when category changes
+                            handleCategoryChange(value);
+                            field.onChange(value === "none" ? 0 : parseInt(value));
                           }}
-                          value={field.value ? field.value.toString() : "none"}
+                          value={
+                            field.value && field.value > 0
+                              ? field.value.toString()
+                              : "none"
+                          }
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -291,7 +512,7 @@ export default function QuestionsManagement() {
                                 key={category.id}
                                 value={category.id.toString()}
                               >
-                                {category.icon} {category.name}
+                                {category.icon || ""} {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -307,13 +528,23 @@ export default function QuestionsManagement() {
                       <FormItem className="flex-1">
                         <FormLabel>الفئة الفرعية</FormLabel>
                         <Select
-                          disabled={!form.getValues("categoryId")}
-                          onValueChange={(value) => {
-                            field.onChange(
-                              value === "none" ? undefined : parseInt(value),
-                            );
-                          }}
-                          value={field.value ? field.value.toString() : "none"}
+                          disabled={
+                            !(
+                              form.getValues("categoryId") &&
+                              form.getValues("categoryId") > 0
+                            )
+                          }
+                          onValueChange={(value) =>
+                            form.setValue(
+                              "subcategoryId",
+                              value === "none" ? 0 : parseInt(value),
+                            )
+                          }
+                          value={
+                            field.value && field.value > 0
+                              ? field.value.toString()
+                              : "none"
+                          }
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -324,26 +555,31 @@ export default function QuestionsManagement() {
                             <SelectItem value="none">
                               اختر الفئة الفرعية
                             </SelectItem>
-                            {(() => {
-                              const selectedCat = categories.find(
-                                (c) => c.id === form.getValues("categoryId"),
-                              );
-                              return selectedCat &&
-                                selectedCat.children.length > 0 ? (
-                                selectedCat.children.map((subcat) => (
-                                  <SelectItem
-                                    key={subcat.id}
-                                    value={subcat.id.toString()}
-                                  >
-                                    {subcat.icon} {subcat.name}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="0" disabled>
-                                  لا توجد فئات فرعية
-                                </SelectItem>
-                              );
-                            })()}
+                            {form.getValues("categoryId") &&
+                            form.getValues("categoryId") > 0
+                              ? (() => {
+                                  const selectedCat = categories.find(
+                                    (c) => c.id === form.getValues("categoryId")
+                                  );
+                                  console.log("الفئة المحددة في عنصر الاختيار:", selectedCat);
+                                  
+                                  // التحقق من وجود الفئة المحددة وأن لديها فئات فرعية
+                                  if (selectedCat && selectedCat.children && selectedCat.children.length > 0) {
+                                    console.log("عرض الفئات الفرعية:", selectedCat.children);
+                                    return selectedCat.children.map((subcat) => (
+                                      <SelectItem
+                                        key={subcat.id}
+                                        value={subcat.id.toString()}
+                                      >
+                                        {subcat.icon || ""} {subcat.name}
+                                      </SelectItem>
+                                    ));
+                                  } else {
+                                    console.log("لا توجد فئات فرعية للفئة المحددة");
+                                    return <SelectItem value="0">لا توجد فئات فرعية</SelectItem>;
+                                  }
+                                })()
+                              : null}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -352,6 +588,7 @@ export default function QuestionsManagement() {
                   />
                 </div>
 
+                {/* مستوى الصعوبة */}
                 <FormField
                   control={form.control}
                   name="difficulty"
@@ -359,20 +596,20 @@ export default function QuestionsManagement() {
                     <FormItem>
                       <FormLabel>الصعوبة</FormLabel>
                       <Select
-                        value={field.value ? field.value.toString() : "1"}
                         onValueChange={(value) =>
                           field.onChange(parseInt(value))
                         }
+                        value={field.value.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="اختر" />
+                            <SelectValue placeholder="اختر مستوى الصعوبة" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="1">سهل</SelectItem>
-                          <SelectItem value="2">متوسط</SelectItem>
-                          <SelectItem value="3">صعب</SelectItem>
+                          <SelectItem value="1">سهل (1 نقطة)</SelectItem>
+                          <SelectItem value="2">متوسط (2 نقطة)</SelectItem>
+                          <SelectItem value="3">صعب (3 نقاط)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -380,39 +617,30 @@ export default function QuestionsManagement() {
                   )}
                 />
 
-                <div className="flex gap-2">
-                  <FormField
-                    control={form.control}
-                    name="imageUrl"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>رابط الصورة (اختياري)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="رابط الصورة"
-                            className="text-xs"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {form.watch("imageUrl") && (
-                    <div className="self-end">
-                      <img
-                        src={form.watch("imageUrl")}
-                        alt="معاينة"
-                        className="h-10 w-10 object-contain border rounded"
-                        onError={(e) => (e.currentTarget.src = "")}
-                      />
-                    </div>
-                  )}
-                </div>
-
+                {/* رابط الصورة */}
                 <FormField
                   control={form.control}
-                  name="tags"
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel>رابط الصورة (اختياري)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="أدخل رابط صورة للسؤال (اختياري)"
+                          className="text-xs"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* الكلمات المفتاحية */}
+                <FormField
+                  control={form.control}
+                  name="keywords"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>الكلمات المفتاحية</FormLabel>
@@ -421,6 +649,7 @@ export default function QuestionsManagement() {
                           {...field}
                           placeholder="مثال: رياضيات,علوم"
                           className="text-xs"
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -460,18 +689,15 @@ export default function QuestionsManagement() {
             <Button
               type="submit"
               form="question-form"
-              className="w-28"
+              className="w-24"
               disabled={saving}
             >
               {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  جاري الحفظ...
-                </>
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : isEditMode ? (
-                "حفظ التعديلات"
+                "تحديث"
               ) : (
-                "إضافة السؤال"
+                "إضافة"
               )}
             </Button>
           </div>
