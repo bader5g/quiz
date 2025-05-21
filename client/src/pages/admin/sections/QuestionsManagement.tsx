@@ -127,6 +127,14 @@ export default function QuestionsManagement() {
   const [showQuickCategoryModal, setShowQuickCategoryModal] = useState(false);
   const [showQuickDifficultyModal, setShowQuickDifficultyModal] = useState(false);
   
+  // نموذج تعديل الفئات السريع
+  const setEditForm = useForm({
+    defaultValues: {
+      categoryId: 0,
+      subcategoryId: undefined as number | undefined,
+    }
+  });
+  
   // فلاتر البحث
   const [filterText, setFilterText] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
@@ -451,6 +459,149 @@ export default function QuestionsManagement() {
           await apiRequest("PUT", `/api/questions/${questionId}`, updatedQuestion);
         }
       }
+      
+  // وظائف التعديل السريع
+  const handleQuickEdit = (id: number, field: string, value: string | number) => {
+    setQuickEditId(id);
+    setQuickEditField(field);
+    setQuickEditValue(value);
+    setShowQuickEditModal(true);
+  };
+
+  const handleQuickCategoryEdit = (id: number, categoryId: number, subcategoryId: number | null) => {
+    setQuickEditId(id);
+    setEditForm.reset({
+      categoryId,
+      subcategoryId: subcategoryId || undefined,
+    });
+    setShowQuickCategoryModal(true);
+  };
+
+  const handleQuickDifficultyEdit = (id: number, difficulty: number) => {
+    setQuickEditId(id);
+    setQuickEditValue(difficulty);
+    setShowQuickDifficultyModal(true);
+  };
+
+  const saveQuickEdit = async () => {
+    if (!quickEditId || !quickEditField || quickEditValue === null) return;
+    
+    try {
+      await apiRequest("PUT", `/api/questions/${quickEditId}`, {
+        [quickEditField]: quickEditValue,
+      });
+      
+      // تحديث القائمة المحلية بدون إعادة جلب كل الأسئلة
+      setQuestions(questions.map(q => 
+        q.id === quickEditId 
+          ? { ...q, [quickEditField]: quickEditValue }
+          : q
+      ));
+      
+      setFilteredQuestions(filteredQuestions.map(q => 
+        q.id === quickEditId 
+          ? { ...q, [quickEditField]: quickEditValue }
+          : q
+      ));
+      
+      toast({
+        title: "تم التعديل",
+        description: "تم تعديل المعلومات بنجاح",
+      });
+      
+      setShowQuickEditModal(false);
+      setQuickEditId(null);
+      setQuickEditField(null);
+      setQuickEditValue(null);
+    } catch (error) {
+      console.error("Error updating question:", error);
+      toast({
+        title: "خطأ أثناء التعديل",
+        description: "حدث خطأ أثناء محاولة تعديل السؤال",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveQuickCategoryEdit = async () => {
+    if (!quickEditId) return;
+    
+    try {
+      const values = setEditForm.getValues();
+      
+      await apiRequest("PUT", `/api/questions/${quickEditId}`, {
+        categoryId: values.categoryId,
+        subcategoryId: values.subcategoryId,
+      });
+      
+      // تحديث البيانات المحلية
+      const updatedQuestion = { ...questions.find(q => q.id === quickEditId)! };
+      const category = categories.find(c => c.id === values.categoryId);
+      const subcategory = category?.children.find(s => s.id === values.subcategoryId);
+      
+      updatedQuestion.categoryId = values.categoryId;
+      updatedQuestion.subcategoryId = values.subcategoryId;
+      updatedQuestion.categoryName = category?.name || '';
+      updatedQuestion.subcategoryName = subcategory?.name || null;
+      
+      setQuestions(questions.map(q => q.id === quickEditId ? updatedQuestion : q));
+      setFilteredQuestions(filteredQuestions.map(q => q.id === quickEditId ? updatedQuestion : q));
+      
+      toast({
+        title: "تم التعديل",
+        description: "تم تعديل الفئة بنجاح",
+      });
+      
+      setShowQuickCategoryModal(false);
+      setQuickEditId(null);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      toast({
+        title: "خطأ أثناء التعديل",
+        description: "حدث خطأ أثناء محاولة تعديل الفئة",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveQuickDifficultyEdit = async () => {
+    if (!quickEditId || quickEditValue === null) return;
+    
+    try {
+      await apiRequest("PUT", `/api/questions/${quickEditId}`, {
+        difficulty: quickEditValue,
+      });
+      
+      // تحديث البيانات المحلية
+      setQuestions(questions.map(q => 
+        q.id === quickEditId 
+          ? { ...q, difficulty: quickEditValue as number }
+          : q
+      ));
+      
+      setFilteredQuestions(filteredQuestions.map(q => 
+        q.id === quickEditId 
+          ? { ...q, difficulty: quickEditValue as number }
+          : q
+      ));
+      
+      toast({
+        title: "تم التعديل",
+        description: "تم تعديل مستوى الصعوبة بنجاح",
+      });
+      
+      setShowQuickDifficultyModal(false);
+      setQuickEditId(null);
+      setQuickEditValue(null);
+    } catch (error) {
+      console.error("Error updating difficulty:", error);
+      toast({
+        title: "خطأ أثناء التعديل",
+        description: "حدث خطأ أثناء محاولة تعديل مستوى الصعوبة",
+        variant: "destructive",
+      });
+    }
+  };
       
       // تحديث قائمة الأسئلة
       await fetchQuestions();
@@ -1997,6 +2148,195 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* نوافذ التعديل السريع */}
+      {/* نافذة التعديل السريع للنص */}
+      <Dialog open={showQuickEditModal} onOpenChange={setShowQuickEditModal}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>تعديل سريع للنص</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            {quickEditField === 'text' ? (
+              <div>
+                <label className="mb-2 block">نص السؤال</label>
+                <Textarea 
+                  value={quickEditValue as string || ''} 
+                  onChange={(e) => setQuickEditValue(e.target.value)}
+                  rows={4}
+                  className="w-full"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="mb-2 block">الإجابة</label>
+                <Input 
+                  value={quickEditValue as string || ''} 
+                  onChange={(e) => setQuickEditValue(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            )}
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowQuickEditModal(false);
+                  setQuickEditId(null);
+                  setQuickEditField(null);
+                  setQuickEditValue(null);
+                }}
+              >
+                إلغاء
+              </Button>
+              <Button onClick={saveQuickEdit}>حفظ</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* نافذة التعديل السريع للفئة */}
+      <Dialog open={showQuickCategoryModal} onOpenChange={setShowQuickCategoryModal}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>تغيير الفئة والفئة الفرعية</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <Form {...setEditForm}>
+              <form className="space-y-4">
+                <FormField
+                  control={setEditForm.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الفئة</FormLabel>
+                      <select
+                        className="w-full rounded-md border border-input bg-background px-3 py-2"
+                        value={field.value}
+                        onChange={(e) => {
+                          field.onChange(parseInt(e.target.value));
+                          setEditForm.setValue("subcategoryId", undefined);
+                        }}
+                      >
+                        <option value="" disabled>اختر الفئة...</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={setEditForm.control}
+                  name="subcategoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الفئة الفرعية</FormLabel>
+                      <select
+                        className="w-full rounded-md border border-input bg-background px-3 py-2"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        disabled={!setEditForm.watch("categoryId")}
+                      >
+                        <option value="">بدون فئة فرعية</option>
+                        {setEditForm.watch("categoryId") &&
+                          categories
+                            .find((c) => c.id === setEditForm.watch("categoryId"))
+                            ?.children.map((subcat) => (
+                              <option key={subcat.id} value={subcat.id}>
+                                {subcat.name}
+                              </option>
+                            ))}
+                      </select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowQuickCategoryModal(false);
+                  setQuickEditId(null);
+                }}
+              >
+                إلغاء
+              </Button>
+              <Button onClick={saveQuickCategoryEdit}>حفظ</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* نافذة التعديل السريع لمستوى الصعوبة */}
+      <Dialog open={showQuickDifficultyModal} onOpenChange={setShowQuickDifficultyModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تغيير مستوى الصعوبة</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3">
+                <label className="mb-2 block">مستوى الصعوبة</label>
+                <div className="flex flex-col gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="quickDifficulty"
+                      value={1}
+                      checked={(quickEditValue as number) === 1}
+                      onChange={() => setQuickEditValue(1)}
+                      className="h-4 w-4"
+                    />
+                    <span>سهل</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="quickDifficulty"
+                      value={2}
+                      checked={(quickEditValue as number) === 2}
+                      onChange={() => setQuickEditValue(2)}
+                      className="h-4 w-4"
+                    />
+                    <span>متوسط</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="quickDifficulty"
+                      value={3}
+                      checked={(quickEditValue as number) === 3}
+                      onChange={() => setQuickEditValue(3)}
+                      className="h-4 w-4"
+                    />
+                    <span>صعب</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowQuickDifficultyModal(false);
+                  setQuickEditId(null);
+                  setQuickEditValue(null);
+                }}
+              >
+                إلغاء
+              </Button>
+              <Button onClick={saveQuickDifficultyEdit}>حفظ</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
