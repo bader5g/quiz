@@ -1585,35 +1585,77 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                     </td>
                     <td className="p-3 text-center font-bold">{(currentPage - 1) * pageSize + index + 1}</td>
                     <td className="p-3 text-right">
-                      {question.text.length > 60
-                        ? question.text.substring(0, 60) + "..."
-                        : question.text}
-                    </td>
-                    <td className="p-3 text-right">
-                      {question.answer.length > 20
-                        ? question.answer.substring(0, 20) + "..."
-                        : question.answer}
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex flex-col gap-1">
-                        <div className="font-bold text-primary">
-                          {question.categoryName}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          {question.text.length > 60
+                            ? question.text.substring(0, 60) + "..."
+                            : question.text}
                         </div>
-                        {question.subcategoryName && (
-                          <div className="mt-1">
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                              {question.subcategoryName}
-                            </span>
-                          </div>
-                        )}
+                        <button 
+                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+                          onClick={() => handleQuickEdit(question.id, 'text', question.text)}
+                          title="تعديل السؤال"
+                        >
+                          <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
                       </div>
                     </td>
                     <td className="p-3 text-right">
-                      {question.difficulty === 1
-                        ? "سهل"
-                        : question.difficulty === 2
-                          ? "متوسط"
-                          : "صعب"}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          {question.answer.length > 20
+                            ? question.answer.substring(0, 20) + "..."
+                            : question.answer}
+                        </div>
+                        <button 
+                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+                          onClick={() => handleQuickEdit(question.id, 'answer', question.answer)}
+                          title="تعديل الإجابة"
+                        >
+                          <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-1 flex-1">
+                          <div className="font-bold text-primary">
+                            {question.categoryName}
+                          </div>
+                          {question.subcategoryName && (
+                            <div className="mt-1">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                {question.subcategoryName}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <button 
+                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+                          onClick={() => handleQuickCategoryEdit(question.id, question.categoryId, question.subcategoryId)}
+                          title="تغيير الفئة"
+                        >
+                          <FolderEdit className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          {question.difficulty === 1
+                            ? "سهل"
+                            : question.difficulty === 2
+                              ? "متوسط"
+                              : "صعب"}
+                        </div>
+                        <button 
+                          className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+                          onClick={() => handleQuickDifficultyEdit(question.id, question.difficulty)}
+                          title="تغيير مستوى الصعوبة"
+                        >
+                          <BarChart2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
                     </td>
                     <td className="p-3 text-right">{question.usageCount} مرة</td>
                     <td className="p-3 text-right">
