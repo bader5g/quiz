@@ -67,13 +67,16 @@ interface QuestionDisplay extends Omit<Question, 'subcategoryId'> {
 
 export default function QuestionsManagement() {
   const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [questions, setQuestions] = useState<QuestionDisplay[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionDisplay[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // حالة النوافذ الحوارية
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   
   // خيارات عرض الجدول
   const [pageSize, setPageSize] = useState<number>(10);
@@ -93,6 +96,10 @@ export default function QuestionsManagement() {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  
+  // بيانات استيراد الأسئلة
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
 
   // تهيئة نموذج السؤال
   const form = useForm<Question>({
@@ -254,13 +261,16 @@ export default function QuestionsManagement() {
   const handleSelectAll = (isSelected: boolean) => {
     if (isSelected) {
       // تحديد جميع الأسئلة في الصفحة الحالية
-      const currentPageQuestions = getCurrentPageQuestions();
-      const currentIds = new Set(currentPageQuestions.map(q => q.id));
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const currentPageQuestions = filteredQuestions.slice(startIndex, endIndex);
+      
+      const currentIds = new Set<number>(currentPageQuestions.map(q => q.id));
       setSelectedQuestions(currentIds);
       setShowBulkActions(currentIds.size > 0);
     } else {
       // إلغاء تحديد جميع الأسئلة
-      setSelectedQuestions(new Set());
+      setSelectedQuestions(new Set<number>());
       setShowBulkActions(false);
     }
   };
@@ -592,14 +602,68 @@ export default function QuestionsManagement() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">إدارة الأسئلة</h2>
-        <Button 
-          onClick={showAddQuestionForm}
-          className="flex items-center gap-1"
-        >
-          <Plus className="h-4 w-4" />
-          <span>إضافة سؤال جديد</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* الأزرار العادية */}
+          <Button 
+            onClick={showAddQuestionForm}
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>إضافة سؤال</span>
+          </Button>
+          
+          {/* زر استيراد الأسئلة */}
+          <Button 
+            variant="outline"
+            className="flex items-center gap-1"
+            onClick={() => setImportDialogOpen(true)}
+          >
+            <span>استيراد</span>
+          </Button>
+        </div>
       </div>
+      
+      {/* قسم العمليات الجماعية - يظهر فقط عند تحديد عناصر */}
+      {showBulkActions && (
+        <div className="flex items-center gap-2 p-3 my-2 bg-primary/10 rounded-lg border">
+          <span className="text-sm font-semibold ml-2">
+            تم تحديد {selectedQuestions.size} سؤال
+          </span>
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkActionLoading}
+          >
+            {bulkActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 ml-1" />}
+            حذف المحدد
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleBulkActivate(true)}
+            disabled={bulkActionLoading}
+          >
+            تفعيل
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleBulkActivate(false)}
+            disabled={bulkActionLoading}
+          >
+            إلغاء التفعيل
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedQuestions(new Set<number>())}
+            disabled={bulkActionLoading}
+          >
+            إلغاء التحديد
+          </Button>
+        </div>
+      )}
 
       {/* قسم فلاتر البحث */}
       <div className="mb-6 border rounded-lg p-4 bg-muted/10">
