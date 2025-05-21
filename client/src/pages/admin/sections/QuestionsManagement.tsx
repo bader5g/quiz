@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Upload, Link as LinkIcon, ExternalLink, FileSpreadsheet, FileText } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Upload, Link as LinkIcon, ExternalLink, FileSpreadsheet, FileText, CheckCircle, XCircle, X } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -290,7 +290,7 @@ export default function QuestionsManagement() {
       // تحديد كل الأسئلة المعروضة في الصفحة الحالية
       const currentPageIds = filteredQuestions
         .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-        .map(q => q.id);
+        .map(q => q.id as number);
       setSelectedQuestions(currentPageIds);
     } else {
       // إلغاء تحديد كل الأسئلة
@@ -1368,7 +1368,10 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentPageQuestions.map((question, index) => (
+                  {filteredQuestions.slice(
+                    (currentPage - 1) * pageSize,
+                    currentPage * pageSize
+                  ).map((question, index) => (
                   <tr key={question.id} className={`border-b hover:bg-muted/20 ${selectedQuestions.includes(question.id) ? 'bg-muted/30' : ''}`}>
                     <td className="p-3 text-center">
                       <Checkbox 
