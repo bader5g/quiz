@@ -1,5 +1,5 @@
 import { 
-  users, categories, subcategories, questions, gameSettings, siteSettings,
+  users, categories, subcategories, questions, gameSettings, siteSettings, gameSessions,
   type User, 
   type InsertUser, 
   type GameSettings, 
