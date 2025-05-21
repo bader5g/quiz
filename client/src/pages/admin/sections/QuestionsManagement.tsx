@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Upload, Link as LinkIcon, ExternalLink, FileSpreadsheet, FileText, CheckCircle, XCircle, X } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Upload, Link as LinkIcon, ExternalLink, FileSpreadsheet, FileText, CheckCircle, XCircle, X, Edit, FolderEdit, BarChart2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -118,6 +118,14 @@ export default function QuestionsManagement() {
   // خيارات عرض الجدول
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  
+  // متغيرات التعديل السريع
+  const [quickEditId, setQuickEditId] = useState<number | null>(null);
+  const [quickEditField, setQuickEditField] = useState<string | null>(null);
+  const [quickEditValue, setQuickEditValue] = useState<string | number | null>(null);
+  const [showQuickEditModal, setShowQuickEditModal] = useState(false);
+  const [showQuickCategoryModal, setShowQuickCategoryModal] = useState(false);
+  const [showQuickDifficultyModal, setShowQuickDifficultyModal] = useState(false);
   
   // فلاتر البحث
   const [filterText, setFilterText] = useState("");
