@@ -1316,6 +1316,82 @@ export default function QuestionsManagement() {
           </Form>
         </DialogContent>
       </Dialog>
+      
+      {/* نافذة استيراد الأسئلة */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>استيراد أسئلة من ملف Excel</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center">
+              <input
+                type="file"
+                id="importFile"
+                className="hidden"
+                accept=".xlsx"
+                onChange={(e) => e.target.files && setImportFile(e.target.files[0])}
+              />
+              <label
+                htmlFor="importFile"
+                className="cursor-pointer block p-4 text-center hover:bg-primary/5 rounded-lg transition-colors"
+              >
+                {importFile ? (
+                  <div className="text-green-600">
+                    <span className="block font-semibold">{importFile.name}</span>
+                    <span className="text-sm">
+                      ({(importFile.size / 1024).toFixed(2)} كيلوبايت)
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="block font-semibold">انقر لاختيار ملف Excel</span>
+                    <span className="text-sm text-muted-foreground">
+                      (.xlsx فقط)
+                    </span>
+                  </div>
+                )}
+              </label>
+            </div>
+            
+            <div className="text-sm space-y-2">
+              <h3 className="font-semibold">تعليمات هامة:</h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li>يجب أن يحتوي الملف على الأعمدة التالية: <span className="font-medium">السؤال, الإجابة, الفئة, الصعوبة</span></li>
+                <li>يجب أن تكون أسماء الفئات مطابقة تماماً للأسماء الموجودة في النظام</li>
+                <li>سيتم إضافة الأسئلة في حالة غير مفعلة افتراضياً للمراجعة</li>
+                <li>أعمدة الوسائط (الصور، الفيديو) اختيارية</li>
+              </ul>
+            </div>
+            
+            <div className="flex justify-between mt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setImportDialogOpen(false);
+                  setImportFile(null);
+                }}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                onClick={handleImportQuestions}
+                disabled={!importFile || importLoading}
+              >
+                {importLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري الاستيراد...
+                  </>
+                ) : (
+                  <>استيراد الأسئلة</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
