@@ -1,42 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient"; // تأكد من أن هذا هو المسار الصحيح
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -44,30 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Plus } from "lucide-react";
 import {
-  Loader2,
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Eye,
-  FileText,
-  RefreshCw,
-} from "lucide-react";
+  Form as FormComponent,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"; // تأكد من استيراد Form بشكل صحيح
 
 // مخطط التحقق من السؤال
 const questionSchema = z.object({
@@ -108,28 +72,10 @@ export default function QuestionsManagement() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<QuestionDisplay[]>([]);
-  const [filteredQuestions, setFilteredQuestions] = useState<QuestionDisplay[]>(
-    [],
-  );
   const [categories, setCategories] = useState<Category[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewQuestion, setPreviewQuestion] =
-    useState<QuestionDisplay | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // فلترة
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [subcategoryFilter, setSubcategoryFilter] = useState<string>("all");
-  const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("newest");
-
-  // صفحات
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 10;
 
   // نموذج السؤال
   const form = useForm<Question>({
@@ -137,8 +83,8 @@ export default function QuestionsManagement() {
     defaultValues: {
       text: "",
       answer: "",
-      categoryId: 0,
-      subcategoryId: 0,
+      categoryId: undefined,
+      subcategoryId: undefined,
       difficulty: 1,
       imageUrl: "",
       isActive: true,
@@ -146,224 +92,64 @@ export default function QuestionsManagement() {
     },
   });
 
+  // جلب الفئات من API
   useEffect(() => {
-    // يمكنك استبداله ببيانات وهمية مؤقتًا أثناء عدم توفر API
-    setQuestions([
-      {
-        id: 1,
-        text: "ما هي عاصمة مصر؟",
-        answer: "القاهرة",
-        categoryId: 1,
-        subcategoryId: 1,
-        difficulty: 1,
-        imageUrl: "",
-        isActive: true,
-        tags: "جغرافيا,عواصم",
-        categoryName: "جغرافيا",
-        subcategoryName: "عواصم",
-        categoryIcon: "🌍",
-        usageCount: 0,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
-    setCategories([
-      {
-        id: 1,
-        name: "جغرافيا",
-        icon: "🌍",
-        children: [
-          { id: 1, name: "عواصم", icon: "🏙️", availableQuestions: 20 },
-          { id: 2, name: "أنهار", icon: "🌊", availableQuestions: 8 },
-        ],
-      },
-    ]);
-    setLoading(false);
+    const fetchCategories = async () => {
+      try {
+        const response = await apiRequest("GET", "/categories"); // تأكد من أن هذا هو المسار الصحيح لجلب الفئات
+        if (!response.ok) {
+          throw new Error("فشل في جلب الفئات");
+        }
+        const data = await response.json();
+        console.log("الفئات المستلمة:", data); // تحقق من البيانات
+        setCategories(data);
+      } catch (error) {
+        console.error("خطأ في جلب الفئات:", error);
+        toast({
+          variant: "destructive",
+          title: "خطأ في جلب الفئات",
+          description: "حدث خطأ أثناء محاولة جلب الفئات.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
-  const applyFilters = (data = questions) => {
-    let filtered = [...data];
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (q) =>
-          q.text.includes(searchQuery) ||
-          q.answer.includes(searchQuery) ||
-          (q.tags && q.tags.includes(searchQuery)),
-      );
-    }
-    if (categoryFilter !== "all") {
-      filtered = filtered.filter(
-        (q) => q.categoryId === parseInt(categoryFilter),
-      );
-    }
-    if (subcategoryFilter !== "all") {
-      filtered = filtered.filter(
-        (q) => q.subcategoryId === parseInt(subcategoryFilter),
-      );
-    }
-    if (difficultyFilter !== "all") {
-      filtered = filtered.filter(
-        (q) => q.difficulty === parseInt(difficultyFilter),
-      );
-    }
-    if (sortBy === "newest") {
-      filtered.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-    } else if (sortBy === "oldest") {
-      filtered.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-    } else if (sortBy === "mostUsed") {
-      filtered.sort((a, b) => b.usageCount - a.usageCount);
-    } else if (sortBy === "leastUsed") {
-      filtered.sort((a, b) => a.usageCount - b.usageCount);
-    }
-    setTotalPages(Math.ceil(filtered.length / itemsPerPage));
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedQuestions = filtered.slice(
-      startIndex,
-      startIndex + itemsPerPage,
-    );
-    setFilteredQuestions(paginatedQuestions);
-  };
-
-  useEffect(() => {
-    applyFilters();
-    setCurrentPage(1);
-    // eslint-disable-next-line
-  }, [
-    searchQuery,
-    categoryFilter,
-    subcategoryFilter,
-    difficultyFilter,
-    sortBy,
-    questions,
-  ]);
-
-  useEffect(() => {
-    applyFilters();
-    // eslint-disable-next-line
-  }, [currentPage]);
-
   const showAddQuestionForm = () => {
-    form.reset({
-      text: "",
-      answer: "",
-      categoryId: 0,
-      subcategoryId: 0,
-      difficulty: 1,
-      imageUrl: "",
-      isActive: true,
-      tags: "",
-    });
+    form.reset();
     setIsEditMode(false);
     setDialogOpen(true);
-  };
-
-  const showEditQuestionForm = (question: QuestionDisplay) => {
-    form.reset({
-      id: question.id,
-      text: question.text,
-      answer: question.answer,
-      categoryId: question.categoryId,
-      subcategoryId: question.subcategoryId,
-      difficulty: question.difficulty,
-      imageUrl: question.imageUrl,
-      isActive: question.isActive,
-      tags: question.tags,
-    });
-    setIsEditMode(true);
-    setDialogOpen(true);
-  };
-
-  const findCategoryName = (categoryId: number): string => {
-    const category = categories.find((c) => c.id === categoryId);
-    return category ? category.name : "غير معروف";
-  };
-
-  const findSubcategoryName = (
-    categoryId: number,
-    subcategoryId: number,
-  ): string => {
-    const category = categories.find((c) => c.id === categoryId);
-    if (!category) return "غير معروف";
-    const subcategory = category.children.find((s) => s.id === subcategoryId);
-    return subcategory ? subcategory.name : "غير معروف";
-  };
-
-  const findCategoryIcon = (categoryId: number): string => {
-    const category = categories.find((c) => c.id === categoryId);
-    return category ? category.icon : "❓";
-  };
-
-  const handleCategoryChange = (categoryId: string) => {
-    const catId = categoryId === "none" ? 0 : parseInt(categoryId);
-    form.setValue("categoryId", catId);
-    form.setValue("subcategoryId", 0);
-    
-    // طباعة للتوضيح أثناء التصحيح
-    console.log("تم اختيار الفئة:", catId);
-    
-    // فلترة الفئات الفرعية المتاحة لهذه الفئة
-    if (catId > 0) {
-      const selectedCategory = categories.find(c => c.id === catId);
-      console.log("الفئة المحددة:", selectedCategory);
-      if (selectedCategory && selectedCategory.children) {
-        console.log("الفئات الفرعية المتاحة:", selectedCategory.children);
-      }
-    }
   };
 
   const onSubmitQuestion = async (values: Question) => {
     try {
       setSaving(true);
-      // هنا يمكن إضافة حفظ حقيقي عبر API، حالياً فقط تحديث البيانات المحلية
-      if (isEditMode) {
-        setQuestions(
-          questions.map((q) =>
-            q.id === values.id
-              ? {
-                  ...q,
-                  ...values,
-                  categoryName: findCategoryName(values.categoryId),
-                  subcategoryName: findSubcategoryName(
-                    values.categoryId,
-                    values.subcategoryId,
-                  ),
-                  categoryIcon: findCategoryIcon(values.categoryId),
-                }
-              : q,
+      // هنا يمكنك إضافة منطق لحفظ السؤال عبر API
+      setQuestions((prev) => [
+        ...prev,
+        {
+          ...values,
+          id: prev.length + 1,
+          categoryName: findCategoryName(values.categoryId),
+          subcategoryName: findSubcategoryName(
+            values.categoryId,
+            values.subcategoryId,
           ),
-        );
-        toast({
-          title: "تم التعديل بنجاح",
-          description: "تم تعديل السؤال بنجاح",
-        });
-      } else {
-        setQuestions([
-          ...questions,
-          {
-            ...values,
-            id: questions.length + 1,
-            categoryName: findCategoryName(values.categoryId),
-            subcategoryName: findSubcategoryName(
-              values.categoryId,
-              values.subcategoryId,
-            ),
-            categoryIcon: findCategoryIcon(values.categoryId),
-            usageCount: 0,
-            createdAt: new Date().toISOString(),
-          },
-        ]);
-        toast({
-          title: "تمت الإضافة بنجاح",
-          description: "تم إضافة السؤال بنجاح",
-        });
-      }
+          categoryIcon: findCategoryIcon(values.categoryId),
+          usageCount: 0,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      toast({
+        title: "تمت الإضافة بنجاح",
+        description: "تم إضافة السؤال بنجاح",
+      });
       setDialogOpen(false);
     } catch (error) {
+      console.error(error);
       toast({
         variant: "destructive",
         title: "خطأ في الحفظ",
@@ -374,11 +160,31 @@ export default function QuestionsManagement() {
     }
   };
 
+  const findCategoryName = (categoryId?: number): string => {
+    const category = categories.find((c) => c.id === categoryId);
+    return category ? category.name : "غير معروف";
+  };
+
+  const findSubcategoryName = (
+    categoryId?: number,
+    subcategoryId?: number,
+  ): string => {
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category) return "غير معروف";
+    const subcategory = category.children.find((s) => s.id === subcategoryId);
+    return subcategory ? subcategory.name : "غير معروف";
+  };
+
+  const findCategoryIcon = (categoryId?: number): string => {
+    const category = categories.find((c) => c.id === categoryId);
+    return category ? category.icon : "❓";
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="mr-2">جاري تحميل الأسئلة...</span>
+        <span className="mr-2">جاري تحميل الفئات...</span>
       </div>
     );
   }
@@ -398,27 +204,22 @@ export default function QuestionsManagement() {
         </Button>
       </div>
 
-      {/* مودال إضافة/تعديل سؤال */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
           className="max-w-sm w-full p-0 rounded-2xl shadow-lg border-0 animate-slideInUp"
           style={{ overflow: "visible" }}
         >
-          {/* الهيدر */}
-          <div className="px-4 pt-4 pb-2 border-b">
-            <DialogHeader>
-              <DialogTitle className="text-base">
-                {isEditMode ? "تعديل السؤال" : "إضافة سؤال جديد"}
-              </DialogTitle>
-              <DialogDescription className="text-xs mt-1">
-                {isEditMode
-                  ? 'قم بتعديل بيانات السؤال ثم انقر "حفظ التعديلات"'
-                  : 'يرجى إدخال بيانات السؤال الجديد كاملة ثم اضغط "إضافة السؤال"'}
-              </DialogDescription>
-            </DialogHeader>
-          </div>
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {isEditMode ? "تعديل السؤال" : "إضافة سؤال جديد"}
+            </DialogTitle>
+            <DialogDescription className="text-xs mt-1">
+              {isEditMode
+                ? 'قم بتعديل بيانات السؤال ثم انقر "حفظ التعديلات"'
+                : 'يرجى إدخال بيانات السؤال الجديد كاملة ثم اضغط "إضافة السؤال"'}
+            </DialogDescription>
+          </DialogHeader>
 
-          {/* محتوى النموذج مع تمرير داخلي */}
           <div className="px-4 py-2 max-h-[55vh] overflow-y-auto">
             <Form {...form}>
               <form
@@ -426,7 +227,6 @@ export default function QuestionsManagement() {
                 className="space-y-3"
                 id="question-form"
               >
-                {/* نص السؤال */}
                 <FormField
                   control={form.control}
                   name="text"
@@ -445,7 +245,6 @@ export default function QuestionsManagement() {
                   )}
                 />
 
-                {/* الإجابة */}
                 <FormField
                   control={form.control}
                   name="answer"
@@ -464,7 +263,6 @@ export default function QuestionsManagement() {
                   )}
                 />
 
-                {/* الفئة والفئة الفرعية */}
                 <div className="flex gap-2">
                   <FormField
                     control={form.control}
@@ -474,14 +272,12 @@ export default function QuestionsManagement() {
                         <FormLabel>الفئة</FormLabel>
                         <Select
                           onValueChange={(value) => {
-                            handleCategoryChange(value);
-                            field.onChange(value === "none" ? 0 : parseInt(value));
+                            const catId =
+                              value === "none" ? undefined : parseInt(value);
+                            field.onChange(catId);
+                            form.setValue("subcategoryId", undefined); // Reset subcategory when category changes
                           }}
-                          value={
-                            field.value && field.value > 0
-                              ? field.value.toString()
-                              : "none"
-                          }
+                          value={field.value ? field.value.toString() : "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -495,7 +291,7 @@ export default function QuestionsManagement() {
                                 key={category.id}
                                 value={category.id.toString()}
                               >
-                                {category.icon || ""} {category.name}
+                                {category.icon} {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -511,23 +307,13 @@ export default function QuestionsManagement() {
                       <FormItem className="flex-1">
                         <FormLabel>الفئة الفرعية</FormLabel>
                         <Select
-                          disabled={
-                            !(
-                              form.getValues("categoryId") &&
-                              form.getValues("categoryId") > 0
-                            )
-                          }
-                          onValueChange={(value) =>
-                            form.setValue(
-                              "subcategoryId",
-                              value === "none" ? 0 : parseInt(value),
-                            )
-                          }
-                          value={
-                            field.value && field.value > 0
-                              ? field.value.toString()
-                              : "none"
-                          }
+                          disabled={!form.getValues("categoryId")}
+                          onValueChange={(value) => {
+                            field.onChange(
+                              value === "none" ? undefined : parseInt(value),
+                            );
+                          }}
+                          value={field.value ? field.value.toString() : "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -538,31 +324,26 @@ export default function QuestionsManagement() {
                             <SelectItem value="none">
                               اختر الفئة الفرعية
                             </SelectItem>
-                            {form.getValues("categoryId") &&
-                            form.getValues("categoryId") > 0
-                              ? (() => {
-                                  const selectedCat = categories.find(
-                                    (c) => c.id === form.getValues("categoryId")
-                                  );
-                                  console.log("الفئة المحددة في عنصر الاختيار:", selectedCat);
-                                  
-                                  // التحقق من وجود الفئة المحددة وأن لديها فئات فرعية
-                                  if (selectedCat && selectedCat.children && selectedCat.children.length > 0) {
-                                    console.log("عرض الفئات الفرعية:", selectedCat.children);
-                                    return selectedCat.children.map((subcat) => (
-                                      <SelectItem
-                                        key={subcat.id}
-                                        value={subcat.id.toString()}
-                                      >
-                                        {subcat.icon || ""} {subcat.name}
-                                      </SelectItem>
-                                    ));
-                                  } else {
-                                    console.log("لا توجد فئات فرعية للفئة المحددة");
-                                    return <SelectItem value="0">لا توجد فئات فرعية</SelectItem>;
-                                  }
-                                })()
-                              : null}
+                            {(() => {
+                              const selectedCat = categories.find(
+                                (c) => c.id === form.getValues("categoryId"),
+                              );
+                              return selectedCat &&
+                                selectedCat.children.length > 0 ? (
+                                selectedCat.children.map((subcat) => (
+                                  <SelectItem
+                                    key={subcat.id}
+                                    value={subcat.id.toString()}
+                                  >
+                                    {subcat.icon} {subcat.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="0" disabled>
+                                  لا توجد فئات فرعية
+                                </SelectItem>
+                              );
+                            })()}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -571,7 +352,6 @@ export default function QuestionsManagement() {
                   />
                 </div>
 
-                {/* مستوى الصعوبة */}
                 <FormField
                   control={form.control}
                   name="difficulty"
@@ -579,13 +359,9 @@ export default function QuestionsManagement() {
                     <FormItem>
                       <FormLabel>الصعوبة</FormLabel>
                       <Select
+                        value={field.value ? field.value.toString() : "1"}
                         onValueChange={(value) =>
-                          form.setValue("difficulty", parseInt(value))
-                        }
-                        value={
-                          field.value && field.value > 0
-                            ? field.value.toString()
-                            : "1"
+                          field.onChange(parseInt(value))
                         }
                       >
                         <FormControl>
@@ -604,7 +380,6 @@ export default function QuestionsManagement() {
                   )}
                 />
 
-                {/* الصورة والكلمات المفتاحية */}
                 <div className="flex gap-2">
                   <FormField
                     control={form.control}
@@ -627,11 +402,9 @@ export default function QuestionsManagement() {
                     <div className="self-end">
                       <img
                         src={form.watch("imageUrl")}
-                        className="h-10 w-10 object-contain border rounded"
                         alt="معاينة"
-                        onError={(e) => {
-                          e.currentTarget.src = "";
-                        }}
+                        className="h-10 w-10 object-contain border rounded"
+                        onError={(e) => (e.currentTarget.src = "")}
                       />
                     </div>
                   )}
@@ -655,7 +428,6 @@ export default function QuestionsManagement() {
                   )}
                 />
 
-                {/* حالة التفعيل */}
                 <FormField
                   control={form.control}
                   name="isActive"
@@ -675,7 +447,6 @@ export default function QuestionsManagement() {
             </Form>
           </div>
 
-          {/* الأزرار في الأسفل خارج منطقة التمرير */}
           <div className="flex justify-between gap-2 px-4 py-3 border-t bg-white rounded-b-2xl">
             <Button
               type="button"
