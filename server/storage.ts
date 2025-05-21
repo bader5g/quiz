@@ -713,13 +713,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserGameSessions(userId: number): Promise<GameSession[]> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      const sessions = await db.select().from(gameSessions).where(eq(gameSessions.userId, userId));
+      return sessions;
+    } catch (error) {
+      console.error("Error getting user game sessions:", error);
+      return [];
+    }
   }
 
   async getGameSession(id: number): Promise<GameSession | undefined> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      const [game] = await db.select().from(gameSessions).where(eq(gameSessions.id, id));
+      return game;
+    } catch (error) {
+      console.error("Error getting game session:", error);
+      return undefined;
+    }
   }
 
   // Game play methods
@@ -737,33 +747,76 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGameTeams(gameId: number, teams: any[]): Promise<void> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      await db.update(gameSessions)
+        .set({ teams: JSON.stringify(teams) })
+        .where(eq(gameSessions.id, gameId));
+    } catch (error) {
+      console.error("Error updating game teams:", error);
+      throw error;
+    }
   }
 
   async updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      await db.update(gameSessions)
+        .set({ currentTeam: teamIndex })
+        .where(eq(gameSessions.id, gameId));
+    } catch (error) {
+      console.error("Error updating current team:", error);
+      throw error;
+    }
   }
 
   async updateGameQuestions(gameId: number, questions: any[]): Promise<void> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      await db.update(gameSessions)
+        .set({ questions: JSON.stringify(questions) })
+        .where(eq(gameSessions.id, gameId));
+    } catch (error) {
+      console.error("Error updating game questions:", error);
+      throw error;
+    }
   }
 
   async updateGameViewedQuestions(gameId: number, viewedQuestionIds: any[]): Promise<void> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      await db.update(gameSessions)
+        .set({ viewedQuestions: JSON.stringify(viewedQuestionIds) })
+        .where(eq(gameSessions.id, gameId));
+    } catch (error) {
+      console.error("Error updating viewed questions:", error);
+      throw error;
+    }
   }
 
   async endGame(gameId: number, winnerIndex: number): Promise<void> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      await db.update(gameSessions)
+        .set({ 
+          isCompleted: true,
+          winnerIndex: winnerIndex,
+          completedAt: new Date().toISOString()
+        })
+        .where(eq(gameSessions.id, gameId));
+    } catch (error) {
+      console.error("Error ending game:", error);
+      throw error;
+    }
   }
 
   async saveGameState(gameId: number): Promise<void> {
-    // تنفيذ لاحق - سيتم تنفيذه حسب الحاجة
-    throw new Error("Method not implemented.");
+    try {
+      // حفظ آخر وقت تحديث للعبة
+      await db.update(gameSessions)
+        .set({ 
+          lastUpdated: new Date().toISOString()
+        })
+        .where(eq(gameSessions.id, gameId));
+    } catch (error) {
+      console.error("Error saving game state:", error);
+      throw error;
+    }
   }
 }
 
