@@ -2,6 +2,25 @@ import React, { useState } from "react";
 import { Edit, BarChart2, FolderEdit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+
+// تعريف أنواع البيانات
+interface CategoryChild {
+  id: number;
+  name: string;
+  icon?: string;
+  parentId: number;
+  imageUrl?: string;
+  isActive?: boolean;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  icon?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+  children: CategoryChild[];
+}
 import { 
   Dialog, 
   DialogContent, 
@@ -39,8 +58,9 @@ export function EditTextButton({
       onUpdate(id, field, editValue);
       setOpen(false);
       toast({
-        title: "تم التعديل",
-        description: `تم تعديل ${field === 'text' ? 'السؤال' : 'الإجابة'} بنجاح`,
+        title: "تم التعديل بنجاح",
+        description: `تم تعديل ${field === 'text' ? 'السؤال' : 'الإجابة'} بنجاح: "${editValue.substring(0, 30)}${editValue.length > 30 ? '...' : ''}"`,
+        variant: "default",
       });
     } catch (error) {
       console.error("Error updating:", error);
@@ -120,19 +140,21 @@ export function EditTextButton({
 }
 
 // زر تعديل الفئة
+interface EditCategoryButtonProps {
+  id: number;
+  categoryId: number;
+  subcategoryId: number | null;
+  categories: Category[];
+  onUpdate: (id: number, categoryId: number, subcategoryId: number | null, categoryName: string, categoryIcon: string, subcategoryName: string | null) => void;
+}
+
 export function EditCategoryButton({
   id,
   categoryId,
   subcategoryId,
   categories,
   onUpdate
-}: {
-  id: number;
-  categoryId: number;
-  subcategoryId: number | null;
-  categories: any[];
-  onUpdate: (id: number, categoryId: number, subcategoryId: number | null, categoryName: string, categoryIcon: string, subcategoryName: string | null) => void;
-}) {
+}: EditCategoryButtonProps) {
   const [open, setOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(categoryId.toString());
   const [selectedSubcategory, setSelectedSubcategory] = useState(
@@ -141,7 +163,7 @@ export function EditCategoryButton({
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const subcategories = categories.find(c => c.id.toString() === selectedCategory)?.children || [];
+  const subcategories: CategoryChild[] = categories.find((c: Category) => c.id.toString() === selectedCategory)?.children || [];
 
   const handleSave = async () => {
     const catId = parseInt(selectedCategory);
@@ -156,8 +178,8 @@ export function EditCategoryButton({
         subcategoryId: subcatId
       });
       
-      const category = categories.find(c => c.id === catId);
-      const subcategory = category?.children.find(s => s.id === (subcatId || undefined));
+      const category = categories.find((c: Category) => c.id === catId);
+      const subcategory = category?.children.find((s: CategoryChild) => s.id === subcatId);
       
       onUpdate(
         id, 
@@ -238,7 +260,7 @@ export function EditCategoryButton({
                   <SelectValue placeholder="اختر الفئة الرئيسية" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((category) => (
+                  {categories.map((category: Category) => (
                     <SelectItem key={category.id} value={category.id.toString()}>
                       {category.name}
                     </SelectItem>
@@ -259,7 +281,7 @@ export function EditCategoryButton({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">بدون فئة فرعية</SelectItem>
-                    {subcategories.map((subcategory) => (
+                    {subcategories.map((subcategory: CategoryChild) => (
                       <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
                         {subcategory.name}
                       </SelectItem>
@@ -291,15 +313,17 @@ export function EditCategoryButton({
 }
 
 // زر تعديل مستوى الصعوبة
+interface EditDifficultyButtonProps {
+  id: number;
+  difficulty: number;
+  onUpdate: (id: number, difficulty: number) => void;
+}
+
 export function EditDifficultyButton({
   id,
   difficulty,
   onUpdate
-}: {
-  id: number;
-  difficulty: number;
-  onUpdate: (id: number, difficulty: number) => void;
-}) {
+}: EditDifficultyButtonProps) {
   const [open, setOpen] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState(difficulty.toString());
   const [isSaving, setIsSaving] = useState(false);
