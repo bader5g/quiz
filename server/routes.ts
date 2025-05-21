@@ -59,7 +59,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // إعداد multer لتحميل الملفات
-const storage = multer.diskStorage({
+const multerStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, uploadDir);
   },
@@ -89,7 +89,7 @@ const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFil
 };
 
 const upload = multer({ 
-  storage, 
+  storage: multerStorage, 
   fileFilter,
   limits: { 
     fileSize: 10 * 1024 * 1024, // 10 ميجابايت كحد أقصى
@@ -1604,6 +1604,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting question:", error);
       res.status(500).json({ error: "فشل في حذف السؤال" });
+    }
+  });
+
+  // تحميل ملفات الوسائط للأسئلة (صور وفيديو)
+  app.post("/api/upload-media", upload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "لم يتم تحميل أي ملف" });
+      }
+      
+      // إنشاء عنوان URL للملف المحمل
+      const fileUrl = `/uploads/${req.file.filename}`;
+      
+      // إرجاع البيانات
+      res.json({
+        success: true,
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+    } catch (error: any) {
+      console.error("Error uploading media:", error);
+      res.status(500).json({ 
+        error: "فشل تحميل الملف",
+        message: error.message
+      });
     }
   });
 
