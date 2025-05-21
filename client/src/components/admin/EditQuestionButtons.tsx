@@ -70,6 +70,9 @@ export function EditTextButton({
             <DialogTitle>
               {field === 'text' ? 'تعديل السؤال' : 'تعديل الإجابة'}
             </DialogTitle>
+            <div className="text-sm text-muted-foreground mt-2">
+              قم بتعديل {field === 'text' ? 'نص السؤال' : 'الإجابة'} في الحقل أدناه
+            </div>
           </DialogHeader>
           
           <div className="py-4">
@@ -182,6 +185,9 @@ export function EditCategoryButton({
             <DialogTitle>
               تعديل الفئة
             </DialogTitle>
+            <div className="text-sm text-muted-foreground mt-2">
+              اختر الفئة الرئيسية والفرعية للسؤال
+            </div>
           </DialogHeader>
           
           <div className="py-4 space-y-4">
@@ -218,7 +224,7 @@ export function EditCategoryButton({
                     <SelectValue placeholder="اختر الفئة الفرعية" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">بدون فئة فرعية</SelectItem>
+                    <SelectItem value="0">بدون فئة فرعية</SelectItem>
                     {subcategories.map((subcategory) => (
                       <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
                         {subcategory.name}
@@ -306,6 +312,9 @@ export function EditDifficultyButton({
             <DialogTitle>
               تعديل مستوى الصعوبة
             </DialogTitle>
+            <div className="text-sm text-muted-foreground mt-2">
+              اختر مستوى صعوبة السؤال المناسب
+            </div>
           </DialogHeader>
           
           <div className="py-4">

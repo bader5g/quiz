@@ -56,12 +56,13 @@ interface Category {
   }[];
 }
 
-interface QuestionDisplay extends Question {
+interface QuestionDisplay extends Omit<Question, 'subcategoryId'> {
   categoryName: string;
   subcategoryName: string | null;
   categoryIcon: string;
   usageCount: number;
   createdAt: string;
+  subcategoryId: number | null;
 }
 
 export default function QuestionsManagement() {
