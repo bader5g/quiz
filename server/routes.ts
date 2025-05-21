@@ -460,9 +460,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         teams: req.body.teamNames
           .slice(0, req.body.teamsCount)
           .map((name: string) => ({ name })),
-        answerTimes: req.body.answerTimes,
-        // answerTimeFirst: parseInt(req.body.firstAnswerTime, 10),
-        //  answerTimeSecond: parseInt(req.body.secondAnswerTime, 10),
+        answerTimeFirst: req.body.answerTimes[0] || 30, // وقت الإجابة الأول
+        answerTimeSecond: req.body.answerTimes[1] || 15, // وقت الإجابة الثاني
         selectedCategories: req.body.categories,
       };
 
