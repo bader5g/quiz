@@ -276,23 +276,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allQuestions = await storage.getQuestions();
       const result = [];
       
-      // تسجيل للتشخيص
+      // تسجيل للتشخيص وفحص دقيق لبنية البيانات
       console.log(`إجمالي عدد الأسئلة المسترجعة: ${allQuestions.length}`);
       console.log(`عينة من بيانات السؤال الأول:`, JSON.stringify(allQuestions[0], null, 2));
+      console.log(`جميع حقول السؤال الأول:`, Object.keys(allQuestions[0]));
+
+      // بما أن لدينا 42 سؤال، دعنا نتحقق من كل واحد ونعرف التوزيع حسب الفئات
+      const categoryDistribution = {};
+      const subcategoryDistribution = {};
+      
+      allQuestions.forEach(q => {
+        // تسجيل توزيع الأسئلة حسب الفئة
+        categoryDistribution[q.categoryId] = (categoryDistribution[q.categoryId] || 0) + 1;
+        subcategoryDistribution[q.subcategoryId] = (subcategoryDistribution[q.subcategoryId] || 0) + 1;
+      });
+      
+      console.log("توزيع الأسئلة حسب الفئة:", categoryDistribution);
+      console.log("توزيع الأسئلة حسب الفئة الفرعية:", subcategoryDistribution);
 
       for (const category of categoriesList) {
         const subcategories = await storage.getSubcategories(category.id);
         
-        // تعديل: عد جميع الأسئلة في الفئة بغض النظر عن الفئة الفرعية
+        // تعديل: عد جميع الأسئلة في الفئة بغض النظر عن الفئة الفرعية - مع المقارنة كنص
         const categoryQuestionsCount = allQuestions.filter(
-          (q) => q.categoryId === category.id
+          (q) => Number(q.categoryId) === Number(category.id)
         ).length;
         
-        console.log(`الفئة ${category.name} (ID: ${category.id}) - عدد الأسئلة: ${categoryQuestionsCount}`);
+        console.log(`الفئة ${category.name} (ID: ${category.id}, نوع: ${typeof category.id}) - عدد الأسئلة: ${categoryQuestionsCount}`);
 
         const subcategoriesWithCounts = subcategories.map((sub) => {
           const subcategoryQuestionsCount = allQuestions.filter(
-            (q) => q.subcategoryId === sub.id
+            (q) => Number(q.subcategoryId) === Number(sub.id)
           ).length;
           
           console.log(`  الفئة الفرعية ${sub.name} (ID: ${sub.id}) - عدد الأسئلة: ${subcategoryQuestionsCount}`);
