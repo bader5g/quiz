@@ -463,7 +463,7 @@ export default function QuestionsManagement() {
               
               {/* فلتر الفئة الفرعية */}
               <div>
-                <Label className="mb-1 block">الفئة الفرعية</Label>
+                <label className="mb-1 block">الفئة الفرعية</label>
                 <select
                   className="w-full rounded-md border border-input bg-background px-3 py-2"
                   value={filterSubcategoryId || ""}
@@ -489,7 +489,7 @@ export default function QuestionsManagement() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* فلتر التاريخ (من) */}
               <div>
-                <Label className="mb-1 block">من تاريخ</Label>
+                <label className="mb-1 block">من تاريخ</label>
                 <Input
                   type="date"
                   value={filterDateFrom || ""}
@@ -500,7 +500,7 @@ export default function QuestionsManagement() {
               
               {/* فلتر التاريخ (إلى) */}
               <div>
-                <Label className="mb-1 block">إلى تاريخ</Label>
+                <label className="mb-1 block">إلى تاريخ</label>
                 <Input
                   type="date"
                   value={filterDateTo || ""}
@@ -511,7 +511,7 @@ export default function QuestionsManagement() {
               
               {/* فلتر عدد مرات الاستخدام (الحد الأدنى) */}
               <div>
-                <Label className="mb-1 block">الاستخدام (الحد الأدنى)</Label>
+                <label className="mb-1 block">الاستخدام (الحد الأدنى)</label>
                 <Input
                   type="number"
                   min="0"
@@ -527,7 +527,7 @@ export default function QuestionsManagement() {
               
               {/* فلتر عدد مرات الاستخدام (الحد الأقصى) */}
               <div>
-                <Label className="mb-1 block">الاستخدام (الحد الأقصى)</Label>
+                <label className="mb-1 block">الاستخدام (الحد الأقصى)</label>
                 <Input
                   type="number"
                   min="0"
