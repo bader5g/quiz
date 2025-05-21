@@ -250,6 +250,153 @@ export default function QuestionsManagement() {
     );
   };
   
+  // تغيير الفئة لمجموعة من الأسئلة
+  const handleBulkChangeCategory = async () => {
+    if (selectedQuestions.size === 0 || !bulkCategoryId) return;
+    
+    const categoryObj = categories.find(c => c.id === bulkCategoryId);
+    if (!categoryObj) {
+      toast({
+        title: "خطأ في تغيير الفئة",
+        description: "الرجاء اختيار فئة صالحة.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!confirm(`هل أنت متأكد من نقل ${selectedQuestions.size} سؤال إلى فئة "${categoryObj.name}"؟`)) {
+      return;
+    }
+    
+    setBulkActionLoading(true);
+    
+    try {
+      // تغيير الفئة للأسئلة المحددة باستخدام طلبات متوازية
+      const updatePromises = Array.from(selectedQuestions).map(id => 
+        apiRequest("PUT", `/api/questions/${id}`, { 
+          categoryId: bulkCategoryId, 
+          subcategoryId: bulkSubcategoryId || null 
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // الحصول على اسم الفئة الفرعية إن وجدت
+      const subcategoryName = bulkSubcategoryId 
+        ? categoryObj.children.find(sc => sc.id === bulkSubcategoryId)?.name || null
+        : null;
+      
+      // تحديث قائمة الأسئلة محلياً
+      setQuestions(prevQuestions => 
+        prevQuestions.map(q => 
+          selectedQuestions.has(q.id) 
+            ? { 
+                ...q, 
+                categoryId: bulkCategoryId, 
+                subcategoryId: bulkSubcategoryId || null,
+                categoryName: categoryObj.name,
+                subcategoryName: subcategoryName
+              } 
+            : q
+        )
+      );
+      
+      // تحديث قائمة الأسئلة المفلترة محلياً
+      setFilteredQuestions(prevQuestions => 
+        prevQuestions.map(q => 
+          selectedQuestions.has(q.id) 
+            ? { 
+                ...q, 
+                categoryId: bulkCategoryId, 
+                subcategoryId: bulkSubcategoryId || null,
+                categoryName: categoryObj.name,
+                subcategoryName: subcategoryName
+              } 
+            : q
+        )
+      );
+      
+      // إعادة تعيين التحديد والفئات
+      setSelectedQuestions(new Set<number>());
+      setBulkCategoryId(0);
+      setBulkSubcategoryId(0);
+      setShowChangeCategoryDialog(false);
+      setShowBulkActions(false);
+      
+      toast({
+        title: "تم تغيير الفئة",
+        description: `تم نقل ${selectedQuestions.size} سؤال إلى فئة "${categoryObj.name}" بنجاح.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ في تغيير الفئة",
+        description: error.message || "حدث خطأ أثناء محاولة تغيير فئة الأسئلة.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  // تغيير مستوى الصعوبة لمجموعة من الأسئلة
+  const handleBulkChangeDifficulty = async () => {
+    if (selectedQuestions.size === 0 || !bulkDifficulty) return;
+    
+    const difficultyLabels = {
+      1: "سهل",
+      2: "متوسط",
+      3: "صعب"
+    };
+    
+    if (!confirm(`هل أنت متأكد من تغيير مستوى صعوبة ${selectedQuestions.size} سؤال إلى "${difficultyLabels[bulkDifficulty as keyof typeof difficultyLabels]}"؟`)) {
+      return;
+    }
+    
+    setBulkActionLoading(true);
+    
+    try {
+      // تغيير مستوى الصعوبة للأسئلة المحددة باستخدام طلبات متوازية
+      const updatePromises = Array.from(selectedQuestions).map(id => 
+        apiRequest("PUT", `/api/questions/${id}`, { difficulty: bulkDifficulty })
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // تحديث قائمة الأسئلة محلياً
+      setQuestions(prevQuestions => 
+        prevQuestions.map(q => 
+          selectedQuestions.has(q.id) ? { ...q, difficulty: bulkDifficulty } : q
+        )
+      );
+      
+      // تحديث قائمة الأسئلة المفلترة محلياً
+      setFilteredQuestions(prevQuestions => 
+        prevQuestions.map(q => 
+          selectedQuestions.has(q.id) ? { ...q, difficulty: bulkDifficulty } : q
+        )
+      );
+      
+      // إعادة تعيين التحديد ومستوى الصعوبة
+      setSelectedQuestions(new Set<number>());
+      setBulkDifficulty(0);
+      setShowChangeDifficultyDialog(false);
+      setShowBulkActions(false);
+      
+      toast({
+        title: "تم تغيير مستوى الصعوبة",
+        description: `تم تغيير مستوى صعوبة ${selectedQuestions.size} سؤال بنجاح.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ في تغيير مستوى الصعوبة",
+        description: error.message || "حدث خطأ أثناء محاولة تغيير مستوى صعوبة الأسئلة.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+  
   // دوال التحديد الجماعي
   const handleSelectQuestion = (id: number, isSelected: boolean) => {
     setSelectedQuestions(prevSelected => {
@@ -734,7 +881,10 @@ export default function QuestionsManagement() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => setShowChangeCategoryDialog(true)}
+            onClick={() => {
+              setShowChangeCategoryDialog(true);
+              setShowBulkActions(true);
+            }}
             disabled={bulkActionLoading}
           >
             <FolderEdit className="h-4 w-4 ml-1" />
@@ -743,7 +893,10 @@ export default function QuestionsManagement() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => setShowChangeDifficultyDialog(true)}
+            onClick={() => {
+              setShowChangeDifficultyDialog(true);
+              setShowBulkActions(true);
+            }}
             disabled={bulkActionLoading}
           >
             <BarChart2 className="h-4 w-4 ml-1" />
@@ -1484,7 +1637,92 @@ export default function QuestionsManagement() {
                 إلغاء
               </Button>
               <Button 
-                onClick={handleBulkChangeCategory}
+                onClick={() => {
+                  // استخدام دالة تغيير الفئة الجماعي المعرفة سابقاً
+                  const categoryObj = categories.find(c => c.id === bulkCategoryId);
+                  if (!categoryObj) {
+                    toast({
+                      title: "خطأ في تغيير الفئة",
+                      description: "الرجاء اختيار فئة صالحة.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (!confirm(`هل أنت متأكد من نقل ${selectedQuestions.size} سؤال إلى فئة "${categoryObj.name}"؟`)) {
+                    return;
+                  }
+                  
+                  setBulkActionLoading(true);
+                  
+                  // تغيير الفئة للأسئلة المحددة باستخدام طلبات متوازية
+                  const updatePromises = Array.from(selectedQuestions).map(id => 
+                    apiRequest("PUT", `/api/questions/${id}`, { 
+                      categoryId: bulkCategoryId, 
+                      subcategoryId: bulkSubcategoryId || null 
+                    })
+                  );
+                  
+                  Promise.all(updatePromises)
+                    .then(() => {
+                      // الحصول على اسم الفئة الفرعية إن وجدت
+                      const subcategoryName = bulkSubcategoryId 
+                        ? categoryObj.children.find(sc => sc.id === bulkSubcategoryId)?.name || null
+                        : null;
+                      
+                      // تحديث قائمة الأسئلة محلياً
+                      setQuestions(prevQuestions => 
+                        prevQuestions.map(q => 
+                          selectedQuestions.has(q.id) 
+                            ? { 
+                                ...q, 
+                                categoryId: bulkCategoryId, 
+                                subcategoryId: bulkSubcategoryId || null,
+                                categoryName: categoryObj.name,
+                                subcategoryName: subcategoryName
+                              } 
+                            : q
+                        )
+                      );
+                      
+                      // تحديث قائمة الأسئلة المفلترة محلياً
+                      setFilteredQuestions(prevQuestions => 
+                        prevQuestions.map(q => 
+                          selectedQuestions.has(q.id) 
+                            ? { 
+                                ...q, 
+                                categoryId: bulkCategoryId, 
+                                subcategoryId: bulkSubcategoryId || null,
+                                categoryName: categoryObj.name,
+                                subcategoryName: subcategoryName
+                              } 
+                            : q
+                        )
+                      );
+                      
+                      // إعادة تعيين التحديد والفئات
+                      setSelectedQuestions(new Set<number>());
+                      setBulkCategoryId(0);
+                      setBulkSubcategoryId(0);
+                      setShowChangeCategoryDialog(false);
+                      setShowBulkActions(false);
+                      
+                      toast({
+                        title: "تم تغيير الفئة",
+                        description: `تم نقل ${selectedQuestions.size} سؤال إلى فئة "${categoryObj.name}" بنجاح.`,
+                      });
+                    })
+                    .catch(error => {
+                      toast({
+                        title: "خطأ في تغيير الفئة",
+                        description: error.message || "حدث خطأ أثناء محاولة تغيير فئة الأسئلة.",
+                        variant: "destructive",
+                      });
+                    })
+                    .finally(() => {
+                      setBulkActionLoading(false);
+                    });
+                }}
                 disabled={!bulkCategoryId || bulkActionLoading}
               >
                 {bulkActionLoading ? (
@@ -1534,7 +1772,65 @@ export default function QuestionsManagement() {
                 إلغاء
               </Button>
               <Button 
-                onClick={handleBulkChangeDifficulty}
+                onClick={() => {
+                  // استخدام دالة تغيير مستوى الصعوبة الجماعي
+                  if (selectedQuestions.size === 0 || !bulkDifficulty) return;
+                  
+                  const difficultyLabels = {
+                    1: "سهل",
+                    2: "متوسط",
+                    3: "صعب"
+                  };
+                  
+                  if (!confirm(`هل أنت متأكد من تغيير مستوى صعوبة ${selectedQuestions.size} سؤال إلى "${difficultyLabels[bulkDifficulty as keyof typeof difficultyLabels]}"؟`)) {
+                    return;
+                  }
+                  
+                  setBulkActionLoading(true);
+                  
+                  // تغيير مستوى الصعوبة للأسئلة المحددة باستخدام طلبات متوازية
+                  const updatePromises = Array.from(selectedQuestions).map(id => 
+                    apiRequest("PUT", `/api/questions/${id}`, { difficulty: bulkDifficulty })
+                  );
+                  
+                  Promise.all(updatePromises)
+                    .then(() => {
+                      // تحديث قائمة الأسئلة محلياً
+                      setQuestions(prevQuestions => 
+                        prevQuestions.map(q => 
+                          selectedQuestions.has(q.id) ? { ...q, difficulty: bulkDifficulty } : q
+                        )
+                      );
+                      
+                      // تحديث قائمة الأسئلة المفلترة محلياً
+                      setFilteredQuestions(prevQuestions => 
+                        prevQuestions.map(q => 
+                          selectedQuestions.has(q.id) ? { ...q, difficulty: bulkDifficulty } : q
+                        )
+                      );
+                      
+                      // إعادة تعيين التحديد ومستوى الصعوبة
+                      setSelectedQuestions(new Set<number>());
+                      setBulkDifficulty(0);
+                      setShowChangeDifficultyDialog(false);
+                      setShowBulkActions(false);
+                      
+                      toast({
+                        title: "تم تغيير مستوى الصعوبة",
+                        description: `تم تغيير مستوى صعوبة ${selectedQuestions.size} سؤال بنجاح.`,
+                      });
+                    })
+                    .catch(error => {
+                      toast({
+                        title: "خطأ في تغيير مستوى الصعوبة",
+                        description: error.message || "حدث خطأ أثناء محاولة تغيير مستوى صعوبة الأسئلة.",
+                        variant: "destructive",
+                      });
+                    })
+                    .finally(() => {
+                      setBulkActionLoading(false);
+                    });
+                }}
                 disabled={!bulkDifficulty || bulkActionLoading}
               >
                 {bulkActionLoading ? (
