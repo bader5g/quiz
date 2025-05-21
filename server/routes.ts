@@ -47,8 +47,6 @@ const validateRequest = <T>(schema: z.ZodSchema<T>) => {
   };
 };
 
-
-
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
@@ -57,22 +55,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/import-questions", async (req, res) => {
     try {
       const { questions } = req.body;
-      
+
       if (!Array.isArray(questions) || questions.length === 0) {
         return res.status(400).json({ error: "بيانات الأسئلة غير صالحة" });
       }
-      
+
       console.log("استلام طلب استيراد الأسئلة:", questions);
-      
+
       const importedQuestions = [];
-      
+
       for (const question of questions) {
         // التأكد من وجود الحقول الإلزامية (فقط السؤال والإجابة والفئة)
         if (!question.text || !question.answer || !question.categoryId) {
           console.log("تخطي سؤال غير مكتمل:", question);
           continue;
         }
-        
+
         // إعداد بيانات السؤال (فقط المطلوبة)
         const questionData = {
           text: question.text,
@@ -83,61 +81,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // إضافة الصعوبة (افتراضي: سهل)
           difficulty: question.difficulty || 1,
           // إضافة الوسائط إذا وجدت
-          imageUrl: question.imageUrl || '',
-          videoUrl: question.videoUrl || '',
-          mediaType: question.mediaType || 'none',
+          imageUrl: question.imageUrl || "",
+          videoUrl: question.videoUrl || "",
+          mediaType: question.mediaType || "none",
           // إضافة الكلمات المفتاحية إذا وجدت
-          keywords: question.keywords || '',
+          keywords: question.keywords || "",
           // تعيين السؤال كغير فعال افتراضياً
-          isActive: false
+          isActive: false,
         };
-        
+
         console.log("إضافة سؤال جديد:", questionData);
-        
+
         // إضافة السؤال إلى قاعدة البيانات
         const newQuestion = await storage.createQuestion(questionData);
         importedQuestions.push(newQuestion);
       }
-      
-      res.status(201).json({ 
-        message: "تم استيراد الأسئلة بنجاح", 
-        imported: importedQuestions.length 
+
+      res.status(201).json({
+        message: "تم استيراد الأسئلة بنجاح",
+        imported: importedQuestions.length,
       });
     } catch (error) {
       console.error("خطأ في استيراد الأسئلة:", error);
       res.status(500).json({ error: "حدث خطأ أثناء استيراد الأسئلة" });
     }
   });
-  
+
   // استيراد الأسئلة من رابط خارجي
   app.post("/api/import-questions-from-url", async (req, res) => {
     try {
       const { url } = req.body;
-      
+
       if (!url) {
         return res.status(400).json({ error: "الرابط غير صالح" });
       }
-      
+
       console.log("استلام طلب استيراد الأسئلة من الرابط:", url);
-      
+
       // التحقق مما إذا كان الرابط من Google Sheets
       let sheetData;
-      
+
       try {
         // الحصول على البيانات من الرابط
         const response = await axios.get(url);
-        
+
         // فحص نوع الاستجابة
-        const contentType = response.headers['content-type'];
-        
-        if (contentType.includes('application/json')) {
+        const contentType = response.headers["content-type"];
+
+        if (contentType.includes("application/json")) {
           // إذا كان الرابط يعيد JSON
           sheetData = response.data;
-        } else if (contentType.includes('text/csv') || 
-                 contentType.includes('application/vnd.ms-excel') || 
-                 contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+        } else if (
+          contentType.includes("text/csv") ||
+          contentType.includes("application/vnd.ms-excel") ||
+          contentType.includes(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          )
+        ) {
           // إذا كان الرابط يعيد ملف CSV/Excel
-          const workbook = XLSX.read(response.data, { type: 'binary' });
+          const workbook = XLSX.read(response.data, { type: "binary" });
           const sheetName = workbook.SheetNames[0];
           sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
         } else {
@@ -145,73 +147,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (error) {
         console.error("خطأ في الحصول على البيانات من الرابط:", error);
-        return res.status(400).json({ error: "فشل في استيراد البيانات من الرابط المحدد" });
+        return res
+          .status(400)
+          .json({ error: "فشل في استيراد البيانات من الرابط المحدد" });
       }
-      
+
       if (!Array.isArray(sheetData) || sheetData.length === 0) {
-        return res.status(400).json({ error: "لم يتم العثور على بيانات صالحة في الرابط" });
+        return res
+          .status(400)
+          .json({ error: "لم يتم العثور على بيانات صالحة في الرابط" });
       }
-      
+
       console.log("تم الحصول على البيانات من الرابط:", sheetData.length, "سجل");
-      
+
       // تحويل البيانات إلى تنسيق الأسئلة
       const questionsToImport = [];
-      
+
       for (const row of sheetData) {
         // البحث عن الفئة الرئيسية والفرعية
-        const categoryName = row['الفئة'] || row['category'] || '';
-        const subcategoryName = row['الفئة الفرعية'] || row['subcategory'] || '';
-        
+        const categoryName = row["الفئة"] || row["category"] || "";
+        const subcategoryName =
+          row["الفئة الفرعية"] || row["subcategory"] || "";
+
         let categoryId = 0;
         let subcategoryId = 0;
-        
+
         // البحث عن معرف الفئة
         if (categoryName) {
           const categories = await storage.getCategories();
-          const category = categories.find(c => c.name === categoryName);
-          
+          const category = categories.find((c) => c.name === categoryName);
+
           if (category) {
             categoryId = category.id;
-            
+
             // البحث عن معرف الفئة الفرعية
             if (subcategoryName) {
               const subcategories = await storage.getSubcategories(category.id);
-              const subcategory = subcategories.find(s => s.name === subcategoryName);
-              
+              const subcategory = subcategories.find(
+                (s) => s.name === subcategoryName,
+              );
+
               if (subcategory) {
                 subcategoryId = subcategory.id;
               }
             }
           }
         }
-        
+
         // تحديد مستوى الصعوبة
         let difficulty = 1;
-        const difficultyText = row['الصعوبة'] || row['difficulty'] || '';
-        
-        if (typeof difficultyText === 'string') {
-          if (difficultyText.includes('متوسط')) {
+        const difficultyText = row["الصعوبة"] || row["difficulty"] || "";
+
+        if (typeof difficultyText === "string") {
+          if (difficultyText.includes("متوسط")) {
             difficulty = 2;
-          } else if (difficultyText.includes('صعب')) {
+          } else if (difficultyText.includes("صعب")) {
             difficulty = 3;
           }
-        } else if (typeof difficultyText === 'number') {
-          difficulty = difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
+        } else if (typeof difficultyText === "number") {
+          difficulty =
+            difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
         }
-        
+
         // تحضير بيانات السؤال
-        const questionText = row['نص السؤال'] || row['السؤال'] || row['question'] || '';
-        const answer = row['الإجابة'] || row['answer'] || '';
-        const imageUrl = row['رابط الصورة'] || row['image'] || '';
-        const videoUrl = row['رابط الفيديو'] || row['video'] || '';
-        const keywords = row['الكلمات المفتاحية'] || row['keywords'] || '';
-        
+        const questionText =
+          row["نص السؤال"] || row["السؤال"] || row["question"] || "";
+        const answer = row["الإجابة"] || row["answer"] || "";
+        const imageUrl = row["رابط الصورة"] || row["image"] || "";
+        const videoUrl = row["رابط الفيديو"] || row["video"] || "";
+        const keywords = row["الكلمات المفتاحية"] || row["keywords"] || "";
+
         // التحقق من وجود البيانات الإلزامية
         if (!questionText || !answer || !categoryId) {
           console.log("تخطي سؤال غير مكتمل من الرابط:", row);
           continue;
         }
-        
+
         // إعداد بيانات السؤال
         const questionData = {
           text: questionText,
@@ -221,35 +232,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           difficulty,
           imageUrl,
           videoUrl,
-          mediaType: imageUrl ? 'image' : videoUrl ? 'video' : 'none',
+          mediaType: imageUrl ? "image" : videoUrl ? "video" : "none",
           keywords,
-          isActive: false // الأسئلة المستوردة تكون غير فعالة افتراضياً
+          isActive: false, // الأسئلة المستوردة تكون غير فعالة افتراضياً
         };
-        
+
         console.log("إضافة سؤال جديد من الرابط:", questionData);
         questionsToImport.push(questionData);
       }
-      
+
       // التحقق من وجود أسئلة للاستيراد
       if (questionsToImport.length === 0) {
-        return res.status(400).json({ error: "لم يتم العثور على أسئلة صالحة للاستيراد" });
+        return res
+          .status(400)
+          .json({ error: "لم يتم العثور على أسئلة صالحة للاستيراد" });
       }
-      
+
       // إضافة الأسئلة إلى قاعدة البيانات
       const importedQuestions = [];
-      
+
       for (const question of questionsToImport) {
         const newQuestion = await storage.createQuestion(question);
         importedQuestions.push(newQuestion);
       }
-      
-      res.status(201).json({ 
-        message: "تم استيراد الأسئلة بنجاح", 
-        imported: importedQuestions.length 
+
+      res.status(201).json({
+        message: "تم استيراد الأسئلة بنجاح",
+        imported: importedQuestions.length,
       });
     } catch (error) {
       console.error("خطأ في استيراد الأسئلة من الرابط:", error);
-      res.status(500).json({ error: "حدث خطأ أثناء استيراد الأسئلة من الرابط" });
+      res
+        .status(500)
+        .json({ error: "حدث خطأ أثناء استيراد الأسئلة من الرابط" });
     }
   });
 
@@ -263,15 +278,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const category of categoriesList) {
         const subcategories = await storage.getSubcategories(category.id);
-        
-        // حساب عدد الأسئلة لكل فئة
-        const categoryQuestionsCount = allQuestions.filter(q => q.category_id === category.id).length;
-        
-        // تحضير الفئات الفرعية مع عدد الأسئلة لكل منها
+
+        // عد فقط الأسئلة التي ليس لها فئة فرعية
+        const categoryQuestionsCount = allQuestions.filter(
+          (q) =>
+            q.category_id === category.id &&
+            (!q.subcategory_id || q.subcategory_id === 0),
+        ).length;
+
         const subcategoriesWithCounts = subcategories.map((sub) => {
-          // حساب عدد الأسئلة في الفئة الفرعية
-          const subcategoryQuestionsCount = allQuestions.filter(q => q.subcategory_id === sub.id).length;
-          
+          const subcategoryQuestionsCount = allQuestions.filter(
+            (q) => q.subcategory_id === sub.id,
+          ).length;
           return {
             id: sub.id,
             name: sub.name,
@@ -657,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       default_answer_time_second: 15,
     });
   });
-  
+
   // API لجلب إحصائيات لوحة التحكم
   app.get("/api/admin/dashboard-stats", async (req, res) => {
     try {
@@ -666,44 +684,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let subcategoriesCount = 0;
       let questionsCount = 0;
       let gamesCount = 0;
-      
+
       try {
         const categoriesData = await storage.getCategories();
         categoriesCount = categoriesData?.length || 0;
       } catch (error) {
         console.error("Error fetching categories count:", error);
       }
-      
+
       try {
         const subcategoriesData = await storage.getSubcategories();
         subcategoriesCount = subcategoriesData?.length || 0;
       } catch (error) {
         console.error("Error fetching subcategories count:", error);
       }
-      
+
       try {
         const questionsData = await storage.getQuestions();
         questionsCount = questionsData?.length || 0;
       } catch (error) {
         console.error("Error fetching questions count:", error);
       }
-      
+
       // نحن نعلم أن هذه الوظيفة غير منفذة بالكامل، لذا سنتجاوزها
       try {
         // نستخدم قيمة تقديرية بدلاً من استدعاء وظيفة غير منفذة
-        gamesCount = 5; 
+        gamesCount = 5;
       } catch (error) {
         console.error("Error fetching games count:", error);
       }
-      
+
       // بناء كائن الإحصائيات الديناميكي بناءً على بيانات حقيقية
       console.log("Dashboard stats:", {
         categories: categoriesCount,
         subcategories: subcategoriesCount,
         questions: questionsCount,
-        games: gamesCount
+        games: gamesCount,
       });
-      
+
       res.json({
         users: {
           total: 35,
@@ -735,11 +753,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         levels: {
           total: 5,
           users: {
-            "مبتدئ": 15,
-            "متوسط": 10,
-            "متقدم": 5,
-            "محترف": 3,
-            "خبير": 2,
+            مبتدئ: 15,
+            متوسط: 10,
+            متقدم: 5,
+            محترف: 3,
+            خبير: 2,
           },
         },
         packages: {
@@ -763,19 +781,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               id: 1,
               message: `${categoriesCount || 4} فئات مضافة للنظام مع ${subcategoriesCount || 8} فئات فرعية`,
               type: "info",
-              date: new Date().toLocaleDateString('ar-SA'),
+              date: new Date().toLocaleDateString("ar-SA"),
             },
             {
               id: 2,
               message: `${questionsCount || 120} سؤال متاح في النظام`,
               type: "success",
-              date: new Date().toLocaleDateString('ar-SA'),
+              date: new Date().toLocaleDateString("ar-SA"),
             },
             {
               id: 3,
               message: `تم تسجيل ${gamesCount || 45} جلسة لعب حتى الآن`,
               type: "info",
-              date: new Date().toLocaleDateString('ar-SA'),
+              date: new Date().toLocaleDateString("ar-SA"),
             },
           ],
         },
@@ -1346,11 +1364,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Received subcategory data:", req.body);
       // تحقق من وجود البيانات المطلوبة مباشرة
       const { name, imageUrl, parentId } = req.body;
-      
+
       if (!name || !imageUrl || !parentId) {
-        return res.status(400).json({ error: "اسم الفئة الفرعية وصورتها والفئة الأم مطلوبان" });
+        return res
+          .status(400)
+          .json({ error: "اسم الفئة الفرعية وصورتها والفئة الأم مطلوبان" });
       }
-      
+
       const subcategoryData = insertSubcategorySchema.parse(req.body);
       const newSubcategory = await storage.createSubcategory(subcategoryData);
       console.log("Subcategory created successfully:", newSubcategory);
