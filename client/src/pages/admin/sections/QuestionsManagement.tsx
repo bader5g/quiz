@@ -299,11 +299,21 @@ export default function QuestionsManagement() {
   };
 
   const handleCategoryChange = (categoryId: string) => {
-    form.setValue(
-      "categoryId",
-      categoryId === "none" ? 0 : parseInt(categoryId),
-    );
+    const catId = categoryId === "none" ? 0 : parseInt(categoryId);
+    form.setValue("categoryId", catId);
     form.setValue("subcategoryId", 0);
+    
+    // طباعة للتوضيح أثناء التصحيح
+    console.log("تم اختيار الفئة:", catId);
+    
+    // فلترة الفئات الفرعية المتاحة لهذه الفئة
+    if (catId > 0) {
+      const selectedCategory = categories.find(c => c.id === catId);
+      console.log("الفئة المحددة:", selectedCategory);
+      if (selectedCategory && selectedCategory.children) {
+        console.log("الفئات الفرعية المتاحة:", selectedCategory.children);
+      }
+    }
   };
 
   const onSubmitQuestion = async (values: Question) => {
@@ -463,7 +473,10 @@ export default function QuestionsManagement() {
                       <FormItem className="flex-1">
                         <FormLabel>الفئة</FormLabel>
                         <Select
-                          onValueChange={handleCategoryChange}
+                          onValueChange={(value) => {
+                            handleCategoryChange(value);
+                            field.onChange(value === "none" ? 0 : parseInt(value));
+                          }}
                           value={
                             field.value && field.value > 0
                               ? field.value.toString()
@@ -482,7 +495,7 @@ export default function QuestionsManagement() {
                                 key={category.id}
                                 value={category.id.toString()}
                               >
-                                {category.icon} {category.name}
+                                {category.icon || ""} {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -527,19 +540,28 @@ export default function QuestionsManagement() {
                             </SelectItem>
                             {form.getValues("categoryId") &&
                             form.getValues("categoryId") > 0
-                              ? categories
-                                  .find(
-                                    (c) =>
-                                      c.id === form.getValues("categoryId"),
-                                  )
-                                  ?.children.map((subcat) => (
-                                    <SelectItem
-                                      key={subcat.id}
-                                      value={subcat.id.toString()}
-                                    >
-                                      {subcat.icon} {subcat.name}
-                                    </SelectItem>
-                                  ))
+                              ? (() => {
+                                  const selectedCat = categories.find(
+                                    (c) => c.id === form.getValues("categoryId")
+                                  );
+                                  console.log("الفئة المحددة في عنصر الاختيار:", selectedCat);
+                                  
+                                  // التحقق من وجود الفئة المحددة وأن لديها فئات فرعية
+                                  if (selectedCat && selectedCat.children && selectedCat.children.length > 0) {
+                                    console.log("عرض الفئات الفرعية:", selectedCat.children);
+                                    return selectedCat.children.map((subcat) => (
+                                      <SelectItem
+                                        key={subcat.id}
+                                        value={subcat.id.toString()}
+                                      >
+                                        {subcat.icon || ""} {subcat.name}
+                                      </SelectItem>
+                                    ));
+                                  } else {
+                                    console.log("لا توجد فئات فرعية للفئة المحددة");
+                                    return <SelectItem value="0">لا توجد فئات فرعية</SelectItem>;
+                                  }
+                                })()
                               : null}
                           </SelectContent>
                         </Select>
