@@ -462,19 +462,18 @@ export default function QuestionsManagement() {
       
       if (isEditMode) {
         // تحديث السؤال في القائمة المحلية
+        const selectedCategory = categories.find(c => c.id === values.categoryId);
+        
         setQuestions(
           questions.map((q) =>
             q.id === values.id
               ? {
                   ...q,
                   ...values,
-                  categoryName: findCategoryName(values.categoryId),
-                  categoryIcon: findCategoryIcon(values.categoryId),
-                  subcategoryName: values.subcategoryId
-                    ? categories
-                        .find((c) => c.id === values.categoryId)
-                        ?.children.find((s) => s.id === values.subcategoryId)
-                        ?.name || ""
+                  categoryName: selectedCategory?.name || "",
+                  categoryIcon: selectedCategory?.icon || "",
+                  subcategoryName: values.subcategoryId && selectedCategory
+                    ? selectedCategory.children.find((s) => s.id === values.subcategoryId)?.name || ""
                     : "",
                 }
               : q
@@ -482,17 +481,16 @@ export default function QuestionsManagement() {
         );
       } else {
         // إضافة السؤال الجديد للقائمة المحلية
+        const selectedCategory = categories.find(c => c.id === savedQuestion.categoryId);
+        
         setQuestions([
           ...questions,
           {
             ...savedQuestion,
-            categoryName: findCategoryName(savedQuestion.categoryId),
-            categoryIcon: findCategoryIcon(savedQuestion.categoryId),
-            subcategoryName: savedQuestion.subcategoryId
-              ? categories
-                  .find((c) => c.id === savedQuestion.categoryId)
-                  ?.children.find((s) => s.id === savedQuestion.subcategoryId)
-                  ?.name || ""
+            categoryName: selectedCategory?.name || "",
+            categoryIcon: selectedCategory?.icon || "",
+            subcategoryName: savedQuestion.subcategoryId && selectedCategory
+              ? selectedCategory.children.find((s) => s.id === savedQuestion.subcategoryId)?.name || ""
               : "",
             usageCount: 0,
             createdAt: new Date().toISOString(),
