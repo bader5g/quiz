@@ -15,44 +15,33 @@ import QuestionPage from "@/pages/QuestionPage";
 import GameResultPage from "@/pages/GameResultPage";
 import TestDialogPage from "@/pages/TestDialogPage";
 import AdminPage from "@/pages/admin/AdminPage";
+import AuthPage from "@/pages/auth-page";
 import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
-import LoginButton from "@/components/auth/LoginButton";
+import { ProtectedRoute } from "./lib/protected-route";
+import { AuthProvider } from "./hooks/use-auth";
 
 function Router() {
   return (
     <Switch>
       {/* Add pages below */}
-      <Route path="/" component={Home}/>
+      <ProtectedRoute path="/" component={Home} />
       {/* Login and Register routes */}
-      <Route path="/login" component={() => (
-        <div dir="rtl" className="p-10 text-center">
-          <h1 className="text-2xl font-bold mb-6">صفحة تسجيل الدخول</h1>
-          <p className="mb-6">هذه صفحة تجريبية لأغراض التطوير. انقر على الزر أدناه لتسجيل الدخول بحساب تجريبي.</p>
-          <LoginButton />
-        </div>
-      )} />
-      <Route path="/register" component={() => (
-        <div dir="rtl" className="p-10 text-center">
-          <h1 className="text-2xl font-bold mb-6">صفحة إنشاء حساب</h1>
-          <p className="mb-6">هذه صفحة تجريبية لأغراض التطوير. انقر على الزر أدناه لتسجيل الدخول بحساب تجريبي.</p>
-          <LoginButton />
-        </div>
-      )} />
-      <Route path="/play/:gameId" component={PlayPage} />
-      <Route path="/play/:gameId/question/:questionId" component={QuestionPage} />
-      <Route path="/game-result/:gameId" component={GameResultPage} />
-      <Route path="/categories" component={() => <div dir="rtl" className="p-10 text-center">صفحة الفئات (قيد التطوير)</div>} />
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/play/:gameId" component={PlayPage} />
+      <ProtectedRoute path="/play/:gameId/question/:questionId" component={QuestionPage} />
+      <ProtectedRoute path="/game-result/:gameId" component={GameResultPage} />
+      <ProtectedRoute path="/categories" component={() => <div dir="rtl" className="p-10 text-center">صفحة الفئات (قيد التطوير)</div>} />
       {/* صفحات الألعاب والتاريخ */}
-      <Route path="/my-games" component={MyGamesPage} />
-      <Route path="/game-log/:id" component={GameLogPage} />
-      <Route path="/test-dialog" component={TestDialogPage} />
-      <Route path="/profile" component={ProfilePage} />
-      <Route path="/buy-cards" component={BuyCardsPage} />
-      <Route path="/level" component={LevelPage} />
+      <ProtectedRoute path="/my-games" component={MyGamesPage} />
+      <ProtectedRoute path="/game-log/:id" component={GameLogPage} />
+      <ProtectedRoute path="/test-dialog" component={TestDialogPage} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
+      <ProtectedRoute path="/buy-cards" component={BuyCardsPage} />
+      <ProtectedRoute path="/level" component={LevelPage} />
       {/* لوحة تحكم المدير - تتضمن جميع المسارات الفرعية */}
-      <Route path="/admin" component={AdminPage} />
-      <Route path="/admin/:path" component={AdminPage} />
+      <ProtectedRoute path="/admin" component={AdminPage} />
+      <ProtectedRoute path="/admin/:path" component={AdminPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
@@ -63,12 +52,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SiteProvider>
-        <UserProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </UserProvider>
+        <AuthProvider>
+          <UserProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </UserProvider>
+        </AuthProvider>
       </SiteProvider>
     </QueryClientProvider>
   );
