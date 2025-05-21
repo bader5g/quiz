@@ -390,138 +390,42 @@ export default function QuestionsManagement() {
   };
   
   // تصدير الأسئلة إلى ملف
-
-
-  // استيراد الأسئلة من ملف
-  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const exportQuestions = async (format: 'csv' | 'excel') => {
     try {
-      setImporting(true);
-      
-      // قراءة الملف
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      // تحضير بيانات التصدير - تبسيط البيانات، حذف الحقول غير الضرورية
+      const exportData = filteredQuestions.map(q => ({
+        'نص السؤال': q.text,
+        'الإجابة': q.answer,
+        'الفئة': q.categoryName,
+        'الفئة الفرعية': q.subcategoryName || '',
+        'الصعوبة': q.difficulty === 1 ? 'سهل' : q.difficulty === 2 ? 'متوسط' : 'صعب',
+        'الكلمات المفتاحية': q.keywords || '',
+        'رابط الصورة': q.imageUrl || '',
+        'رابط الفيديو': q.videoUrl || ''
+      }));
 
-      // تحويل البيانات إلى تنسيق الأسئلة
-      const questionsToImport = jsonData.map((row: any) => {
-        // تحديد الفئة الرئيسية والفرعية
-        const categoryName = row['الفئة'] || row['category'] || '';
-        const subcategoryName = row['الفئة الفرعية'] || row['subcategory'] || '';
-        
-        let categoryId = 0;
-        let subcategoryId = 0;
-        
-        // البحث عن الفئة الرئيسية
-        const category = categories.find(c => c.name === categoryName);
-        if (category) {
-          categoryId = category.id;
-          
-          // البحث عن الفئة الفرعية إذا وجدت
-          if (subcategoryName && category.children) {
-            const subcategory = category.children.find(s => s.name === subcategoryName);
-            if (subcategory) {
-              subcategoryId = subcategory.id;
-            }
-          }
-        }
-        
-        // تحديد مستوى الصعوبة
-        let difficulty = 1;
-        const difficultyText = row['الصعوبة'] || row['difficulty'] || '';
-        if (typeof difficultyText === 'string') {
-          if (difficultyText.includes('متوسط')) {
-            difficulty = 2;
-          } else if (difficultyText.includes('صعب')) {
-            difficulty = 3;
-          }
-        } else if (typeof difficultyText === 'number') {
-          difficulty = difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
-        }
-        
-        return {
-          text: row['نص السؤال'] || row['السؤال'] || row['question'] || '',
-          answer: row['الإجابة'] || row['answer'] || '',
-          categoryId,
-          subcategoryId,
-          difficulty,
-          imageUrl: row['رابط الصورة'] || row['image'] || '',
-          videoUrl: row['رابط الفيديو'] || row['video'] || '',
-          mediaType: row['رابط الصورة'] ? 'image' : row['رابط الفيديو'] ? 'video' : 'none',
-          keywords: row['الكلمات المفتاحية'] || row['keywords'] || ''
-        };
-      }).filter((q: any) => q.text && q.answer && q.categoryId); // التأكد من وجود الحقول الإلزامية
-      
-      if (questionsToImport.length === 0) {
-        throw new Error('لم يتم العثور على أسئلة صالحة في الملف');
-      }
-      
-      // إرسال الأسئلة إلى الخادم
-      const response = await apiRequest('POST', '/api/import-questions', { questions: questionsToImport });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'فشلت عملية الاستيراد');
-      }
-      
-      const result = await response.json();
-      
-      // تحديث القائمة المحلية
-      fetchQuestions();
-      
-      toast({
-        title: 'تم الاستيراد بنجاح',
-        description: `تم استيراد ${result.imported} سؤال بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
-      });
-      
-      // إعادة تعيين حقل الملف
-      e.target.value = '';
-    } catch (error: any) {
-      toast({
-        title: 'خطأ في الاستيراد',
-        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة.',
-        variant: 'destructive',
-      });
-    } finally {
-      setImporting(false);
-    }
-  };
+      // إنشاء ورقة عمل
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'الأسئلة');
 
-  // استيراد الأسئلة من رابط
-  const importQuestionsFromURL = async (url: string) => {
-    if (!url) return;
-    
-    try {
-      setImporting(true);
-      
-      // إرسال الرابط إلى الخادم
-      const response = await apiRequest('POST', '/api/import-questions-from-url', { url });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'فشلت عملية الاستيراد من الرابط');
+      // تصدير الملف
+      if (format === 'csv') {
+        XLSX.writeFile(workbook, 'الأسئلة.csv');
+      } else {
+        XLSX.writeFile(workbook, 'الأسئلة.xlsx');
       }
-      
-      const result = await response.json();
-      
-      // تحديث القائمة المحلية
-      fetchQuestions();
-      
+
       toast({
-        title: 'تم الاستيراد بنجاح',
-        description: `تم استيراد ${result.imported} سؤال من الرابط بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
+        title: 'تم التصدير بنجاح',
+        description: `تم تصدير ${exportData.length} سؤال إلى ملف ${format === 'excel' ? 'Excel' : 'CSV'} بنجاح.`,
       });
     } catch (error: any) {
       toast({
-        title: 'خطأ في الاستيراد',
-        description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة من الرابط.',
+        title: 'خطأ في التصدير',
+        description: error.message || 'حدث خطأ أثناء محاولة تصدير الأسئلة.',
         variant: 'destructive',
       });
-    } finally {
-      setImporting(false);
     }
   };
 
