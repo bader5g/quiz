@@ -694,22 +694,28 @@ export class DatabaseStorage implements IStorage {
 
   // Game sessions related methods
   async createGameSession(userId: number, session: InsertGameSession): Promise<GameSession> {
-    // هذه وظيفة مؤقتة للاختبار فقط
-    console.log("تم إنشاء جلسة لعبة جديدة:", session);
-    
-    // إنشاء جلسة لعبة مؤقتة
-    const gameSession: GameSession = {
-      id: Math.floor(Math.random() * 1000) + 1, // رقم عشوائي للاختبار
-      userId: userId,
-      gameName: session.gameName,
-      teams: session.teams,
-      answerTimeFirst: session.answerTimeFirst,
-      answerTimeSecond: session.answerTimeSecond,
-      selectedCategories: session.selectedCategories,
-      createdAt: new Date().toISOString()
-    };
-    
-    return gameSession;
+    try {
+      console.log("تم إنشاء جلسة لعبة جديدة:", session);
+      
+      const [gameSession] = await db
+        .insert(gameSessions)
+        .values({
+          userId: userId,
+          gameName: session.gameName,
+          teams: session.teams,
+          answerTimeFirst: session.answerTimeFirst,
+          answerTimeSecond: session.answerTimeSecond,
+          selectedCategories: session.selectedCategories,
+          createdAt: new Date().toISOString()
+        })
+        .returning();
+      
+      console.log("تم حفظ جلسة اللعبة في قاعدة البيانات:", gameSession);
+      return gameSession;
+    } catch (error) {
+      console.error("خطأ في إنشاء جلسة اللعبة:", error);
+      throw error;
+    }
   }
 
   async getUserGameSessions(userId: number): Promise<GameSession[]> {

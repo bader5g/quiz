@@ -34,15 +34,9 @@ export async function getGameDetails(req: Request, res: Response) {
       selectedCategories = [];
     }
 
-    let questions = [];
-    try {
-      questions = typeof game.questions === 'string' ? 
-        JSON.parse(game.questions) : 
-        (Array.isArray(game.questions) ? game.questions : []);
-    } catch (e) {
-      console.error("Error parsing questions:", e);
-      questions = [];
-    }
+    // تهيئة الأسئلة
+    const generatedQuestions = generateGameQuestions(game);
+    console.log("Generated questions:", generatedQuestions.length);
 
     // جلب answerTimes بشكل صحيح
     const answerTimes = [
@@ -63,12 +57,19 @@ export async function getGameDetails(req: Request, res: Response) {
         name: getCategoryName(catId),
         icon: getCategoryIcon(catId),
       })),
-      questions: questions.length > 0 ? questions : generateGameQuestions(game),
-      currentTeamIndex: game.currentTeam || 0,
+      questions: generatedQuestions,
+      currentTeamIndex: 0, // البدء دائمًا بالفريق الأول
       answerTimes,
     };
 
-    console.log("Sending game details:", JSON.stringify(gameDetails, null, 2));
+    console.log("Sending game details:", JSON.stringify({
+      id: gameDetails.id,
+      name: gameDetails.name,
+      teamsCount: gameDetails.teams.length,
+      questionsCount: gameDetails.questions.length,
+      categoriesCount: gameDetails.categories.length,
+    }));
+    
     res.status(200).json(gameDetails);
   } catch (error) {
     console.error("Error fetching game details:", error);
@@ -346,49 +347,73 @@ export async function updateCurrentTeam(req: Request, res: Response) {
 
 function generateGameQuestions(game: any) {
   const questions = [];
-  const answeredQuestions = new Set(game.answeredQuestions || []);
-  const viewedQuestionIds = new Set(game.viewedQuestionIds || []);
   let idCounter = 1;
-
-  for (const categoryId of game.selectedCategories) {
-    for (let teamIndex = 0; teamIndex < game.teams.length; teamIndex++) {
+  
+  // تهيئة مجموعات الأسئلة المجاب عليها والمعروضة
+  let viewedQuestions = new Set<string>();
+  try {
+    // حاول تحليل الأسئلة المعروضة من البيانات المخزنة
+    if (game.viewedQuestions) {
+      if (typeof game.viewedQuestions === 'string') {
+        viewedQuestions = new Set(JSON.parse(game.viewedQuestions));
+      } else if (Array.isArray(game.viewedQuestions)) {
+        viewedQuestions = new Set(game.viewedQuestions);
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing viewedQuestions:", e);
+    viewedQuestions = new Set();
+  }
+  
+  // جلب الفئات المختارة
+  let selectedCategories: number[] = [];
+  try {
+    selectedCategories = typeof game.selectedCategories === 'string' ? 
+      JSON.parse(game.selectedCategories) : 
+      (Array.isArray(game.selectedCategories) ? game.selectedCategories : []);
+  } catch (e) {
+    console.error("Error parsing selectedCategories for questions:", e);
+    selectedCategories = [];
+  }
+  
+  // جلب عدد الفرق
+  let teams: any[] = [];
+  try {
+    teams = typeof game.teams === 'string' ? 
+      JSON.parse(game.teams) : 
+      (Array.isArray(game.teams) ? game.teams : []);
+  } catch (e) {
+    console.error("Error parsing teams for questions:", e);
+    teams = [];
+  }
+  
+  console.log(`Generating questions for ${selectedCategories.length} categories and ${teams.length} teams`);
+  
+  // إنشاء أسئلة لكل فئة ولكل فريق ولكل مستوى صعوبة
+  for (const categoryId of selectedCategories) {
+    for (let teamIndex = 0; teamIndex < teams.length; teamIndex++) {
       for (let difficulty = 1; difficulty <= 3; difficulty++) {
         const currentId = idCounter;
-
-        const isAnsweredByKey = Array.from(answeredQuestions).some(
-          (key: string) => {
-            const matchesNewFormat =
-              key === `${categoryId}-${difficulty}-${teamIndex}-${currentId}`;
-            const matchesOldFormat =
-              key === `${categoryId}-${difficulty}-${teamIndex}`;
-            const matchesWildcard =
-              key === `${categoryId}-*-${teamIndex}-${currentId}`;
-            const matchesPartial = key.startsWith(
-              `${categoryId}-${difficulty}-${teamIndex}`,
-            );
-            return (
-              matchesNewFormat ||
-              matchesOldFormat ||
-              matchesWildcard ||
-              matchesPartial
-            );
-          },
-        );
-
-        const isViewedQuestion = viewedQuestionIds.has(currentId.toString());
-
+        
+        // تحقق مما إذا كان السؤال قد تم عرضه مسبقًا
+        const questionKey = `${categoryId}-${difficulty}-${teamIndex}`;
+        const isViewed = viewedQuestions.has(questionKey) || 
+                         viewedQuestions.has(currentId.toString()) || 
+                         viewedQuestions.has(`${currentId}`);
+        
         questions.push({
           id: idCounter++,
           questionId: currentId,
           categoryId,
           teamIndex,
           difficulty,
-          isAnswered: isAnsweredByKey || isViewedQuestion,
+          isAnswered: isViewed, // نعتبر الأسئلة التي تم عرضها قد تم الإجابة عليها (أو تعطيلها)
         });
       }
     }
   }
-
+  
+  console.log(`Generated ${questions.length} questions`);
   return questions;
 }
 
