@@ -107,6 +107,12 @@ export default function QuestionsManagement() {
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   
+  // تحديد الأسئلة للعمليات الجماعية
+  const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [bulkActionOpen, setBulkActionOpen] = useState(false);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  
   // خيارات عرض الجدول
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -256,7 +262,121 @@ export default function QuestionsManagement() {
     
     setFilteredQuestions(result);
     setCurrentPage(1); // إعادة تعيين الصفحة الحالية عند تغيير الفلاتر
+    setSelectedQuestions([]); // إعادة تعيين الأسئلة المحددة عند تغيير الفلاتر
+    setSelectAll(false); // إعادة تعيين حالة تحديد الكل
   }, [questions, filterText, filterCategoryId, filterSubcategoryId, filterUsageMin, filterUsageMax, filterDateFrom, filterDateTo, filterActive]);
+  
+  // معالجة تحديد/إلغاء تحديد سؤال
+  const handleSelectQuestion = (questionId: number) => {
+    setSelectedQuestions(prev => {
+      if (prev.includes(questionId)) {
+        // إلغاء تحديد السؤال
+        const newSelected = prev.filter(id => id !== questionId);
+        setSelectAll(false); // إعادة تعيين حالة تحديد الكل
+        return newSelected;
+      } else {
+        // تحديد السؤال
+        return [...prev, questionId];
+      }
+    });
+  };
+  
+  // معالجة تحديد/إلغاء تحديد كل الأسئلة
+  const handleSelectAll = () => {
+    const newSelectAll = !selectAll;
+    setSelectAll(newSelectAll);
+    
+    if (newSelectAll) {
+      // تحديد كل الأسئلة المعروضة في الصفحة الحالية
+      const currentPageIds = filteredQuestions
+        .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+        .map(q => q.id);
+      setSelectedQuestions(currentPageIds);
+    } else {
+      // إلغاء تحديد كل الأسئلة
+      setSelectedQuestions([]);
+    }
+  };
+  
+  // معالجة عملية حذف الأسئلة المحددة
+  const handleBulkDelete = async () => {
+    if (!selectedQuestions.length) return;
+    
+    if (!confirm(`هل أنت متأكد أنك تريد حذف ${selectedQuestions.length} سؤال محدد؟`)) {
+      return;
+    }
+    
+    try {
+      setBulkProcessing(true);
+      
+      // حذف الأسئلة المحددة واحدة تلو الأخرى
+      for (const questionId of selectedQuestions) {
+        await apiRequest("DELETE", `/api/questions/${questionId}`);
+      }
+      
+      // تحديث قائمة الأسئلة بعد الحذف
+      await fetchQuestions();
+      
+      toast({
+        title: "تم بنجاح",
+        description: `تم حذف ${selectedQuestions.length} سؤال بنجاح.`,
+      });
+      
+      // إعادة تعيين حالة التحديد
+      setSelectedQuestions([]);
+      setSelectAll(false);
+      setBulkActionOpen(false);
+    } catch (error) {
+      console.error("خطأ أثناء الحذف الجماعي:", error);
+      toast({
+        title: "خطأ في الحذف",
+        description: "حدث خطأ أثناء محاولة حذف الأسئلة المحددة.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+  
+  // معالجة تغيير حالة التفعيل للأسئلة المحددة
+  const handleBulkToggleActive = async (activate: boolean) => {
+    if (!selectedQuestions.length) return;
+    
+    try {
+      setBulkProcessing(true);
+      
+      // تغيير حالة التفعيل للأسئلة المحددة واحدة تلو الأخرى
+      for (const questionId of selectedQuestions) {
+        const question = questions.find(q => q.id === questionId);
+        if (question) {
+          const updatedQuestion = { ...question, isActive: activate };
+          await apiRequest("PUT", `/api/questions/${questionId}`, updatedQuestion);
+        }
+      }
+      
+      // تحديث قائمة الأسئلة بعد التعديل
+      await fetchQuestions();
+      
+      toast({
+        title: "تم بنجاح",
+        description: `تم ${activate ? 'تفعيل' : 'إلغاء تفعيل'} ${selectedQuestions.length} سؤال بنجاح.`,
+      });
+      
+      // إعادة تعيين حالة التحديد
+      setSelectedQuestions([]);
+      setSelectAll(false);
+      setBulkActionOpen(false);
+    } catch (error) {
+      console.error(`خطأ أثناء ${activate ? 'تفعيل' : 'إلغاء تفعيل'} الأسئلة المحددة:`, error);
+      toast({
+        title: `خطأ في ${activate ? 'التفعيل' : 'إلغاء التفعيل'}`,
+        description: `حدث خطأ أثناء محاولة ${activate ? 'تفعيل' : 'إلغاء تفعيل'} الأسئلة المحددة.`,
+        variant: "destructive",
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
 
   // عرض نموذج إضافة سؤال جديد
   const showAddQuestionForm = () => {
@@ -1163,9 +1283,79 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
           
           <div className="border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
+              {/* قسم أزرار العمليات الجماعية */}
+              {selectedQuestions.length > 0 && (
+                <div className="mb-3 p-3 bg-muted/20 border rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">
+                      تم تحديد {selectedQuestions.length} سؤال
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkToggleActive(true)}
+                        disabled={bulkProcessing}
+                      >
+                        {bulkProcessing ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 ml-2" />
+                        )}
+                        تفعيل الكل
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkToggleActive(false)}
+                        disabled={bulkProcessing}
+                      >
+                        {bulkProcessing ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        ) : (
+                          <XCircle className="h-4 w-4 ml-2" />
+                        )}
+                        إلغاء تفعيل الكل
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        disabled={bulkProcessing}
+                      >
+                        {bulkProcessing ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 ml-2" />
+                        )}
+                        حذف المحدد
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedQuestions([]);
+                          setSelectAll(false);
+                        }}
+                      >
+                        <X className="h-4 w-4 ml-2" />
+                        إلغاء التحديد
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
+                    <th className="p-3 text-center w-10">
+                      <Checkbox 
+                        checked={selectAll}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="تحديد الكل"
+                      />
+                    </th>
                     <th className="p-3 text-center">#</th>
                     <th className="p-3 text-right">السؤال</th>
                     <th className="p-3 text-right">الإجابة</th>
@@ -1178,8 +1368,15 @@ const exportQuestions = async (format: 'csv' | 'excel') => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredQuestions.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((question, index) => (
-                  <tr key={question.id} className="border-b hover:bg-muted/20">
+                  {currentPageQuestions.map((question, index) => (
+                  <tr key={question.id} className={`border-b hover:bg-muted/20 ${selectedQuestions.includes(question.id) ? 'bg-muted/30' : ''}`}>
+                    <td className="p-3 text-center">
+                      <Checkbox 
+                        checked={selectedQuestions.includes(question.id)}
+                        onCheckedChange={() => handleSelectQuestion(question.id)}
+                        aria-label={`تحديد السؤال رقم ${question.id}`}
+                      />
+                    </td>
                     <td className="p-3 text-center font-bold">{(currentPage - 1) * pageSize + index + 1}</td>
                     <td className="p-3 text-right">
                       {question.text.length > 60
