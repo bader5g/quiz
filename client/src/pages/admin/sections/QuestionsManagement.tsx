@@ -628,16 +628,12 @@ export default function QuestionsManagement() {
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 rtl">
-                          <span className="inline-flex items-center justify-center w-7 h-7 text-center rounded-full bg-primary/10 text-primary">
-                            {question.categoryIcon || "📚"}
-                          </span>
-                          <span className="font-bold text-primary">{question.categoryName}</span>
+                        <div className="font-bold text-primary">
+                          {question.categoryName}
                         </div>
                         {question.subcategoryName && (
-                          <div className="mr-2 mt-1 flex items-center gap-1">
-                            <span className="text-xs text-gray-500">الفئة الفرعية:</span>
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
+                          <div className="mt-1">
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                               {question.subcategoryName}
                             </span>
                           </div>
