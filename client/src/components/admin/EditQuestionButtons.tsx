@@ -44,9 +44,25 @@ export function EditTextButton({
       });
     } catch (error) {
       console.error("Error updating:", error);
+      
+      // تحسين رسائل الخطأ لتكون أكثر تحديدًا
+      let errorMessage = "حدث خطأ أثناء تعديل البيانات";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("timeout")) {
+          errorMessage = "انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.";
+        } else if (error.message.includes("network")) {
+          errorMessage = "يوجد مشكلة في الاتصال بالشبكة. تحقق من اتصالك بالإنترنت.";
+        } else if (error.message.includes("403")) {
+          errorMessage = "ليس لديك صلاحية لتعديل هذا العنصر.";
+        } else if (error.message.includes("404")) {
+          errorMessage = "لم يتم العثور على السؤال. قد يكون قد تم حذفه.";
+        }
+      }
+      
       toast({
         title: "خطأ في التعديل",
-        description: "حدث خطأ أثناء تعديل البيانات",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -159,9 +175,27 @@ export function EditCategoryButton({
       });
     } catch (error) {
       console.error("Error updating category:", error);
+      
+      // تحسين رسائل الخطأ لتكون أكثر تحديدًا
+      let errorMessage = "حدث خطأ أثناء تعديل الفئة";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("timeout")) {
+          errorMessage = "انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.";
+        } else if (error.message.includes("network")) {
+          errorMessage = "يوجد مشكلة في الاتصال بالشبكة. تحقق من اتصالك بالإنترنت.";
+        } else if (error.message.includes("403")) {
+          errorMessage = "ليس لديك صلاحية لتعديل فئة هذا السؤال.";
+        } else if (error.message.includes("404")) {
+          errorMessage = "لم يتم العثور على السؤال أو الفئة. قد يكون أحدهما قد تم حذفه.";
+        } else if (error.message.includes("category not found")) {
+          errorMessage = "الفئة المحددة غير موجودة.";
+        }
+      }
+      
       toast({
-        title: "خطأ في التعديل",
-        description: "حدث خطأ أثناء تعديل الفئة",
+        title: "خطأ في تعديل الفئة",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -286,9 +320,27 @@ export function EditDifficultyButton({
       });
     } catch (error) {
       console.error("Error updating difficulty:", error);
+      
+      // تحسين رسائل الخطأ لتكون أكثر تحديدًا
+      let errorMessage = "حدث خطأ أثناء تعديل مستوى الصعوبة";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("timeout")) {
+          errorMessage = "انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.";
+        } else if (error.message.includes("network")) {
+          errorMessage = "يوجد مشكلة في الاتصال بالشبكة. تحقق من اتصالك بالإنترنت.";
+        } else if (error.message.includes("403")) {
+          errorMessage = "ليس لديك صلاحية لتعديل مستوى صعوبة هذا السؤال.";
+        } else if (error.message.includes("404")) {
+          errorMessage = "لم يتم العثور على السؤال. قد يكون قد تم حذفه.";
+        } else if (error.message.includes("invalid difficulty")) {
+          errorMessage = "مستوى الصعوبة المحدد غير صالح.";
+        }
+      }
+      
       toast({
-        title: "خطأ في التعديل",
-        description: "حدث خطأ أثناء تعديل مستوى الصعوبة",
+        title: "خطأ في تعديل مستوى الصعوبة",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
