@@ -138,8 +138,26 @@ export default function QuestionsManagement() {
       const response = await apiRequest("GET", "/api/questions");
       if (response.ok) {
         const data = await response.json();
-        setQuestions(data || []);
-        setFilteredQuestions(data || []);
+        
+        // معالجة الأسئلة وإضافة أسماء الفئات إليها
+        const processedQuestions = data.map((question: any) => {
+          const categoryObj = categories.find(c => c.id === question.categoryId);
+          let subcategoryObj = null;
+          if (question.subcategoryId && categoryObj) {
+            subcategoryObj = categoryObj.children.find(s => s.id === question.subcategoryId);
+          }
+          
+          return {
+            ...question,
+            categoryName: categoryObj ? categoryObj.name : "بدون فئة",
+            categoryIcon: categoryObj ? categoryObj.icon : "❓",
+            subcategoryName: subcategoryObj ? subcategoryObj.name : null
+          };
+        });
+        
+        console.log("الأسئلة بعد إضافة أسماء الفئات:", processedQuestions[0]);
+        setQuestions(processedQuestions || []);
+        setFilteredQuestions(processedQuestions || []);
       }
     } catch (err) {
       console.error("Error fetching questions:", err);
