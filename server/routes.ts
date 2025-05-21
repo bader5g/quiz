@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pool } from "./db";
+import axios from "axios";
+import * as XLSX from "xlsx";
 import {
   gameSessionSchema,
   updateGameSettingsSchema,
