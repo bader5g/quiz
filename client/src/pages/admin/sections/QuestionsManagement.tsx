@@ -97,6 +97,15 @@ export default function QuestionsManagement() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   
+  // خيارات تغيير الفئة الجماعي
+  const [showChangeCategoryDialog, setShowChangeCategoryDialog] = useState(false);
+  const [bulkCategoryId, setBulkCategoryId] = useState<number>(0);
+  const [bulkSubcategoryId, setBulkSubcategoryId] = useState<number>(0);
+  
+  // خيارات تغيير مستوى الصعوبة الجماعي
+  const [showChangeDifficultyDialog, setShowChangeDifficultyDialog] = useState(false);
+  const [bulkDifficulty, setBulkDifficulty] = useState<number>(0);
+  
   // بيانات استيراد الأسئلة
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -334,6 +343,10 @@ export default function QuestionsManagement() {
   
   const handleBulkActivate = async (activate: boolean) => {
     if (selectedQuestions.size === 0) return;
+    
+    if (!confirm(`هل أنت متأكد من ${activate ? 'تفعيل' : 'إلغاء تفعيل'} ${selectedQuestions.size} سؤال؟`)) {
+      return;
+    }
     
     setBulkActionLoading(true);
     try {
@@ -689,7 +702,7 @@ export default function QuestionsManagement() {
       
       {/* قسم العمليات الجماعية - يظهر فقط عند تحديد عناصر */}
       {showBulkActions && (
-        <div className="flex items-center gap-2 p-3 my-2 bg-primary/10 rounded-lg border">
+        <div className="flex flex-wrap items-center gap-2 p-3 my-2 bg-primary/10 rounded-lg border">
           <span className="text-sm font-semibold ml-2">
             تم تحديد {selectedQuestions.size} سؤال
           </span>
@@ -717,6 +730,24 @@ export default function QuestionsManagement() {
             disabled={bulkActionLoading}
           >
             إلغاء التفعيل
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowChangeCategoryDialog(true)}
+            disabled={bulkActionLoading}
+          >
+            <FolderEdit className="h-4 w-4 ml-1" />
+            تغيير الفئة
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowChangeDifficultyDialog(true)}
+            disabled={bulkActionLoading}
+          >
+            <BarChart2 className="h-4 w-4 ml-1" />
+            تغيير الصعوبة
           </Button>
           <Button 
             variant="outline" 
@@ -1386,6 +1417,133 @@ export default function QuestionsManagement() {
                   </>
                 ) : (
                   <>استيراد الأسئلة</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* نافذة تغيير الفئة للأسئلة المحددة */}
+      <Dialog open={showChangeCategoryDialog} onOpenChange={setShowChangeCategoryDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>تغيير فئة الأسئلة المحددة ({selectedQuestions.size})</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">اختر الفئة الجديدة</label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                value={bulkCategoryId || 0}
+                onChange={(e) => {
+                  const categoryId = parseInt(e.target.value);
+                  setBulkCategoryId(categoryId);
+                  setBulkSubcategoryId(0); // إعادة تعيين الفئة الفرعية عند تغيير الفئة الرئيسية
+                }}
+              >
+                <option value={0} disabled>اختر الفئة</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {bulkCategoryId > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">اختر الفئة الفرعية (اختياري)</label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  value={bulkSubcategoryId || 0}
+                  onChange={(e) => setBulkSubcategoryId(parseInt(e.target.value))}
+                >
+                  <option value={0}>بدون فئة فرعية</option>
+                  {categories
+                    .find((c) => c.id === bulkCategoryId)
+                    ?.children.map((subcat) => (
+                      <option key={subcat.id} value={subcat.id}>
+                        {subcat.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+            
+            <div className="flex justify-between mt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowChangeCategoryDialog(false);
+                  setBulkCategoryId(0);
+                  setBulkSubcategoryId(0);
+                }}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                onClick={handleBulkChangeCategory}
+                disabled={!bulkCategoryId || bulkActionLoading}
+              >
+                {bulkActionLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري التغيير...
+                  </>
+                ) : (
+                  <>تغيير الفئة</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* نافذة تغيير مستوى الصعوبة للأسئلة المحددة */}
+      <Dialog open={showChangeDifficultyDialog} onOpenChange={setShowChangeDifficultyDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>تغيير مستوى صعوبة الأسئلة المحددة ({selectedQuestions.size})</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">اختر مستوى الصعوبة الجديد</label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                value={bulkDifficulty || 0}
+                onChange={(e) => setBulkDifficulty(parseInt(e.target.value))}
+              >
+                <option value={0} disabled>اختر مستوى الصعوبة</option>
+                <option value={1}>سهل</option>
+                <option value={2}>متوسط</option>
+                <option value={3}>صعب</option>
+              </select>
+            </div>
+            
+            <div className="flex justify-between mt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowChangeDifficultyDialog(false);
+                  setBulkDifficulty(0);
+                }}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                onClick={handleBulkChangeDifficulty}
+                disabled={!bulkDifficulty || bulkActionLoading}
+              >
+                {bulkActionLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري التغيير...
+                  </>
+                ) : (
+                  <>تغيير مستوى الصعوبة</>
                 )}
               </Button>
             </div>
