@@ -31,6 +31,7 @@ import {
 import { saveAs } from "file-saver";
 
 // دالة مساعدة للبحث عن فئة باستخدام طرق مطابقة مختلفة
+// دالة مساعدة للبحث عن فئة باستخدام طرق مطابقة مختلفة
 const findCategoryByName = (name: string, categoriesList: any[]) => {
   if (!name || !categoriesList || categoriesList.length === 0) return null;
   
@@ -429,24 +430,48 @@ const createImportTemplate = async (format: 'csv' | 'excel') => {
     
     // جمع قائمة بأسماء الفئات المتاحة للمساعدة في الاستيراد
     const categoryOptions = categories.map(c => c.name).join(', ');
+    const currentCategories = categories.map(c => c.name);
     
-    // إنشاء بيانات النموذج مع أمثلة
+    // البحث عن فئة كرة قدم أو رياضة
+    let sportsCategory = categories.find(c => c.name === 'كرة قدم')?.name || 
+                         categories.find(c => c.name === 'رياضة')?.name || 
+                         (categories.length > 0 ? categories[0].name : 'كرة قدم');
+    
+    // تحديد فئة فرعية ذات صلة بكرة القدم
+    let footballSubcategory = '';
+    const sportsCat = categories.find(c => c.name === sportsCategory);
+    if (sportsCat && sportsCat.children && sportsCat.children.length > 0) {
+      footballSubcategory = sportsCat.children.find(s => s.name.includes('قدم') || s.name.includes('عالم'))?.name || 
+                           sportsCat.children[0].name;
+    }
+    
+    // إنشاء بيانات النموذج مع أمثلة باستخدام الفئات الموجودة فعلياً في النظام
     const templateData = [
       {
         'نص السؤال': 'من الفائز بكأس العالم 2022؟',
         'الإجابة': 'الأرجنتين',
-        'الفئة': categories.length > 0 ? categories.find(c => c.name === 'كرة قدم')?.name || categories[0].name : 'كرة قدم',
-        'الفئة الفرعية': 'كرة قدم عالمية',
+        'الفئة': sportsCategory,
+        'الفئة الفرعية': footballSubcategory,
         'الصعوبة': 'متوسط',
         'الكلمات المفتاحية': 'كأس العالم,قطر,ميسي',
         'رابط الصورة': 'https://upload.wikimedia.org/wikipedia/commons/b/b9/Flag_of_Argentina.svg',
-        'رابط الفيديو': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+        'رابط الفيديو': ''
+      },
+      {
+        'نص السؤال': 'من هو أول لاعب في التاريخ يسجل هاتريك في نهائيات كأس العالم؟',
+        'الإجابة': 'بيرت باتيناود',
+        'الفئة': sportsCategory,
+        'الفئة الفرعية': footballSubcategory,
+        'الصعوبة': 'صعب',
+        'الكلمات المفتاحية': 'كأس العالم,هاتريك,تاريخ',
+        'رابط الصورة': '',
+        'رابط الفيديو': ''
       },
       {
         'نص السؤال': 'ما هي عاصمة فرنسا؟',
         'الإجابة': 'باريس',
-        'الفئة': categories.length > 0 ? categories.find(c => c.name === 'معلومات عامة')?.name || categories[0].name : 'معلومات عامة',
-        'الفئة الفرعية': 'جغرافيا',
+        'الفئة': categories.find(c => c.name.includes('معلومات') || c.name.includes('جغرافيا'))?.name || sportsCategory,
+        'الفئة الفرعية': '',
         'الصعوبة': 'سهل',
         'الكلمات المفتاحية': 'فرنسا,عواصم,أوروبا',
         'رابط الصورة': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Paris_Night.jpg/1280px-Paris_Night.jpg',
@@ -470,11 +495,12 @@ const createImportTemplate = async (format: 'csv' | 'excel') => {
       { 'تعليمات': 'تعليمات استيراد الأسئلة:' },
       { 'تعليمات': '1. الحقول المطلوبة هي: نص السؤال، الإجابة، الفئة' },
       { 'تعليمات': '2. الفئات المتاحة حالياً في النظام: ' + categoryOptions },
-      { 'تعليمات': '3. قيم حقل الصعوبة المقبولة: سهل، متوسط، صعب' },
-      { 'تعليمات': '4. لإضافة صورة، ضع رابط الصورة في عمود "رابط الصورة"' },
-      { 'تعليمات': '5. لإضافة فيديو، ضع رابط الفيديو في عمود "رابط الفيديو"' },
-      { 'تعليمات': '6. يمكن إضافة إما صورة أو فيديو للسؤال الواحد، وليس كلاهما' },
-      { 'تعليمات': '7. الأسئلة المستوردة ستكون غير فعالة حتى يتم تفعيلها من لوحة التحكم' }
+      { 'تعليمات': '3. يجب أن تكون الفئات مطابقة بالضبط للفئات الموجودة في النظام، وإلا لن يتم استيراد السؤال' },
+      { 'تعليمات': '4. قيم حقل الصعوبة المقبولة: سهل، متوسط، صعب' },
+      { 'تعليمات': '5. لإضافة صورة، ضع رابط الصورة في عمود "رابط الصورة"' },
+      { 'تعليمات': '6. لإضافة فيديو، ضع رابط الفيديو في عمود "رابط الفيديو"' },
+      { 'تعليمات': '7. يمكن إضافة إما صورة أو فيديو للسؤال الواحد، وليس كلاهما' },
+      { 'تعليمات': '8. الأسئلة المستوردة ستكون غير فعالة حتى يتم تفعيلها من لوحة التحكم' }
     ];
     
     // إنشاء ورقة عمل للنموذج وورقة أخرى للتعليمات
