@@ -564,25 +564,29 @@ export default function QuestionsManagement() {
     
     try {
       setImporting(true);
+      console.log("بدء عملية استيراد الأسئلة من الرابط:", url);
       
       // إرسال الرابط إلى الخادم
       const response = await apiRequest('POST', '/api/import-questions-from-url', { url });
+      console.log("استجابة الخادم:", response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'فشلت عملية الاستيراد');
+        throw new Error(errorData.error || 'فشلت عملية الاستيراد من الرابط');
       }
       
       const result = await response.json();
+      console.log("نتيجة الاستيراد:", result);
       
       // تحديث القائمة المحلية
       fetchQuestions();
       
       toast({
         title: 'تم الاستيراد بنجاح',
-        description: `تم استيراد ${result.imported} سؤال بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
+        description: `تم استيراد ${result.imported} سؤال من الرابط بنجاح. الأسئلة المستوردة بحالة غير فعّالة.`,
       });
     } catch (error: any) {
+      console.error("خطأ في استيراد الأسئلة من الرابط:", error);
       toast({
         title: 'خطأ في الاستيراد',
         description: error.message || 'حدث خطأ أثناء محاولة استيراد الأسئلة من الرابط.',
