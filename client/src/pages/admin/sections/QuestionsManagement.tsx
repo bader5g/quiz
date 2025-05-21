@@ -81,6 +81,11 @@ export default function QuestionsManagement() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   
+  // خيارات عرض الجدول
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [paginatedQuestions, setPaginatedQuestions] = useState<QuestionDisplay[]>([]);
+  
   // فلاتر البحث
   const [filterText, setFilterText] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
@@ -217,7 +222,15 @@ export default function QuestionsManagement() {
     }
     
     setFilteredQuestions(result);
+    setCurrentPage(1); // إعادة تعيين الصفحة الحالية عند تغيير الفلاتر
   }, [questions, filterText, filterCategoryId, filterSubcategoryId, filterUsageMin, filterUsageMax, filterDateFrom, filterDateTo]);
+  
+  // تطبيق الترقيم على الأسئلة المفلترة
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, filteredQuestions.length);
+    setPaginatedQuestions(filteredQuestions.slice(startIndex, endIndex));
+  }, [filteredQuestions, currentPage, pageSize]);
 
   // عرض نموذج إضافة سؤال جديد
   const showAddQuestionForm = () => {
@@ -573,29 +586,50 @@ export default function QuestionsManagement() {
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : questions.length === 0 ? (
+      ) : filteredQuestions.length === 0 ? (
         <div className="text-center p-8 border rounded-lg bg-muted/30">
-          <p className="text-lg">لا توجد أسئلة. أضف سؤالاً جديداً.</p>
+          <p className="text-lg">لا توجد أسئلة مطابقة للفلاتر المحددة.</p>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="p-3 text-center">#</th>
-                  <th className="p-3 text-right">السؤال</th>
-                  <th className="p-3 text-right">الإجابة</th>
-                  <th className="p-3 text-right">الفئة</th>
-                  <th className="p-3 text-right">الصعوبة</th>
-                  <th className="p-3 text-right">الاستخدام</th>
-                  <th className="p-3 text-right">التاريخ</th>
-                  <th className="p-3 text-right">الحالة</th>
-                  <th className="p-3 text-right">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {questions.map((question, index) => (
+        <div>
+          {/* خيارات عرض الجدول */}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">عدد الأسئلة في الصفحة:</span>
+              <select
+                className="w-24 p-1 border rounded-md"
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            <div className="text-sm">
+              عرض {(currentPage - 1) * pageSize + 1} إلى {Math.min(currentPage * pageSize, filteredQuestions.length)} من إجمالي {filteredQuestions.length} سؤال
+            </div>
+          </div>
+          
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="p-3 text-center">#</th>
+                    <th className="p-3 text-right">السؤال</th>
+                    <th className="p-3 text-right">الإجابة</th>
+                    <th className="p-3 text-right">الفئة</th>
+                    <th className="p-3 text-right">الصعوبة</th>
+                    <th className="p-3 text-right">الاستخدام</th>
+                    <th className="p-3 text-right">التاريخ</th>
+                    <th className="p-3 text-right">الحالة</th>
+                    <th className="p-3 text-right">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredQuestions.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((question, index) => (
                   <tr key={question.id} className="border-b hover:bg-muted/20">
                     <td className="p-3 text-center font-bold">{index + 1}</td>
                     <td className="p-3 text-right">
