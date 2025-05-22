@@ -226,18 +226,20 @@ export default function Header() {
             </>
           ) : (
             <>
-              <button 
+              <Button 
+                variant="ghost"
                 onClick={() => navigate('/auth')} 
-                className="text-blue-600 hover:underline transition-colors px-3 py-1.5 font-medium"
+                className="text-blue-600 hover:text-blue-800 transition-colors px-3 py-1.5 font-medium"
               >
                 تسجيل الدخول
-              </button>
-              <button 
+              </Button>
+              <Button 
+                variant="default"
                 onClick={() => navigate('/auth')} 
                 className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-full font-medium"
               >
                 إنشاء حساب
-              </button>
+              </Button>
             </>
           )}
         </div>
