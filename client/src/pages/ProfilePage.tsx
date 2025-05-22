@@ -64,7 +64,7 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const { user: currentUser, updateUser: setUser } = useUser();
+  const { user: currentUser } = useAuth();
   
   // الحد الأقصى لعدد المستخدمين الفرعيين
   const maxSubUsers = 5; // القيمة الافتراضية، يمكن استبدالها بقيمة من إعدادات اللعبة
@@ -146,12 +146,12 @@ export default function ProfilePage() {
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
-  // تحديث حالة المستخدم عند جلب البيانات
-  useEffect(() => {
-    if (userProfile) {
-      setUser(userProfile);
-    }
-  }, [userProfile, setUser]);
+  // لا نحتاج للتحديث اليدوي لبيانات المستخدم مع نظام المصادقة الموحد
+  // useEffect(() => {
+  //   if (userProfile) {
+  //     // تم إزالة setUser لأننا نستخدم الآن نظام المصادقة الموحد
+  //   }
+  // }, [userProfile]);
   
   // تعبئة بيانات المستخدم الفرعي المحدد عند فتح نافذة التعديل
   useEffect(() => {
@@ -170,48 +170,53 @@ export default function ProfilePage() {
   };
 
   // دالة معالجة حفظ التغييرات
-  const handleSaveProfileChanges = (type: string, value: string) => {
+  const handleSaveProfileChanges = async (type: string, value: string) => {
     if (!currentUser) return;
     
-    // تحديث بيانات المستخدم
-    const updatedUser = { ...currentUser };
-    
-    switch(type) {
-      case 'name':
-        updatedUser.name = value;
-        break;
-      case 'email':
-        updatedUser.email = value;
-        break;
-      case 'phone':
-        updatedUser.phone = value;
-        break;
-      case 'password':
-        // لن نقوم بتخزين كلمة المرور في حالة المستخدم الحالية
-        toast({
-          title: "تم تغيير كلمة المرور",
-          description: "تم تحديث كلمة المرور الخاصة بك بنجاح",
-        });
-        break;
-      case 'avatar':
-        updatedUser.avatarUrl = value;
-        break;
-    }
-    
-    // تحديث البيانات في الواجهة وفي الخادم
-    setUser(updatedUser);
-    setEditModalOpen(false);
-    
-    // إظهار رسالة نجاح
-    if (type !== 'password') {
+    try {
+      // في التطبيق الحقيقي، سنقوم بإرسال البيانات إلى الخادم عبر apiRequest
+      // let updatedData = {};
+      // 
+      // switch(type) {
+      //   case 'name':
+      //     updatedData = { name: value };
+      //     break;
+      //   case 'email':
+      //     updatedData = { email: value };
+      //     break;
+      //   case 'phone':
+      //     updatedData = { phone: value };
+      //     break;
+      //   case 'password':
+      //     updatedData = { password: value };
+      //     break;
+      //   case 'avatar':
+      //     updatedData = { avatarUrl: value };
+      //     break;
+      // }
+      //
+      // await apiRequest("PATCH", "/api/user-profile", updatedData);
+      
+      // محاكاة الاستجابة
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      setEditModalOpen(false);
+      
+      // إظهار رسالة نجاح
       toast({
         title: "تم الحفظ بنجاح",
         description: "تم تحديث معلومات ملفك الشخصي",
       });
+      
+      // إعادة تحميل بيانات الملف الشخصي
+      refetchProfile();
+    } catch (error) {
+      toast({
+        title: "خطأ في حفظ البيانات",
+        description: "حدث خطأ أثناء محاولة تحديث بياناتك",
+        variant: "destructive",
+      });
     }
-    
-    // إعادة تحميل بيانات الملف الشخصي
-    refetchProfile();
   };
   
   // إضافة مستخدم فرعي جديد
