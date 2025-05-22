@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { useUser } from '@/context/UserContext';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -226,20 +226,12 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Button 
-                variant="ghost"
-                onClick={() => navigate('/auth')} 
-                className="text-blue-600 hover:text-blue-800 transition-colors px-3 py-1.5 font-medium"
-              >
+              <a href="/auth" className="text-blue-600 hover:text-blue-800 transition-colors px-3 py-1.5 font-medium">
                 تسجيل الدخول
-              </Button>
-              <Button 
-                variant="default"
-                onClick={() => navigate('/auth')} 
-                className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-full font-medium"
-              >
+              </a>
+              <a href="/auth" className="bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-1.5 rounded-full font-medium inline-block">
                 إنشاء حساب
-              </Button>
+              </a>
             </>
           )}
         </div>
