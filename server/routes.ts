@@ -1089,30 +1089,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User level API endpoint
-  app.get("/api/user-level", (_req, res) => {
-    // Sample user level data
+  app.get("/api/user-level", (req, res) => {
+    // التحقق من حالة تسجيل الدخول
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    
+    const user = req.user;
+    
+    // استخدام بيانات المستخدم الفعلية أو القيم الافتراضية
+    const currentStars = user.stars || 0;
+    const level = user.level || "مبتدئ";
+    const badge = user.levelBadge || "🌟";
+    const color = user.levelColor || "#A9A9A9";
+    
+    // تحديد المستوى التالي والتقدم المتطلب
+    let nextLevel = "ذهبي";
+    let requiredStars = 10;
+    let progress = 0;
+    
+    // حساب التقدم بناء على المستوى الحالي
+    if (level === "مبتدئ") {
+      nextLevel = "فضي";
+      requiredStars = 10;
+      progress = Math.min(100, (currentStars / requiredStars) * 100);
+    } else if (level === "فضي") {
+      nextLevel = "ذهبي";
+      requiredStars = 20;
+      progress = Math.min(100, (currentStars / requiredStars) * 100);
+    } else if (level === "ذهبي") {
+      nextLevel = "بلاتيني";
+      requiredStars = 30;
+      progress = Math.min(100, (currentStars / requiredStars) * 100);
+    } else if (level === "بلاتيني") {
+      nextLevel = "ماسي";
+      requiredStars = 50;
+      progress = Math.min(100, (currentStars / requiredStars) * 100);
+    } else {
+      // المستوى النهائي أو أي مستوى آخر
+      nextLevel = "الأسطوري";
+      requiredStars = 100;
+      progress = Math.min(100, (currentStars / requiredStars) * 100);
+    }
+    
+    // حساب الإحصاءات الأخرى
+    const starsThisMonth = Math.floor(currentStars * 0.3); // افتراضي: 30% من النجوم الكلية تم اكتسابها هذا الشهر
+    const cardsUsed = currentStars * 2; // افتراضي: 2 كروت لكل نجمة
+    const starsToNextLevel = requiredStars - currentStars;
+    
     const userLevel = {
-      level: "ذهبي",
-      badge: "🥇",
-      color: "#FFD700",
-      progress: 75,
-      nextLevel: "بلاتيني",
-      requiredStars: 20,
-      currentStars: 15,
-      startDate: "2025-01-15T12:00:00.000Z",
+      level,
+      badge,
+      color,
+      progress: Math.round(progress),
+      nextLevel,
+      requiredStars,
+      currentStars,
+      startDate: user.createdAt || "2025-01-15T12:00:00.000Z",
       monthlyRewards: {
-        freeCards: 15,
+        freeCards: Math.max(5, Math.floor(currentStars * 0.5)),
         validity: 30, // أيام
-        nextRenewal: "2025-05-15T12:00:00.000Z",
+        nextRenewal: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         accumulative: true,
       },
       stats: {
-        starsThisMonth: 7,
-        cardsUsed: 28,
+        starsThisMonth,
+        cardsUsed,
         conversionRate: 2, // كل 2 كرت = 1 نجمة
-        starsToNextLevel: 5,
+        starsToNextLevel,
         daysBeforeDemotion: 45, // الأيام المتبقية قبل فقدان المستوى
-        starsFromSubs: 3, // النجوم من المستخدمين الفرعيين
+        starsFromSubs: Math.floor(currentStars * 0.2), // افتراضي: 20% من النجوم من المستخدمين الفرعيين
       },
     };
 
@@ -1248,42 +1294,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User profile API endpoint
-  app.get("/api/user-profile", (_req, res) => {
-    // Sample user profile data
+  app.get("/api/user-profile", (req, res) => {
+    // التحقق من حالة تسجيل الدخول
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    
+    // استخدام بيانات المستخدم الحقيقية من الجلسة
+    const user = req.user;
+    
+    // إنشاء كائن ملف المستخدم الشخصي
     const userProfile = {
-      id: 1,
-      username: "ahmed_88",
-      name: "أحمد محمد",
-      email: "ahmed@example.com",
-      phone: "966512345678",
-      avatarUrl: "/assets/avatars/avatar1.png",
+      id: user.id,
+      username: user.username,
+      // استخدام البيانات المتاحة من المستخدم، أو استخدام قيم افتراضية إذا كانت غير موجودة
+      name: user.name || user.username,
+      email: user.email || "",
+      phone: user.phone || "",
+      avatarUrl: user.avatarUrl || "/assets/avatars/default.png",
     };
 
     res.json(userProfile);
   });
 
   // User stats API endpoint
-  app.get("/api/user-stats", (_req, res) => {
-    // Sample user stats data
-    const userStats = {
-      gamesPlayed: 15,
-      lastPlayed: "2025-04-28T14:30:00Z",
-    };
-
-    res.json(userStats);
+  app.get("/api/user-stats", async (req, res) => {
+    // التحقق من حالة تسجيل الدخول
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    
+    try {
+      const userId = req.user.id;
+      
+      // جلب ألعاب المستخدم
+      const userGames = await storage.getUserGameSessions(userId);
+      
+      // حساب عدد الألعاب التي لعبها المستخدم
+      const gamesPlayed = userGames.length;
+      
+      // تحديد آخر لعبة لعبها المستخدم (إذا وجدت)
+      const lastPlayed = gamesPlayed > 0 ? userGames[0].createdAt : null;
+      
+      // إنشاء كائن إحصائيات المستخدم
+      const userStats = {
+        gamesPlayed,
+        lastPlayed,
+      };
+      
+      res.json(userStats);
+    } catch (error) {
+      console.error("خطأ في جلب إحصائيات المستخدم:", error);
+      res.status(500).json({ message: "حدث خطأ أثناء جلب إحصائيات المستخدم" });
+    }
   });
 
   // User cards API endpoint
-  app.get("/api/user-cards", (_req, res) => {
-    // Sample user cards data
+  app.get("/api/user-cards", (req, res) => {
+    // التحقق من حالة تسجيل الدخول
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
+    }
+    
+    // استخدام بيانات المستخدم الحقيقية
+    const user = req.user;
+    
+    // جلب بيانات الكروت من المستخدم أو استخدام القيم الافتراضية
+    const freeCards = user.freeCards || 5;
+    const paidCards = user.paidCards || 0;
+    const totalCards = freeCards + paidCards;
+    
+    // إحصاءات إضافية عن استخدام البطاقات
+    // في المستقبل، يمكن أن تأتي هذه البيانات من قاعدة البيانات
+    const usedFreeCards = 0;
+    const usedPaidCards = 0;
+    
     const userCards = {
-      freeCards: 5,
-      paidCards: 10,
-      totalCards: 15,
+      freeCards,
+      paidCards,
+      totalCards,
       freeIcon: "🎫",
       paidIcon: "💳",
-      usedFreeCards: 3,
-      usedPaidCards: 2,
+      usedFreeCards,
+      usedPaidCards,
     };
 
     res.json(userCards);
