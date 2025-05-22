@@ -376,15 +376,15 @@ export class DatabaseStorage implements IStorage {
         return {
           id: 2,
           username: "user_test",
-          password: "password_hash",
-          name: "مستخدم تجريبي",
-          email: "test@example.com",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          password: "password_hash"
         };
       }
       
-      const [user] = await db.select().from(users).where(eq(users.id, id));
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        password: users.password
+      }).from(users).where(eq(users.id, id));
       return user;
     } catch (error) {
       console.error("Error getting user:", error);
