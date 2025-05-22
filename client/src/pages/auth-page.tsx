@@ -1,4 +1,5 @@
-import { useLocation, Redirect } from "wouter";
+import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -49,9 +50,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const [_, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  const { loginMutation, registerMutation, isLoading } = useAuth();
+  const [tab, setTab] = useState("login");
 
   // استخدام التأخير للتحقق من صحة النموذج
   const debouncedValidation = useDebouncedCallback(
@@ -76,30 +78,30 @@ export default function AuthPage() {
     },
   });
 
-  // تحقق إذا كان المستخدم مسجل الدخول بالفعل ولم نكن في عملية تسجيل دخول/إنشاء حساب
-  const isProcessingAuth = loginMutation.isPending || registerMutation.isPending;
-  
-  // نتحقق من أن المستخدم مسجل ولا نقوم بأي عملية تسجيل دخول أو إنشاء حساب
-  if (user && !isLoading && !isProcessingAuth) {
-    return <Redirect to="/" />;
-  }
+  const isProcessingAuth =
+    loginMutation.isPending || registerMutation.isPending;
 
-  // معالجة تسجيل الدخول
+  // معالجة تسجيل الدخول ـ التحويل يتم فقط عند النجاح
   async function onLoginSubmit(data: LoginFormValues) {
     try {
-      const result = await loginMutation.mutateAsync(data);
-      
-      if (result) {
-        toast({
-          title: "تم تسجيل الدخول بنجاح",
-          description: "مرحباً بك في جاوب!",
-        });
-        
-        // إضافة تأخير قصير قبل التوجيه للسماح بإكمال العمليات
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
-      }
+      await loginMutation.mutateAsync(data, {
+        onSuccess: () => {
+          toast({
+            title: "تم تسجيل الدخول بنجاح",
+            description: "مرحباً بك في جاوب!",
+          });
+          setTimeout(() => {
+            navigate("/");
+          }, 700); // لإظهار رسالة التوست أولاً
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "خطأ في تسجيل الدخول",
+            description: error?.message || "حدث خطأ غير متوقع",
+            variant: "destructive",
+          });
+        },
+      });
     } catch (error) {
       toast({
         title: "خطأ في تسجيل الدخول",
@@ -110,26 +112,28 @@ export default function AuthPage() {
     }
   }
 
-  // معالجة إنشاء حساب جديد
+  // معالجة إنشاء حساب جديد ـ التحويل يتم فقط عند النجاح
   async function onRegisterSubmit(data: RegisterFormValues) {
     try {
-      // حذف حقل تأكيد كلمة المرور قبل الإرسال لأنه غير موجود في قاعدة البيانات
       const { confirmPassword, ...userData } = data;
-      
-      // استخدام سلوك أكثر أمانًا للتسجيل
-      const result = await registerMutation.mutateAsync(userData);
-      
-      if (result) {
-        toast({
-          title: "تم إنشاء الحساب بنجاح",
-          description: "مرحباً بك في جاوب!",
-        });
-        
-        // إضافة تأخير قصير قبل التوجيه للسماح بإكمال العمليات
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
-      }
+      await registerMutation.mutateAsync(userData, {
+        onSuccess: () => {
+          toast({
+            title: "تم إنشاء الحساب بنجاح",
+            description: "مرحباً بك في جاوب!",
+          });
+          setTimeout(() => {
+            navigate("/");
+          }, 700); // لإظهار رسالة التوست أولاً
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "خطأ في إنشاء الحساب",
+            description: error?.message || "حدث خطأ غير متوقع",
+            variant: "destructive",
+          });
+        },
+      });
     } catch (error) {
       toast({
         title: "خطأ في إنشاء الحساب",
@@ -152,7 +156,12 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs
+            value={tab}
+            onValueChange={setTab}
+            className="w-full"
+            defaultValue="login"
+          >
             <TabsList
               className="grid w-full grid-cols-2 mb-6"
               aria-label="نموذج المصادقة"
@@ -213,8 +222,12 @@ export default function AuthPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoading || isProcessingAuth}
+                  >
+                    {isProcessingAuth ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
                   </Button>
                 </form>
               </Form>
@@ -293,8 +306,12 @@ export default function AuthPage() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isLoading || isProcessingAuth}
+                  >
+                    {isProcessingAuth ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
                   </Button>
                 </form>
               </Form>

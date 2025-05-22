@@ -23,6 +23,18 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
+  // Verificar si hay datos de usuario en localStorage
+  const userFromStorage = localStorage.getItem('user');
+  let initialUser = null;
+  if (userFromStorage) {
+    try {
+      initialUser = JSON.parse(userFromStorage);
+    } catch (error) {
+      console.error('Error al analizar el usuario almacenado:', error);
+      localStorage.removeItem('user');
+    }
+  }
+  
   const {
     data: user,
     error,
@@ -30,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    initialData: initialUser,
   });
 
   const loginMutation = useMutation({
@@ -39,6 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      
+      // حفظ بيانات المستخدم في التخزين المحلي
+      localStorage.setItem('user', JSON.stringify(user));
+      
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: `مرحبًا ${user.username}`,

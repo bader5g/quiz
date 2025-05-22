@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 
 interface User {
   id: number;
@@ -20,23 +21,41 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
+  const { user: authUser, loginMutation, logoutMutation } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   
-  // Check localStorage for user on initial load
+  // استخدام بيانات المستخدم من نظام المصادقة AuthProvider
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('user');
+    if (authUser) {
+      // تحويل بيانات المستخدم من AuthProvider إلى النموذج المطلوب
+      const formattedUser: User = {
+        id: authUser.id,
+        username: authUser.username,
+        // إضافة حقول إضافية إذا كانت متوفرة في authUser
+      };
+      
+      setUser(formattedUser);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(formattedUser));
+    } else {
+      // تحقق من وجود بيانات في التخزين المحلي
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Error parsing stored user:', error);
+          localStorage.removeItem('user');
+        }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     }
-  }, []);
+  }, [authUser]);
   
   const login = (userData: User) => {
     setUser(userData);
@@ -44,10 +63,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(userData));
   };
   
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('user');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
   
   // تحديث بيانات المستخدم دون إعادة تسجيل الدخول
