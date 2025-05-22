@@ -44,11 +44,6 @@ export default function AuthPage() {
   const { login: userLogin } = useUser();
   const isLoading = loginMutation.isPending || registerMutation.isPending;
 
-  // If user is already logged in, redirect to home page
-  if (user) {
-    return <Redirect to="/" />;
-  }
-
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -67,6 +62,11 @@ export default function AuthPage() {
       phone: "",
     },
   });
+  
+  // If user is already logged in, redirect to home page
+  if (user) {
+    return <Redirect to="/" />;
+  }
 
   async function onLoginSubmit(data: LoginFormValues) {
     try {
