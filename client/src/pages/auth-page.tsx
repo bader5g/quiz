@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/context/UserContext";
 
 // Define login form schema
 const loginSchema = z.object({
@@ -40,6 +41,7 @@ export default function AuthPage() {
   const [_, navigate] = useLocation();
   const { toast } = useToast();
   const { user, loginMutation, registerMutation } = useAuth();
+  const { login: userLogin } = useUser();
   const isLoading = loginMutation.isPending || registerMutation.isPending;
 
   // If user is already logged in, redirect to home page
@@ -68,7 +70,9 @@ export default function AuthPage() {
 
   async function onLoginSubmit(data: LoginFormValues) {
     try {
-      await loginMutation.mutateAsync(data);
+      const userData = await loginMutation.mutateAsync(data);
+      // أيضًا قم بتسجيل الدخول إلى UserContext لضمان عمل كلا النظامين
+      userLogin(userData);
       navigate("/");
     } catch (error) {
       // Error handling is already done in the mutation
@@ -77,7 +81,9 @@ export default function AuthPage() {
 
   async function onRegisterSubmit(data: RegisterFormValues) {
     try {
-      await registerMutation.mutateAsync(data);
+      const userData = await registerMutation.mutateAsync(data);
+      // أيضًا قم بتسجيل الدخول إلى UserContext لضمان عمل كلا النظامين
+      userLogin(userData);
       navigate("/");
     } catch (error) {
       // Error handling is already done in the mutation
