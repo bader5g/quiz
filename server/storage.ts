@@ -83,11 +83,11 @@ export class MemStorage implements IStorage {
   private categories: Map<number, any>;
   private subcategories: Map<number, any>;
   private questions: Map<number, any>;
-  currentCategoryId: number;
-  currentSubcategoryId: number;
-  currentQuestionId: number;
-  currentUserId: number;
-  currentSessionId: number;
+  currentCategoryId: number = 100;
+  currentSubcategoryId: number = 100;
+  currentQuestionId: number = 100;
+  currentUserId: number = 10;
+  currentSessionId: number = 10;
 
   constructor() {
     this.users = new Map();
