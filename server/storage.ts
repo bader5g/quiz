@@ -19,7 +19,7 @@ import {
   type UpdateQuestion
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql, desc, asc } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -858,5 +858,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// استخدام التخزين المؤقت في الذاكرة حتى نتمكن من إصلاح مشاكل قاعدة البيانات
-export const storage = new MemStorage();
+// استخدام قاعدة البيانات للتخزين
+export const storage = new DatabaseStorage();
