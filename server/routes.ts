@@ -1089,19 +1089,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User level API endpoint
-  app.get("/api/user-level", (req, res) => {
+  app.get("/api/user-level", async (req, res) => {
     // التحقق من حالة تسجيل الدخول
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
     }
     
-    const user = req.user;
-    
-    // استخدام بيانات المستخدم الفعلية أو القيم الافتراضية
-    const currentStars = user.stars || 0;
-    const level = user.level || "مبتدئ";
-    const badge = user.levelBadge || "🌟";
-    const color = user.levelColor || "#A9A9A9";
+    try {
+      const userId = req.user.id;
+      
+      // حساب النجوم من الألعاب الحقيقية
+      const userGames = await storage.getUserGameSessions(userId);
+      const completedGames = userGames.filter(game => game.status === 'completed');
+      const wonGames = completedGames.filter(game => game.winnerTeamIndex !== null && game.winnerTeamIndex !== undefined);
+      
+      // حساب النجوم الحقيقية: انتصار = 3 نجوم، مشاركة = 1 نجمة
+      const currentStars = (wonGames.length * 3) + (completedGames.length - wonGames.length);
+      
+      // تحديد المستوى بناء على النجوم الحقيقية
+      let level = "مبتدئ";
+      let badge = "🌟";
+      let color = "#A9A9A9";
+      
+      if (currentStars >= 100) {
+        level = "الأسطوري";
+        badge = "👑";
+        color = "#8B0000";
+      } else if (currentStars >= 50) {
+        level = "ماسي";
+        badge = "💎";
+        color = "#B9F2FF";
+      } else if (currentStars >= 30) {
+        level = "بلاتيني";
+        badge = "🥈";
+        color = "#E5E4E2";
+      } else if (currentStars >= 20) {
+        level = "ذهبي";
+        badge = "🥇";
+        color = "#FFD700";
+      } else if (currentStars >= 10) {
+        level = "فضي";
+        badge = "🥈";
+        color = "#C0C0C0";
+      }
     
     // تحديد المستوى التالي والتقدم المتطلب
     let nextLevel = "ذهبي";
@@ -1132,10 +1162,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       progress = Math.min(100, (currentStars / requiredStars) * 100);
     }
     
-    // حساب الإحصاءات الأخرى
-    const starsThisMonth = Math.floor(currentStars * 0.3); // افتراضي: 30% من النجوم الكلية تم اكتسابها هذا الشهر
-    const cardsUsed = currentStars * 2; // افتراضي: 2 كروت لكل نجمة
-    const starsToNextLevel = requiredStars - currentStars;
+    // حساب الإحصاءات الحقيقية من الألعاب
+    const thisMonth = new Date();
+    const gamesThisMonth = userGames.filter(game => {
+      const gameDate = new Date(game.createdAt);
+      return gameDate.getMonth() === thisMonth.getMonth() && gameDate.getFullYear() === thisMonth.getFullYear();
+    });
+    
+    const starsThisMonth = gamesThisMonth.reduce((total, game) => {
+      // إذا كانت هناك بيانات فائز، أعطي نجوم إضافية
+      if (game.winnerIndex !== null && game.winnerIndex !== undefined) {
+        return total + 3;
+      }
+      return total + 1; // نجمة واحدة للمشاركة
+    }, 0);
+    
+    const cardsUsed = userGames.length * 2; // كل لعبة تستهلك كرتين في المتوسط
+    const starsToNextLevel = Math.max(0, requiredStars - currentStars);
     
     const userLevel = {
       level,
@@ -1145,7 +1188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       nextLevel,
       requiredStars,
       currentStars,
-      startDate: user.createdAt || "2025-01-15T12:00:00.000Z",
+      startDate: req.user.createdAt || "2025-01-15T12:00:00.000Z",
       monthlyRewards: {
         freeCards: Math.max(5, Math.floor(currentStars * 0.5)),
         validity: 30, // أيام
@@ -1158,11 +1201,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversionRate: 2, // كل 2 كرت = 1 نجمة
         starsToNextLevel,
         daysBeforeDemotion: 45, // الأيام المتبقية قبل فقدان المستوى
-        starsFromSubs: Math.floor(currentStars * 0.2), // افتراضي: 20% من النجوم من المستخدمين الفرعيين
+        starsFromSubs: 0, // سيحسب لاحقاً من المستخدمين الفرعيين
       },
     };
 
     res.json(userLevel);
+    } catch (error) {
+      console.error("خطأ في جلب مستوى المستخدم:", error);
+      res.status(500).json({ message: "حدث خطأ أثناء جلب مستوى المستخدم" });
+    }
   });
 
   // Star history API endpoint
