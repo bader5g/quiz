@@ -7,29 +7,43 @@ import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useUser } from "@/context/UserContext";
+import { useDebouncedCallback } from "use-debounce";
 
-// Define login form schema
+// تعريف مخطط نموذج تسجيل الدخول
 const loginSchema = z.object({
   username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+  password: z
+    .string()
+    .min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل")
+    .regex(/[A-Z]/, "يجب أن تحتوي على حرف كبير واحد على الأقل")
+    .regex(/[0-9]/, "يجب أن تحتوي على رقم واحد على الأقل")
+    .regex(/[^A-Za-z0-9]/, "يجب أن تحتوي على رمز خاص واحد على الأقل"),
 });
 
-// Define registration form schema
-const registerSchema = z.object({
-  username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
-});
+// تعريف مخطط نموذج التسجيل
+const registerSchema = z
+  .object({
+    username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
+    password: z
+      .string()
+      .min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل")
+      .regex(/[A-Z]/, "يجب أن تحتوي على حرف كبير واحد على الأقل")
+      .regex(/[0-9]/, "يجب أن تحتوي على رقم واحد على الأقل")
+      .regex(/[^A-Za-z0-9]/, "يجب أن تحتوي على رمز خاص واحد على الأقل"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "كلمات المرور غير متطابقة",
+    path: ["confirmPassword"],
+  });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -37,9 +51,13 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [_, navigate] = useLocation();
   const { toast } = useToast();
-  const { user, loginMutation, registerMutation } = useAuth();
-  const { login: userLogin } = useUser();
-  const isLoading = loginMutation.isPending || registerMutation.isPending;
+  const { user, login, register, isLoading } = useAuth();
+
+  // استخدام التأخير للتحقق من صحة النموذج
+  const debouncedValidation = useDebouncedCallback(
+    (form: any) => form.trigger(),
+    500,
+  );
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -53,55 +71,84 @@ export default function AuthPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
-      password: ""
+      password: "",
+      confirmPassword: "",
     },
   });
-  
-  // If user is already logged in, redirect to home page
+
+  // إذا كان المستخدم مسجل الدخول بالفعل، قم بالتوجيه إلى الصفحة الرئيسية
   if (user) {
     return <Redirect to="/" />;
   }
 
+  // معالجة تسجيل الدخول
   async function onLoginSubmit(data: LoginFormValues) {
     try {
-      const userData = await loginMutation.mutateAsync(data);
-      // أيضًا قم بتسجيل الدخول إلى UserContext لضمان عمل كلا النظامين
-      userLogin(userData);
+      await login(data);
+      toast({
+        title: "تم تسجيل الدخول بنجاح",
+        description: "مرحباً بك في جاوب!",
+      });
       navigate("/");
     } catch (error) {
-      // Error handling is already done in the mutation
+      toast({
+        title: "خطأ في تسجيل الدخول",
+        description:
+          error instanceof Error ? error.message : "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
     }
   }
 
+  // معالجة إنشاء حساب جديد
   async function onRegisterSubmit(data: RegisterFormValues) {
     try {
-      const userData = await registerMutation.mutateAsync(data);
-      // أيضًا قم بتسجيل الدخول إلى UserContext لضمان عمل كلا النظامين
-      userLogin(userData);
+      await register(data);
+      toast({
+        title: "تم إنشاء الحساب بنجاح",
+        description: "مرحباً بك في جاوب!",
+      });
       navigate("/");
     } catch (error) {
-      // Error handling is already done in the mutation
+      toast({
+        title: "خطأ في إنشاء الحساب",
+        description:
+          error instanceof Error ? error.message : "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
     }
   }
 
   return (
     <div className="flex h-screen">
-      {/* Form Side */}
+      {/* جانب النموذج */}
       <div className="w-full md:w-1/2 flex flex-col justify-center px-4 md:px-8 lg:px-12 py-6 bg-background">
         <div className="max-w-md mx-auto w-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold tracking-tight">جاوب</h1>
-            <p className="text-muted-foreground mt-2">منصة الألعاب التعليمية المبتكرة</p>
+            <p className="text-muted-foreground mt-2">
+              منصة الألعاب التعليمية المبتكرة
+            </p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">تسجيل الدخول</TabsTrigger>
-              <TabsTrigger value="register">إنشاء حساب</TabsTrigger>
+            <TabsList
+              className="grid w-full grid-cols-2 mb-6"
+              aria-label="نموذج المصادقة"
+            >
+              <TabsTrigger value="login" role="tab">
+                تسجيل الدخول
+              </TabsTrigger>
+              <TabsTrigger value="register" role="tab">
+                إنشاء حساب
+              </TabsTrigger>
             </TabsList>
-            <TabsContent value="login">
+            <TabsContent value="login" role="tabpanel">
               <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
+                <form
+                  onSubmit={loginForm.handleSubmit(onLoginSubmit)}
+                  className="space-y-6"
+                >
                   <FormField
                     control={loginForm.control}
                     name="username"
@@ -109,7 +156,15 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>اسم المستخدم</FormLabel>
                         <FormControl>
-                          <Input placeholder="أدخل اسم المستخدم" {...field} />
+                          <Input
+                            placeholder="أدخل اسم المستخدم"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              debouncedValidation(loginForm);
+                            }}
+                            aria-label="اسم المستخدم"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -122,7 +177,16 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••" {...field} />
+                          <Input
+                            type="password"
+                            placeholder="••••••"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              debouncedValidation(loginForm);
+                            }}
+                            aria-label="كلمة المرور"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -134,9 +198,12 @@ export default function AuthPage() {
                 </form>
               </Form>
             </TabsContent>
-            <TabsContent value="register">
+            <TabsContent value="register" role="tabpanel">
               <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                <form
+                  onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
+                  className="space-y-4"
+                >
                   <FormField
                     control={registerForm.control}
                     name="username"
@@ -144,7 +211,15 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>اسم المستخدم</FormLabel>
                         <FormControl>
-                          <Input placeholder="أدخل اسم المستخدم" {...field} />
+                          <Input
+                            placeholder="أدخل اسم المستخدم"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              debouncedValidation(registerForm);
+                            }}
+                            aria-label="اسم المستخدم"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -158,12 +233,45 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••" {...field} />
+                          <Input
+                            type="password"
+                            placeholder="••••••"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              debouncedValidation(registerForm);
+                            }}
+                            aria-label="كلمة المرور"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={registerForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>تأكيد كلمة المرور</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="••••••"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              debouncedValidation(registerForm);
+                            }}
+                            aria-label="تأكيد كلمة المرور"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
                   </Button>
@@ -174,24 +282,31 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Hero Side */}
+      {/* الجانب الترحيبي */}
       <div className="hidden md:flex md:w-1/2 bg-primary text-primary-foreground">
         <div className="flex flex-col justify-center items-center p-12 text-center">
           <h1 className="text-4xl font-extrabold mb-6">مرحباً بك في جاوب!</h1>
           <p className="text-xl mb-8 max-w-md">
-            منصة الألعاب التعليمية الرائدة. استمتع بتجربة مسابقات ثقافية تفاعلية مع الأصدقاء والعائلة.
+            منصة الألعاب التعليمية الرائدة. استمتع بتجربة مسابقات ثقافية تفاعلية
+            مع الأصدقاء والعائلة.
           </p>
           <div className="space-y-4 text-start w-full max-w-md">
             <div className="flex items-center">
-              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center mr-4">1</div>
+              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center ml-4">
+                1
+              </div>
               <span>سجل دخولك أو أنشئ حساباً جديداً</span>
             </div>
             <div className="flex items-center">
-              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center mr-4">2</div>
+              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center ml-4">
+                2
+              </div>
               <span>أنشئ لعبة جديدة واختر الفئات المفضلة لديك</span>
             </div>
             <div className="flex items-center">
-              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center mr-4">3</div>
+              <div className="rounded-full bg-primary-foreground text-primary w-10 h-10 flex items-center justify-center ml-4">
+                3
+              </div>
               <span>ادعُ أصدقاءك للمشاركة واستمتع بالمنافسة</span>
             </div>
           </div>
