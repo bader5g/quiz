@@ -1330,16 +1330,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // جلب ألعاب المستخدم
       const userGames = await storage.getUserGameSessions(userId);
       
-      // حساب عدد الألعاب التي لعبها المستخدم
-      const gamesPlayed = userGames.length;
+      // حساب الإحصائيات الحقيقية
+      const totalGames = userGames.length;
+      const completedGames = userGames.filter(game => game.status === 'completed');
+      const wonGames = completedGames.filter(game => game.winnerTeamIndex !== null && game.winnerTeamIndex !== undefined);
+      const winRate = completedGames.length > 0 ? Math.round((wonGames.length / completedGames.length) * 100) : 0;
       
-      // تحديد آخر لعبة لعبها المستخدم (إذا وجدت)
-      const lastPlayed = gamesPlayed > 0 ? userGames[0].createdAt : null;
+      // حساب متوسط النقاط من الألعاب المكتملة
+      let totalScore = 0;
+      let scoreCount = 0;
+      completedGames.forEach(game => {
+        if (game.teams && Array.isArray(game.teams)) {
+          game.teams.forEach(team => {
+            if (team.score !== undefined && team.score !== null) {
+              totalScore += team.score;
+              scoreCount++;
+            }
+          });
+        }
+      });
+      const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
       
-      // إنشاء كائن إحصائيات المستخدم
+      // العثور على تاريخ آخر لعبة
+      const lastGameDate = userGames.length > 0 
+        ? userGames.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].createdAt.split('T')[0]
+        : null;
+      
+      // حساب سلسلة الانتصارات الحالية
+      let streak = 0;
+      const recentCompletedGames = completedGames
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      for (const game of recentCompletedGames) {
+        if (game.winnerTeamIndex !== null && game.winnerTeamIndex !== undefined) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      
+      // تحديد الفئة المفضلة من الألعاب
+      const categoryCount: { [key: string]: number } = {};
+      userGames.forEach(game => {
+        if (game.selectedCategories && Array.isArray(game.selectedCategories)) {
+          game.selectedCategories.forEach((catId: number) => {
+            categoryCount[catId] = (categoryCount[catId] || 0) + 1;
+          });
+        }
+      });
+      
+      let favoriteCategory = "لا توجد ألعاب بعد";
+      if (Object.keys(categoryCount).length > 0) {
+        const mostUsedCategoryId = Object.keys(categoryCount).reduce((a, b) => 
+          categoryCount[a] > categoryCount[b] ? a : b
+        );
+        
+        // تحويل معرف الفئة إلى اسم الفئة
+        const categories = await storage.getCategories();
+        const category = categories.find(cat => cat.id.toString() === mostUsedCategoryId);
+        favoriteCategory = category ? category.name : "فئة غير معروفة";
+      }
+      
       const userStats = {
-        gamesPlayed,
-        lastPlayed,
+        totalGames,
+        winRate,
+        favoriteCategory,
+        averageScore,
+        lastGameDate,
+        streak,
+        trophies: wonGames.length, // عدد الجوائز = عدد الألعاب المكسوبة
+        medals: Math.floor(wonGames.length / 2), // ميدالية لكل انتصارين
+        rank: Math.max(1, 100 - (wonGames.length * 5)), // ترتيب تقديري
+        stars: wonGames.length * 3 + streak // نجوم = انتصارات × 3 + سلسلة الانتصارات
       };
       
       res.json(userStats);
