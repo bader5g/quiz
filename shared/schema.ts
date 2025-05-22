@@ -6,14 +6,31 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  name: text("name"),
+  email: text("email"),
+  phone: text("phone"),
+  avatarUrl: text("avatar_url"),
+  role: text("role").default("user"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  name: true,
+  email: true,
+  phone: true,
+});
+
+export const updateUserSchema = createInsertSchema(users).partial().omit({
+  id: true,
+  password: true,
+  createdAt: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type User = typeof users.$inferSelect;
 
 // Game settings schema
