@@ -51,7 +51,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [_, navigate] = useLocation();
   const { toast } = useToast();
-  const { user, login, register, isLoading } = useAuth();
+  const { user, loginMutation, registerMutation, isLoading } = useAuth();
 
   // استخدام التأخير للتحقق من صحة النموذج
   const debouncedValidation = useDebouncedCallback(
@@ -76,20 +76,30 @@ export default function AuthPage() {
     },
   });
 
-  // إذا كان المستخدم مسجل الدخول بالفعل، قم بالتوجيه إلى الصفحة الرئيسية
-  if (user) {
+  // تحقق إذا كان المستخدم مسجل الدخول بالفعل ولم نكن في عملية تسجيل دخول/إنشاء حساب
+  const isProcessingAuth = loginMutation.isPending || registerMutation.isPending;
+  
+  // نتحقق من أن المستخدم مسجل ولا نقوم بأي عملية تسجيل دخول أو إنشاء حساب
+  if (user && !isLoading && !isProcessingAuth) {
     return <Redirect to="/" />;
   }
 
   // معالجة تسجيل الدخول
   async function onLoginSubmit(data: LoginFormValues) {
     try {
-      await login(data);
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: "مرحباً بك في جاوب!",
-      });
-      navigate("/");
+      const result = await loginMutation.mutateAsync(data);
+      
+      if (result) {
+        toast({
+          title: "تم تسجيل الدخول بنجاح",
+          description: "مرحباً بك في جاوب!",
+        });
+        
+        // إضافة تأخير قصير قبل التوجيه للسماح بإكمال العمليات
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
+      }
     } catch (error) {
       toast({
         title: "خطأ في تسجيل الدخول",
@@ -103,12 +113,23 @@ export default function AuthPage() {
   // معالجة إنشاء حساب جديد
   async function onRegisterSubmit(data: RegisterFormValues) {
     try {
-      await register(data);
-      toast({
-        title: "تم إنشاء الحساب بنجاح",
-        description: "مرحباً بك في جاوب!",
-      });
-      navigate("/");
+      // حذف حقل تأكيد كلمة المرور قبل الإرسال لأنه غير موجود في قاعدة البيانات
+      const { confirmPassword, ...userData } = data;
+      
+      // استخدام سلوك أكثر أمانًا للتسجيل
+      const result = await registerMutation.mutateAsync(userData);
+      
+      if (result) {
+        toast({
+          title: "تم إنشاء الحساب بنجاح",
+          description: "مرحباً بك في جاوب!",
+        });
+        
+        // إضافة تأخير قصير قبل التوجيه للسماح بإكمال العمليات
+        setTimeout(() => {
+          navigate("/");
+        }, 1000);
+      }
     } catch (error) {
       toast({
         title: "خطأ في إنشاء الحساب",
