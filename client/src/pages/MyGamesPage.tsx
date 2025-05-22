@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 // @ts-ignore - تجاهل مشكلة استيراد المكون
 import ReplayGameModal from '@/components/game/ReplayGameModal';
 import Layout from '@/components/layout/Layout';
-import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/hooks/use-auth';
 
 // تعريف نوع Category لتحويل البيانات من API
 interface GameCategory {
@@ -82,7 +82,7 @@ export default function MyGamesPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   // تحويل معرفات الفئات إلى كائنات الفئات
   const getCategoryInfo = (categoryId: number): GameCategory => {
