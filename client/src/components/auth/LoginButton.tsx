@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
 /**
@@ -8,26 +8,28 @@ import { useToast } from '@/hooks/use-toast';
  * In a real application, this would be replaced with a proper login form
  */
 export default function LoginButton() {
-  const { isAuthenticated, login, logout } = useUser();
+  const { isAuthenticated, logoutMutation, loginMutation } = useAuth();
   const { toast } = useToast();
 
-  const handleAuth = () => {
+  const handleAuth = async () => {
     if (isAuthenticated) {
-      logout();
-      toast({
-        title: "تم تسجيل الخروج",
-        description: "تم تسجيل خروجك بنجاح من حسابك"
-      });
+      await logoutMutation.mutateAsync();
     } else {
-      // Mock user data - in a real app this would come from a login form and API
-      login({
-        id: 1,
-        username: "مستخدم"
-      });
-      toast({
-        title: "تم تسجيل الدخول",
-        description: "تم تسجيل دخولك بنجاح"
-      });
+      // في تطبيق حقيقي، سيتم توجيه المستخدم إلى صفحة تسجيل الدخول
+      // هذا مجرد تنفيذ مؤقت للاختبار
+      try {
+        await loginMutation.mutateAsync({
+          username: "مستخدم",
+          password: "Password1!"
+        });
+      } catch (error) {
+        console.error("خطأ في تسجيل الدخول:", error);
+        toast({
+          title: "خطأ في تسجيل الدخول",
+          description: "حدث خطأ أثناء محاولة تسجيل الدخول",
+          variant: "destructive"
+        });
+      }
     }
   };
 
