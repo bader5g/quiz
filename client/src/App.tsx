@@ -16,7 +16,6 @@ import GameResultPage from "@/pages/GameResultPage";
 import TestDialogPage from "@/pages/TestDialogPage";
 import AdminPage from "@/pages/admin/AdminPage";
 import AuthPage from "@/pages/auth-page";
-import { UserProvider } from "./context/UserContext";
 import { SiteProvider } from "./context/SiteContext";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
@@ -53,12 +52,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <SiteProvider>
         <AuthProvider>
-          <UserProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </UserProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
         </AuthProvider>
       </SiteProvider>
     </QueryClientProvider>

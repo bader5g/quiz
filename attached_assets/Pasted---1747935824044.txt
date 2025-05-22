@@ -1,0 +1,108 @@
+الحل النهائي لمشكلة ظهور حساب خاطئ بعد تسجيل الدخول
+الهدف:
+جعل التطبيق يعتمد فقط على نظام مصادقة واحد (AuthProvider وuseAuth) وحذف أي كود أو مزودات (Provider) أو هوكس (useUser) خاصة بـ UserContext.
+هذا يضمن أن بيانات المستخدم تظل صحيحة ومحدثة دومًا في كل أجزاء التطبيق.
+
+1. حذف الـ UserProvider من التطبيق
+🔹 ملف App.tsx:
+
+يوجد سطر مثل:
+jsx
+3 lines
+Click to expand
+<UserProvider>
+...
+...
+قم بحذفه تمامًا ولا تستورد أو تستعمل أي شيء اسمه UserProvider في التطبيق.
+بعد التعديل:
+
+jsx
+14 lines
+Click to expand
+function App() {
+return (
+...
+2. استبدال كل استخدام لـ useUser بـ useAuth
+🔹 في أي صفحة أو مكون مثل الصفحة الرئيسية (Home) أو الهيدر (Header):
+
+بدّل الاستيراد:
+
+jsx
+5 lines
+Click to expand
+// قبل
+import { useUser } from "@/context/UserContext";
+...
+واستخدم فقط:
+
+js
+1 lines
+Click to expand
+const { user, isAuthenticated, logout } = useAuth();
+واحذف أي متغير مرتبط بـ useUser.
+
+3. في مكون الهيدر وHome وأي مكان آخر
+التعديل يكون كما سبق، بحيث تعتمد فقط على بيانات user و isAuthenticated من useAuth مباشرة. مثال:
+
+jsx
+1 lines
+Click to expand
+const { user, isAuthenticated, logout } = useAuth();
+واستخدم تلك المتغيرات ولا تستخدم كود UserProvider أو useUser أو متغيرات محلية من LocalStorage.
+
+4. في صفحة تسجيل الدخول/إنشاء الحساب (auth-page.tsx)
+عند النجاح في عملية تسجيل الدخول أو إنشاء الحساب (loginMutation أو registerMutation):
+نفذ التوجيه (navigate("/")) فقط بعد onSuccess.
+لا تضع أي useEffect يراقب user أو isAuthenticated ولا أي شرط تحويل تلقائي عند التواجد بالفعل في الصفحة.
+مثال:
+
+js
+8 lines
+Click to expand
+async function onLoginSubmit(data) {
+await loginMutation.mutateAsync(data, {
+...
+ونفس الشيء في onRegisterSubmit.
+
+5. تعديل دالة تسجيل الخروج في AuthProvider
+عند onSuccess في logoutMutation:
+
+js
+8 lines
+Click to expand
+onSuccess: () => {
+queryClient.setQueryData(["/api/user"], null);
+...
+6. احذف ملف UserContext.tsx بالكامل (اختياري، موصى به)
+لو لم تعد تحتاج له لأي استعمال قديم.
+
+7. مراجعة أخيرة
+ممنوع استعمال أي شيء اسمه UserProvider أو useUser في كل المشروع.
+استعمل دائمًا useAuth من AuthProvider فهو المصدر الوحيد الصحيح لحالة المستخدم وإثبات تسجيل الدخول في كل مكان.
+لو المبرمج يحتاج مثال عملي:
+الهيدر:
+
+js
+3 lines
+Click to expand
+import { useAuth } from "@/hooks/use-auth";
+const { user, isAuthenticated, logout } = useAuth();
+...
+Home:
+
+js
+3 lines
+Click to expand
+import { useAuth } from "@/hooks/use-auth";
+const { isAuthenticated, user } = useAuth();
+...
+صفحة auth-page.tsx:
+
+js
+10 lines
+Click to close
+const { loginMutation, registerMutation } = useAuth();
+...
+ملاحظات نهائية:
+أي سطر يتعامل مع useUser أو UserProvider يجب أن يزول من كل ملفات المشروع.
+

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, X } from "lucide-react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
-import { useUser } from "@/context/UserContext";
+import { useAuth } from "@/hooks/use-auth";
 import { GameSettingsModal } from "@/components/game/GameSettingsModal";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout/Layout";
@@ -41,7 +41,8 @@ interface GameSettings {
 }
 
 export default function Home() {
-  const { isAuthenticated } = useUser();
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
   const { toast } = useToast();
   const [, navigate] = useLocation();
 

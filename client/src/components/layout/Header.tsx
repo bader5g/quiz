@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
-import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/hooks/use-auth';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -45,7 +45,8 @@ interface UserCards {
 }
 
 export default function Header() {
-  const { user, isAuthenticated, logout } = useUser();
+  const { user, logoutMutation } = useAuth();
+  const isAuthenticated = !!user;
   const [, navigate] = useLocation();
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null);
@@ -213,7 +214,7 @@ export default function Header() {
                       variant="ghost" 
                       size="icon" 
                       className="rounded-full hover:bg-gray-100"
-                      onClick={() => logout()}
+                      onClick={() => logoutMutation.mutate()}
                     >
                       <LogOut size={20} className="text-red-600" />
                     </Button>
