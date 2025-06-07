@@ -192,4 +192,18 @@ export class QuestionsStorage {
       throw new Error("فشل في جلب الأسئلة العشوائية");
     }
   }
+
+  // تفعيل أو إلغاء تفعيل مجموعة من الأسئلة دفعة واحدة
+  async bulkActivateDeactivate(ids: number[], isActive: boolean): Promise<number> {
+    try {
+      const result = await db.update(questions)
+        .set({ isActive, updatedAt: new Date() })
+        .where(questions.id.in(ids))
+        .returning();
+      return result.length;
+    } catch (error) {
+      console.error("Error in bulkActivateDeactivate:", error);
+      throw new Error("فشل في تحديث حالة الأسئلة جماعيًا");
+    }
+  }
 }

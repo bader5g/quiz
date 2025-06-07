@@ -130,4 +130,11 @@ router.get("/category/:categoryId", async (req, res) => {
   }
 });
 
+// تفعيل أو إلغاء تفعيل مجموعة من الأسئلة دفعة واحدة
+router.post("/bulk-activate-deactivate", async (req, res) => {
+  // استدعاء الكنترولر الجديد
+  const { bulkActivateDeactivateQuestions } = require("../controllers/questions-controller");
+  return bulkActivateDeactivateQuestions(req, res);
+});
+
 export default router;

@@ -1058,7 +1058,7 @@ const QuestionsManagementTabbed: React.FC = () => {
             }
           }}
         >
-          <DialogContent className="max-w-2xl rtl" dir="rtl">
+          <DialogContent className="max-w-2xl rtl animate-slideInUp" dir="rtl">
             <DialogHeader className="text-right">
               <DialogTitle>
                 {editingQuestion ? 'تعديل السؤال' : 'إضافة سؤال جديد'}

@@ -231,3 +231,28 @@ export const getRandomQuestionsForGame = async (req: Request, res: Response) => 
     });
   }
 };
+
+// تفعيل أو إلغاء تفعيل مجموعة من الأسئلة دفعة واحدة
+export const bulkActivateDeactivateQuestions = async (req: Request, res: Response) => {
+  try {
+    const { ids, isActive } = req.body;
+    if (!Array.isArray(ids) || typeof isActive !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "البيانات غير صالحة"
+      });
+    }
+    const updatedCount = await questionsStorage.bulkActivateDeactivate(ids, isActive);
+    res.json({
+      success: true,
+      message: `تم تحديث حالة ${updatedCount} سؤال بنجاح`,
+      updatedCount
+    });
+  } catch (error) {
+    console.error("Error in bulkActivateDeactivateQuestions:", error);
+    res.status(500).json({
+      success: false,
+      message: "فشل في تحديث حالة الأسئلة جماعيًا"
+    });
+  }
+};
