@@ -11,16 +11,16 @@ import {
   DialogTitle,
   DialogFooter,
   DialogContent
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { useToast } from '../../hooks/use-toast';
+import { Badge } from "../ui/badge";
 import { Users, Clock, AlertCircle, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from "../ui/alert";
+import { Skeleton } from "../ui/skeleton";
 
 interface GameCategory {
   id: number;

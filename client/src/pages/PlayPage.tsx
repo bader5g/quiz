@@ -1,14 +1,14 @@
 // النسخة الكاملة من صفحة PlayPage بعد تعديل منطق التحديث عند العودة لتحديث currentTeamIndex
 import React, { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useSite } from "@/context/SiteContext";
-import { GameLoading } from "@/components/game/GameLoading";
-import { GameError } from "@/components/game/GameError";
-import { GameHeader } from "@/components/game/GameHeader";
-import { GameScoreBoard } from "@/components/game/GameScoreBoard";
-import { GameCategories } from "@/components/game/GameCategories";
+import { useToast } from '../hooks/use-toast';
+import { apiRequest } from "../lib/queryClient";
+import { useSite } from "../context/SiteContext";
+import { GameLoading } from "../components/game/GameLoading";
+import { GameError } from "../components/game/GameError";
+import { GameHeader } from "../components/game/GameHeader";
+import { GameScoreBoard } from "../components/game/GameScoreBoard";
+import { GameCategories } from "../components/game/GameCategories";
 
 interface GameTeam {
   name: string;
@@ -20,6 +20,8 @@ interface GameCategory {
   id: number;
   name: string;
   icon: string;
+  isActive?: boolean;
+  availableQuestions?: number;
 }
 
 interface GameQuestion {
@@ -186,8 +188,10 @@ export default function PlayPage() {
       });
       return;
     }
+    // استخدم النظام الجديد للفئات في الرابط
     navigate(
-      `/play/${gameId}/question/${questionId}?difficulty=${difficulty}&categoryId=${question.categoryId}`,
+      `/play/${gameId}/question/${questionId}?difficulty=${difficulty}` +
+      `&category=${question.main_category_code}&subcategory=${question.subcategory_id}`
     );
   };
 

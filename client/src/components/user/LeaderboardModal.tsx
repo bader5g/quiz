@@ -6,11 +6,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from '@/components/ui/button';
+} from "../ui/dialog";
+import { Button } from "../ui/button";
 import { Trophy } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
+import { Skeleton } from "../ui/skeleton";
+import { Badge } from "../ui/badge";
 
 interface LeaderboardItem {
   id: number;

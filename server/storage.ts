@@ -1,7 +1,8 @@
 import { 
-  users, categories, subcategories, questions, gameSettings, siteSettings, gameSessions,
+  users, categories, subcategories, gameSettings, siteSettings, gameSessions,
   type User, 
-  type InsertUser, 
+  type InsertUser,
+  type UpdateUser,
   type GameSettings, 
   type UpdateGameSettings, 
   type GameSession, 
@@ -13,13 +14,35 @@ import {
   type UpdateCategory,
   type Subcategory,
   type InsertSubcategory,
-  type UpdateSubcategory,
-  type Question,
-  type InsertQuestion,
-  type UpdateQuestion
+  type UpdateSubcategory
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, desc, asc } from "drizzle-orm";
+import { eq, sql, desc, asc, and } from "drizzle-orm";
+import {
+  getCategoriesMem,
+  getCategoryByIdMem,
+  createCategoryMem,
+  updateCategoryMem,
+  deleteCategoryMem
+} from './storage/categories';
+import {
+  getUserMem,
+  getUserByUsernameMem,
+  createUserMem,
+  updateUserMem
+} from './storage/users';
+import {
+  createGameSessionMem,
+  getUserGameSessionsMem,
+  getGameSessionMem,
+  getGameByIdMem,
+  updateGameTeamsMem,
+  updateGameCurrentTeamMem,
+  updateGameViewedQuestionsMem,
+  updateGameQuestionsMem,
+  endGameMem,
+  saveGameStateMem
+} from './storage/games';
 
 // modify the interface with any CRUD methods
 // you might need
@@ -64,16 +87,7 @@ export interface IStorage {
   getSubcategories(categoryId?: number): Promise<any[]>;
   getSubcategoryById(id: number): Promise<any | undefined>;
   createSubcategory(subcategory: any): Promise<any>;
-  updateSubcategory(id: number, subcategory: any): Promise<any>;
-  deleteSubcategory(id: number): Promise<void>;
-  
-  // Questions management
-  getQuestions(): Promise<any[]>;
-  getQuestionById(id: number): Promise<any | undefined>;
-  getQuestionsByCategory(categoryId: number, subcategoryId?: number): Promise<any[]>;
-  createQuestion(question: any): Promise<any>;
-  updateQuestion(id: number, question: any): Promise<any>;
-  deleteQuestion(id: number): Promise<void>;
+  updateSubcategory(id: number, subcategory: any): Promise<any>;    deleteSubcategory(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -83,16 +97,14 @@ export class MemStorage implements IStorage {
   private gameSessions: Map<number, GameSession>;
   private categories: Map<number, any>;
   private subcategories: Map<number, any>;
-  private questions: Map<number, any>;
   currentCategoryId: number = 100;
   currentSubcategoryId: number = 100;
-  currentQuestionId: number = 100;
   currentUserId: number = 10;
-  currentSessionId: number = 10;
-
-  constructor() {
+  currentSessionId: number = 10;  constructor() {
     this.users = new Map();
     this.gameSessions = new Map();
+    this.categories = new Map();
+    this.subcategories = new Map();
     this.currentUserId = 1;
     this.currentSessionId = 1;
     
@@ -101,9 +113,22 @@ export class MemStorage implements IStorage {
       id: 1,
       username: "أحمد",
       password: "hashed_password", // في التطبيق الحقيقي ستكون كلمة المرور مشفرة
+      name: "أحمد محمد",
+      email: null,
+      phone: null,
+      avatarUrl: null,
+      freeCards: 5,
+      paidCards: 0,
+      gamesPlayed: 0,
+      lastPlayedAt: null,
+      stars: 0,
+      level: "مبتدئ",
+      levelBadge: "🌟",
+      levelColor: "#A9A9A9",
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
-    
-    // إضافة جلسات لعب تجريبية
+      // إضافة جلسات لعب تجريبية
     // Game Session 1
     const gameSession1: GameSession = {
       id: 1,
@@ -115,7 +140,16 @@ export class MemStorage implements IStorage {
       ],
       answerTimeFirst: 30,
       answerTimeSecond: 15,
+      answerTimeThird: null,
+      answerTimeFourth: null,
       selectedCategories: [12, 13, 31, 34], // فيزياء، أحياء، تاريخ، أدب
+      currentTeam: 0,
+      questions: [],
+      viewedQuestions: [],
+      isCompleted: false,
+      winnerIndex: null,
+      completedAt: null,
+      lastUpdated: null,
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // قبل أسبوع
     };
     
@@ -131,7 +165,16 @@ export class MemStorage implements IStorage {
       ],
       answerTimeFirst: 45,
       answerTimeSecond: 20,
+      answerTimeThird: null,
+      answerTimeFourth: null,
       selectedCategories: [41, 42, 43, 44], // برمجة، شبكات، ذكاء صناعي، تطبيقات
+      currentTeam: 0,
+      questions: [],
+      viewedQuestions: [],
+      isCompleted: false,
+      winnerIndex: null,
+      completedAt: null,
+      lastUpdated: null,
       createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // قبل 3 أيام
     };
     
@@ -146,7 +189,16 @@ export class MemStorage implements IStorage {
       ],
       answerTimeFirst: 30,
       answerTimeSecond: 15,
+      answerTimeThird: null,
+      answerTimeFourth: null,
       selectedCategories: [21, 22, 23, 24], // جبر، هندسة، إحصاء، حساب
+      currentTeam: 0,
+      questions: [],
+      viewedQuestions: [],
+      isCompleted: false,
+      winnerIndex: null,
+      completedAt: null,
+      lastUpdated: null,
       createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // قبل يوم
     };
     
@@ -157,8 +209,7 @@ export class MemStorage implements IStorage {
     
     // تحديث currentSessionId
     this.currentSessionId = 4;
-    
-    // Initialize default game settings
+      // Initialize default game settings
     this.gameSettings = {
       id: 1,
       minCategories: 4,
@@ -171,9 +222,36 @@ export class MemStorage implements IStorage {
       defaultSecondAnswerTime: 15,
       allowedFirstAnswerTimes: [15, 30, 45, 60],
       allowedSecondAnswerTimes: [10, 15, 20, 30],
-      maxSubUsers: 5, // الحد الأقصى للمستخدمين الفرعيين
+      answerTimeOptions: {
+        first: {
+          default: 30,
+          options: [60, 30, 15, 10]
+        },
+        second: {
+          default: 15,
+          options: [30, 15, 10, 5]
+        },
+        third: {
+          default: 10,
+          options: [20, 10, 5]
+        },
+        fourth: {
+          default: 5,
+          options: [10, 5, 3]
+        }
+      },
+      answerTimesFor2Teams: [15, 30, 45],
+      answerTimesFor3Teams: [20, 40, 60],
+      answerTimesFor4Teams: [30, 60, 90],
+      helpToolsEnabled: true,
+      onlyEnabledForTwoTeams: true,
+      skipQuestionEnabled: true,
+      pointDeductionEnabled: true,
+      turnReverseEnabled: true,
+      maxSubUsers: 5,
       modalTitle: "إعدادات اللعبة",
       pageDescription: "اختبر معلوماتك ونافس أصدقاءك في أجواء جماعية مشوقة!",
+      minQuestionsPerCategory: 5,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -192,27 +270,55 @@ export class MemStorage implements IStorage {
 
   // User related methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    return getUserMem(this.users, id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    return getUserByUsernameMem(this.users, username);
+  }
+  async createUser(insertUser: InsertUser): Promise<User> {
+    return createUserMem(this.users, { value: this.currentUserId }, insertUser);
+  }
+  async updateUser(id: number, userData: UpdateUser): Promise<User | undefined> {
+    return updateUserMem(this.users, id, userData);
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  // Game sessions & play methods
+  async createGameSession(userId: number, session: InsertGameSession): Promise<GameSession> {
+    return createGameSessionMem(this.gameSessions, { value: this.currentSessionId }, userId, session);
   }
-  
+  async getUserGameSessions(userId: number): Promise<GameSession[]> {
+    return getUserGameSessionsMem(this.gameSessions, userId);
+  }
+  async getGameSession(id: number): Promise<GameSession | undefined> {
+    return getGameSessionMem(this.gameSessions, id);
+  }
+  async getGameById(id: number): Promise<GameSession | undefined> {
+    return getGameByIdMem(this.gameSessions, id);
+  }
+  async updateGameTeams(gameId: number, teams: any[]): Promise<void> {
+    return updateGameTeamsMem(this.gameSessions, gameId, teams);
+  }
+  async updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void> {
+    return updateGameCurrentTeamMem(this.gameSessions, gameId, teamIndex);
+  }
+  async updateGameViewedQuestions(gameId: number, viewedQuestionIds: any[]): Promise<void> {
+    return updateGameViewedQuestionsMem(this.gameSessions, gameId, viewedQuestionIds);
+  }
+  async updateGameQuestions(gameId: number, questions: any[]): Promise<void> {
+    return updateGameQuestionsMem(this.gameSessions, gameId, questions);
+  }
+  async endGame(gameId: number, winnerIndex: number): Promise<void> {
+    return endGameMem(this.gameSessions, gameId, winnerIndex);
+  }
+  async saveGameState(gameId: number): Promise<void> {
+    return saveGameStateMem(this.gameSessions, gameId);
+  }
+
   // Game settings related methods
   async getGameSettings(): Promise<GameSettings | undefined> {
     return this.gameSettings;
   }
-  
   async updateGameSettings(settings: UpdateGameSettings): Promise<GameSettings> {
     this.gameSettings = {
       ...this.gameSettings,
@@ -221,12 +327,11 @@ export class MemStorage implements IStorage {
     };
     return this.gameSettings;
   }
-  
+
   // Site settings related methods
   async getSiteSettings(): Promise<SiteSettings | undefined> {
     return this.siteSettings;
   }
-  
   async updateSiteSettings(settings: UpdateSiteSettings): Promise<SiteSettings> {
     this.siteSettings = {
       ...this.siteSettings,
@@ -235,170 +340,68 @@ export class MemStorage implements IStorage {
     };
     return this.siteSettings;
   }
-  
-  // Game sessions related methods
-  async createGameSession(userId: number, session: InsertGameSession): Promise<GameSession> {
-    const id = this.currentSessionId++;
-    const newSession: GameSession = {
-      id,
-      userId,
-      ...session,
-      createdAt: new Date().toISOString()
-    };
-    this.gameSessions.set(id, newSession);
-    return newSession;
+
+  // Categories management methods
+  async getCategories(): Promise<any[]> {
+    return getCategoriesMem(this.categories);
   }
-  
-  async getUserGameSessions(userId: number): Promise<GameSession[]> {
-    return Array.from(this.gameSessions.values()).filter(
-      (session) => session.userId === userId
-    );
+  async getCategoryById(id: number): Promise<any | undefined> {
+    return getCategoryByIdMem(this.categories, id);
   }
-  
-  async getGameSession(id: number): Promise<GameSession | undefined> {
-    return this.gameSessions.get(id);
+  async createCategory(category: any): Promise<any> {
+    return createCategoryMem(this.categories, { value: this.currentCategoryId }, category);
+  }
+  async updateCategory(id: number, category: any): Promise<any> {
+    return updateCategoryMem(this.categories, id, category);
+  }
+  async deleteCategory(id: number): Promise<void> {
+    return deleteCategoryMem(this.categories, id);
   }
 
-  // Implement Game play methods
-  async getGameById(id: number): Promise<GameSession | undefined> {
-    return this.getGameSession(id);
-  }
-
-  async updateGameTeams(gameId: number, teams: any[]): Promise<void> {
-    const game = await this.getGameSession(gameId);
-    if (game) {
-      console.log("تحديث فرق اللعبة:", { 
-        قبل: JSON.stringify(game.teams),
-        بعد: JSON.stringify(teams)
-      });
-      
-      // نسخ عميق لفرق اللعبة لتجنب التعديل المباشر على الكائن الأصلي
-      const updatedTeams = JSON.parse(JSON.stringify(teams));
-      
-      // التأكد من أن جميع الفرق لديها قيمة score
-      updatedTeams.forEach((team: any, index: number) => {
-        if (typeof team.score !== 'number') {
-          team.score = 0;
-        }
-      });
-      
-      const updatedGame = { 
-        ...game, 
-        teams: updatedTeams 
-      };
-      
-      this.gameSessions.set(gameId, updatedGame);
-      console.log("تم تحديث فرق اللعبة بنجاح:", updatedGame.teams);
-    } else {
-      console.error("لم يتم العثور على اللعبة رقم", gameId);
+  // Subcategories management methods
+  async getSubcategories(categoryId?: number): Promise<any[]> {
+    if (categoryId) {
+      return Array.from(this.subcategories.values()).filter((s: any) => s.parentId === categoryId);
     }
+    return Array.from(this.subcategories.values());
   }
-
-  async updateGameCurrentTeam(gameId: number, teamIndex: number): Promise<void> {
-    const game = await this.getGameSession(gameId);
-    if (game) {
-      const updatedGame = { ...game, currentTeamIndex: teamIndex };
-      this.gameSessions.set(gameId, updatedGame);
-    }
+  async getSubcategoryById(id: number): Promise<any | undefined> {
+    return this.subcategories.get(id);
   }
-
-  async updateGameViewedQuestions(gameId: number, viewedQuestionIds: any[]): Promise<void> {
-    const game = await this.getGameSession(gameId);
-    if (game) {
-      // تحديث قائمة الأسئلة التي تم عرضها
-      const updatedGame = { 
-        ...game, 
-        viewedQuestionIds 
-      };
-      this.gameSessions.set(gameId, updatedGame);
-    }
+  async createSubcategory(subcategory: any): Promise<any> {
+    const newSubcategory = { ...subcategory, id: this.currentSubcategoryId++ };
+    this.subcategories.set(newSubcategory.id, newSubcategory);
+    return newSubcategory;
   }
-
-  async updateGameQuestions(gameId: number, questions: any[]): Promise<void> {
-    const game = await this.getGameSession(gameId);
-    if (game) {
-      // ندمج الأسئلة مع الأسئلة الموجودة حاليًا في اللعبة
-      // نخزن الأسئلة المجاب عليها بخاصية answeredQuestions
-      const answeredQuestions = game.answeredQuestions || [];
-      
-      // إضافة الأسئلة الجديدة المجاب عليها
-      questions.forEach(q => {
-        if (q.isAnswered) {
-          // إذا لم يكن السؤال موجود بالفعل في القائمة، نضيفه
-          const questionKey = `${q.categoryId}-${q.difficulty}-${q.teamIndex}-${q.questionId}`;
-          if (!answeredQuestions.some(aq => aq === questionKey)) {
-            answeredQuestions.push(questionKey);
-          }
-        }
-      });
-      
-      // تحديث اللعبة بالأسئلة المجاب عليها
-      const updatedGame = { 
-        ...game, 
-        answeredQuestions 
-      };
-      this.gameSessions.set(gameId, updatedGame);
+  async updateSubcategory(id: number, subcategory: any): Promise<any> {
+    const existing = this.subcategories.get(id);
+    if (existing) {
+      const updated = { ...existing, ...subcategory };
+      this.subcategories.set(id, updated);
+      return updated;
     }
+    throw new Error("Subcategory not found");
   }
-
-  async endGame(gameId: number, winnerIndex: number): Promise<void> {
-    const game = await this.getGameSession(gameId);
-    if (game) {
-      const updatedGame = { 
-        ...game, 
-        isCompleted: true,
-        winnerIndex
-      };
-      this.gameSessions.set(gameId, updatedGame);
-    }
-  }
-
-  async saveGameState(gameId: number): Promise<void> {
-    const game = await this.getGameSession(gameId);
-    if (game) {
-      const updatedGame = { 
-        ...game, 
-        isSaved: true
-      };
-      this.gameSessions.set(gameId, updatedGame);
-    }
+  async deleteSubcategory(id: number): Promise<void> {    this.subcategories.delete(id);
   }
 }
 
 export class DatabaseStorage implements IStorage {
   constructor() {}
-
   // User related methods
   async getUser(id: number): Promise<User | undefined> {
     try {
-      // للتجربة: إنشاء مستخدم وهمي للمعرّف 2
-      if (id === 2) {
-        return {
-          id: 2,
-          username: "user_test",
-          password: "password_hash"
-        };
-      }
-      
-      const [user] = await db.select({
-        id: users.id,
-        username: users.username,
-        password: users.password
-      }).from(users).where(eq(users.id, id));
+      const [user] = await db.select().from(users).where(eq(users.id, id));
       return user;
     } catch (error) {
       console.error("Error getting user:", error);
       return undefined;
     }
   }
-
+  
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const [user] = await db.select({
-        id: users.id,
-        username: users.username,
-        password: users.password
-      }).from(users).where(eq(users.username, username));
+      const [user] = await db.select().from(users).where(eq(users.username, username));
       return user;
     } catch (error) {
       console.error("Error getting user by username:", error);
@@ -406,30 +409,25 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async updateUser(id: number, userData: any): Promise<User | undefined> {
+  async updateUser(id: number, userData: UpdateUser): Promise<User | undefined> {
     try {
       const [updatedUser] = await db.update(users)
-        .set(userData)
+        .set({
+          ...userData,
+          updatedAt: new Date()
+        })
         .where(eq(users.id, id))
-        .returning({
-          id: users.id,
-          username: users.username,
-          password: users.password
-        });
+        .returning();
       return updatedUser;
     } catch (error) {
       console.error("Error updating user:", error);
       return undefined;
     }
   }
-
+  
   async createUser(user: InsertUser): Promise<User> {
     try {
-      const [createdUser] = await db.insert(users).values(user).returning({
-        id: users.id,
-        username: users.username,
-        password: users.password
-      });
+      const [createdUser] = await db.insert(users).values(user).returning();
       return createdUser;
     } catch (error) {
       console.error("Error creating user:", error);
@@ -627,101 +625,11 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-
-  // Questions related methods
-  async getQuestions(): Promise<any[]> {
-    try {
-      const questionsData = await db.select().from(questions);
-      return questionsData;
-    } catch (error) {
-      console.error("Error getting questions:", error);
-      return [];
-    }
-  }
-
-  async getQuestionById(id: number): Promise<any | undefined> {
-    try {
-      const [question] = await db.select().from(questions).where(eq(questions.id, id));
-      return question;
-    } catch (error) {
-      console.error("Error getting question by ID:", error);
-      return undefined;
-    }
-  }
-
-  async getQuestionsByCategory(categoryId: number, subcategoryId?: number): Promise<any[]> {
-    try {
-      let query = db.select().from(questions).where(eq(questions.categoryId, categoryId));
-      if (subcategoryId) {
-        query = query.where(eq(questions.subcategoryId, subcategoryId));
-      }
-      return await query;
-    } catch (error) {
-      console.error("Error getting questions by category:", error);
-      return [];
-    }
-  }
-
-  async createQuestion(question: InsertQuestion): Promise<Question> {
-    try {
-      // نتعامل مع الحقول ذات الصلة فقط ونترك Drizzle يتعامل مع حقول التاريخ وحقل usageCount
-      const [createdQuestion] = await db.insert(questions).values({
-        text: question.text,
-        answer: question.answer,
-        categoryId: question.categoryId,
-        subcategoryId: question.subcategoryId,
-        difficulty: question.difficulty,
-        imageUrl: question.imageUrl,
-        videoUrl: question.videoUrl,
-        isActive: question.isActive !== undefined ? question.isActive : true,
-        tags: question.tags
-      }).returning();
-      return createdQuestion;
-    } catch (error) {
-      console.error("Error creating question:", error);
-      throw error;
-    }
-  }
-
-  async updateQuestion(id: number, question: UpdateQuestion): Promise<Question> {
-    try {
-      // تحديث الحقول المحددة فقط دون التدخل في حقول التاريخ
-      const [updatedQuestion] = await db
-        .update(questions)
-        .set({
-          text: question.text,
-          answer: question.answer,
-          categoryId: question.categoryId,
-          subcategoryId: question.subcategoryId,
-          difficulty: question.difficulty,
-          imageUrl: question.imageUrl,
-          videoUrl: question.videoUrl,
-          isActive: question.isActive,
-          tags: question.tags,
-          usageCount: question.usageCount
-        })
-        .where(eq(questions.id, id))
-        .returning();
-      return updatedQuestion;
-    } catch (error) {
-      console.error("Error updating question:", error);
-      throw error;
-    }
-  }
-
-  async deleteQuestion(id: number): Promise<void> {
-    try {
-      await db.delete(questions).where(eq(questions.id, id));
-    } catch (error) {
-      console.error("Error deleting question:", error);
-      throw error;
-    }
-  }
-
   // Game sessions related methods
   async createGameSession(userId: number, session: InsertGameSession): Promise<GameSession> {
     try {
       console.log("تم إنشاء جلسة لعبة جديدة:", session);
+      console.log("selectedCategories being saved:", session.selectedCategories);
       
       // استخدام واجهة Drizzle مباشرة بدلاً من SQL
       const [gameSession] = await db
@@ -732,12 +640,13 @@ export class DatabaseStorage implements IStorage {
           teams: session.teams,
           answerTimeFirst: session.answerTimeFirst,
           answerTimeSecond: session.answerTimeSecond,
-          selectedCategories: session.selectedCategories,
+          selectedCategories: session.selectedCategories, // يجب أن يحفظ في selected_categories تلقائياً
           createdAt: new Date().toISOString()
         })
         .returning();
       
       console.log("تم حفظ جلسة اللعبة في قاعدة البيانات:", gameSession);
+      console.log("selectedCategories after save:", gameSession.selectedCategories);
       
       // وضع أسئلة اللعبة في ذاكرة المستخدم لاستعادتها فيما بعد
       const gameWithQuestions = {
@@ -748,7 +657,6 @@ export class DatabaseStorage implements IStorage {
       return gameWithQuestions;
     } catch (error) {
       console.error("خطأ في إنشاء جلسة اللعبة:", error);
-      
       // إذا كان هناك خطأ، نقوم بإنشاء لعبة بشكل مباشر في الذاكرة
       const tempGame: GameSession = {
         id: Math.floor(Math.random() * 1000) + 1, // رقم عشوائي للاختبار
@@ -757,7 +665,16 @@ export class DatabaseStorage implements IStorage {
         teams: session.teams,
         answerTimeFirst: session.answerTimeFirst,
         answerTimeSecond: session.answerTimeSecond,
+        answerTimeThird: null,
+        answerTimeFourth: null,
         selectedCategories: session.selectedCategories,
+        currentTeam: 0,
+        questions: [],
+        viewedQuestions: [],
+        isCompleted: false,
+        winnerIndex: null,
+        completedAt: null,
+        lastUpdated: null,
         createdAt: new Date().toISOString()
       };
       
@@ -877,8 +794,7 @@ export class DatabaseStorage implements IStorage {
           lastUpdated: new Date().toISOString()
         })
         .where(eq(gameSessions.id, gameId));
-    } catch (error) {
-      console.error("Error saving game state:", error);
+    } catch (error) {      console.error("Error saving game state:", error);
       throw error;
     }
   }

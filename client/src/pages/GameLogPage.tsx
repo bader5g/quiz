@@ -8,36 +8,28 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '../components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Skeleton } from '../components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { useToast } from '../hooks/use-toast';
+import Layout from '../components/layout/Layout';
 import { 
-  CalendarIcon, 
-  ArrowLeft, 
-  Users, 
-  Eye, 
   Award, 
+  Clock, 
   CheckCircle2, 
-  XCircle,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Medal,
-  Trophy
+  XCircle, 
+  ArrowLeft, 
+  Trophy, 
+  Medal, 
+  Eye, 
+  ChevronsLeft, 
+  ChevronLeft, 
+  ChevronRight, 
+  ChevronsRight 
 } from 'lucide-react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import Layout from '@/components/layout/Layout';
 
 interface GameCategory {
   id: number;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from "../ui/button";
+import { useAuth } from "../../hooks/use-auth";
+import { useToast } from '../../hooks/use-toast';
 
 /**
  * A mock login button for development purposes

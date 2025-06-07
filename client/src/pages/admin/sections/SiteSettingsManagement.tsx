@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '../../../hooks/use-toast';
+import { apiRequest } from "../../../lib/queryClient";
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +12,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "../../../components/ui/card";
 import {
   Form,
   FormControl,
@@ -21,7 +21,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "../../../components/ui/form";
 import {
   Dialog,
   DialogContent,
@@ -29,28 +29,28 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "../../../components/ui/dialog";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "../../../components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { useSite } from '@/context/SiteContext';
+} from "../../../components/ui/select";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Textarea } from "../../../components/ui/textarea";
+import { Separator } from "../../../components/ui/separator";
+import { Switch } from "../../../components/ui/switch";
+import { Label } from "../../../components/ui/label";
+import { Badge } from "../../../components/ui/badge";
+import { useSite } from "../../../context/SiteContext";
 import { Loader2, Upload, Image as ImageIcon, PaintBucket, Link as LinkIcon, Save, Plus, Trash2, Globe, Edit } from 'lucide-react';
 
 // مخطط التحقق من إعدادات الموقع
@@ -102,9 +102,8 @@ export default function SiteSettingsManagement() {
   const { siteSettings } = useSite();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
-
   // نموذج إعدادات الموقع العامة
-  const form = useForm<SiteSettingsFormValues>({
+  const form = useForm({
     resolver: zodResolver(siteSettingsFormSchema),
     defaultValues: {
       appName: '',
@@ -118,9 +117,8 @@ export default function SiteSettingsManagement() {
       rtlMode: true,
     },
   });
-
   // نموذج روابط التذييل
-  const footerLinkForm = useForm<FooterLink>({
+  const footerLinkForm = useForm({
     resolver: zodResolver(footerLinkSchema),
     defaultValues: {
       label: '',

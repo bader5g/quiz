@@ -6,18 +6,18 @@ import {
   DialogDescription,
   DialogFooter,
   DialogContent,
-} from "@/components/ui/dialog";
-import { ModalDialogContent } from "@/components/ui/modal-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "../../components/ui/dialog";
+import { ModalDialogContent } from "../../components/ui/modal-dialog";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../../components/ui/select";
 import {
   Form,
   FormControl,
@@ -26,11 +26,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "../../components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 import { useLocation } from "wouter";
 import axios from "axios";
 
@@ -301,18 +301,7 @@ export function GameSettingsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="hidden"
-        aria-describedby="game-settings-description"
-      >
-        <span id="game-settings-description" className="sr-only">
-          إعدادات اللعبة
-        </span>
-      </DialogContent>
-      <ModalDialogContent
-        className="w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto"
-        dir="rtl"
-      >
+      <DialogContent className="w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center mb-4">
             {settings.modalTitle}
@@ -542,7 +531,7 @@ export function GameSettingsModal({
             </DialogFooter>
           </form>
         </Form>
-      </ModalDialogContent>
+      </DialogContent>
     </Dialog>
   );
 }

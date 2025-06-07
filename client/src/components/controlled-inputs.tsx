@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import { Input } from '@/components/ui/input';
+import { Input } from "./ui/input";
 import { ControllerRenderProps } from 'react-hook-form';
 
 // مكون إدخال عددي متحكم به لمنع تحذيرات uncontrolled/controlled

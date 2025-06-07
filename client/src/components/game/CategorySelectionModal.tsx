@@ -5,10 +5,10 @@ import {
   DialogTitle,
   DialogFooter,
   DialogContent
-} from '@/components/ui/dialog';
-import { ModalDialogContent } from '@/components/ui/modal-dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+} from "../ui/dialog";
+import { ModalDialogContent } from "../ui/modal-dialog";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 
 interface CategoryChild {
   id: number;

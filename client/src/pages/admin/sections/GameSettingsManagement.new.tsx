@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useToast } from '../../../hooks/use-toast';
+import { apiRequest, queryClient } from "../../../lib/queryClient";
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +12,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "../../../components/ui/card";
 import {
   Form,
   FormControl,
@@ -21,19 +21,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "../../../components/ui/form";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "../../../components/ui/tabs";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Separator } from "../../../components/ui/separator";
+import { Switch } from "../../../components/ui/switch";
+import { Slider } from "../../../components/ui/slider";
+import { Checkbox } from "../../../components/ui/checkbox";
 import { Loader2, Settings, Users, Timer, HelpCircle, FileText } from 'lucide-react';
 
 // مخطط التحقق من الإدخالات الأساسية
@@ -46,44 +46,44 @@ const gameSettingsBaseSchema = z.object({
   maxTeamNameLength: z.coerce.number().min(3).max(50),
   defaultFirstAnswerTime: z.coerce.number().min(10).max(120),
   defaultSecondAnswerTime: z.coerce.number().min(5).max(60),
-  minQuestionsPerCategory: z.coerce.number().min(1).max(20).optional(),
+  minQuestionsPerCategory: z.coerce.number().min(1).max(20),
   modalTitle: z.string().min(1, { message: 'يجب إدخال عنوان النافذة' }),
   pageDescription: z.string().min(1, { message: 'يجب إدخال وصف الصفحة' }),
 });
 
 // مخطط التحقق من إدخالات التوقيت
 const gameSettingsTimerSchema = z.object({
-  timerEnabled: z.boolean().default(true),
-  showTimerAnimation: z.boolean().default(true),
-  pauseTimerOnQuestionView: z.boolean().default(false),
-  enableTimerSounds: z.boolean().default(true),
+  timerEnabled: z.boolean(),
+  showTimerAnimation: z.boolean(),
+  pauseTimerOnQuestionView: z.boolean(),
+  enableTimerSounds: z.boolean(),
   lowTimeThreshold: z.coerce.number().min(3).max(20),
-  timerDisplayFormat: z.enum(['digital', 'analog', 'bar']).default('digital'),
+  timerDisplayFormat: z.enum(['digital', 'analog', 'bar']),
 });
 
 // مخطط التحقق من إدخالات وسائل المساعدة
 const gameSettingsHelpToolsSchema = z.object({
-  helpToolsEnabled: z.boolean().default(true),
-  onlyEnabledForTwoTeams: z.boolean().default(true),
-  skipQuestionEnabled: z.boolean().default(true),
+  helpToolsEnabled: z.boolean(),
+  onlyEnabledForTwoTeams: z.boolean(),
+  skipQuestionEnabled: z.boolean(),
   skipQuestionCount: z.coerce.number().min(0).max(10),
-  pointDeductionEnabled: z.boolean().default(true),
+  pointDeductionEnabled: z.boolean(),
   pointDeductionCount: z.coerce.number().min(0).max(10),
   pointDeductionAmount: z.coerce.number().min(0).max(100),
-  turnReverseEnabled: z.boolean().default(true),
+  turnReverseEnabled: z.boolean(),
   turnReverseCount: z.coerce.number().min(0).max(10),
 });
 
 // مخطط التحقق من إدخالات النتائج والسجل
 const gameSettingsResultsSchema = z.object({
-  showFinalResults: z.boolean().default(true),
-  enableConfetti: z.boolean().default(true),
-  showAnswerStats: z.boolean().default(true),
-  showGameLog: z.boolean().default(true),
-  gameLogVisibility: z.enum(['all', 'judge', 'none']).default('all'),
-  showTeamScoresDuringGame: z.boolean().default(true),
-  showWinningTeamAnimation: z.boolean().default(true),
-  saveGameHistory: z.boolean().default(true),
+  showFinalResults: z.boolean(),
+  enableConfetti: z.boolean(),
+  showAnswerStats: z.boolean(),
+  showGameLog: z.boolean(),
+  gameLogVisibility: z.enum(['all', 'judge', 'none']),
+  showTeamScoresDuringGame: z.boolean(),
+  showWinningTeamAnimation: z.boolean(),
+  saveGameHistory: z.boolean(),
   historyRetentionDays: z.coerce.number().min(1).max(365),
 });
 

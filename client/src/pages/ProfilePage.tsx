@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
-import Layout from "@/components/layout/Layout";
+import Layout from "../components/layout/Layout";
 import { useQuery } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import EditModal from "@/components/profile/EditModal";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { getQueryFn } from "../lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Skeleton } from "../components/ui/skeleton";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { useAuth } from "../hooks/use-auth";
+import EditModal from "../components/profile/EditModal";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { 
   UserIcon, 
   Calendar, 
@@ -29,6 +28,7 @@ import {
   XCircle,
   Star
 } from "lucide-react";
+import { useToast } from '../hooks/use-toast';
 
 interface LinkedUser {
   id: number;
@@ -554,7 +554,7 @@ export default function ProfilePage() {
                 <div className="flex flex-col items-center">
                   <div className="relative group">
                     <Avatar className="h-24 w-24 border-2 border-primary">
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarImage src={user.avatarUrl ?? undefined} alt={user.name ?? undefined} />
                       <AvatarFallback>{user.name?.charAt(0) || user.username?.charAt(0) || <UserIcon />}</AvatarFallback>
                     </Avatar>
                     <button 
@@ -726,7 +726,7 @@ export default function ProfilePage() {
                               <div className="flex items-center gap-3">
                                 <div className="relative">
                                   <Avatar className="h-11 w-11 border border-muted">
-                                    <AvatarImage src={linkedUser.avatarUrl} alt={linkedUser.name} />
+                                    <AvatarImage src={linkedUser.avatarUrl ?? undefined} alt={linkedUser.name ?? undefined} />
                                     <AvatarFallback>
                                       {linkedUser.name?.charAt(0) || linkedUser.username?.charAt(0) || <UserIcon />}
                                     </AvatarFallback>
@@ -889,7 +889,13 @@ export default function ProfilePage() {
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         editType={editType}
-        user={user}
+        user={user ? {
+          ...user,
+          name: user.name ?? undefined,
+          email: user.email ?? undefined,
+          phone: user.phone ?? undefined,
+          avatarUrl: user.avatarUrl ?? undefined
+        } : null}
         onSave={handleSaveProfileChanges}
         phonePrefix={phonePrefix}
       />

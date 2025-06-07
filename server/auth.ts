@@ -34,7 +34,7 @@ export function setupAuth(app: Express) {
   const PostgresSessionStore = connectPg(session);
   
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.DATABASE_URL || "jaweb-session-secret", // استخدام DATABASE_URL كسر للجلسة بشكل مؤقت
+    secret: process.env.SESSION_SECRET || "jaweb-session-secret", // استخدام SESSION_SECRET للجلسة بدلاً من DATABASE_URL
     resave: false,
     saveUninitialized: false,
     store: new PostgresSessionStore({

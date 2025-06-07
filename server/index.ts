@@ -2,8 +2,23 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
+import { webSocketManager } from "./websocket";
+import dotenv from 'dotenv';
+import cors from 'cors';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
+
+// إضافة CORS قبل باقي middleware
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5000', 'file://'], 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -43,6 +58,15 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Initialize WebSocket server
+  webSocketManager.initialize(server);
+  
+  // Start mock activity generator for testing (every 10 seconds)
+  if (app.get("env") === "development") {
+    webSocketManager.startMockActivityGenerator(10000);
+    log("Mock activity generator started for development");
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -63,7 +87,7 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
   server.listen({
     port,
     host: "0.0.0.0",

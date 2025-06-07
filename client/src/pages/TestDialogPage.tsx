@@ -1,6 +1,6 @@
 import { useState } from "react";
-import Layout from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
+// import Layout from "./components/layout/Layout";
+import { Button } from "../components/ui/button";
 import { 
   Dialog, 
   DialogContent, 
@@ -8,15 +8,17 @@ import {
   DialogTitle, 
   DialogFooter,
   DialogPortal  
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+
+// تم تعطيل الاستيراد المفقود مؤقتًا لحل مشكلة البناء
 
 export default function TestDialogPage() {
   const [open, setOpen] = useState(false);
 
   return (
-    <Layout>
+    <>
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-bold mb-4">اختبار النافذة المنبثقة</h1>
         
@@ -54,6 +56,6 @@ export default function TestDialogPage() {
           </DialogPortal>
         </Dialog>
       </div>
-    </Layout>
+    </>
   );
 }

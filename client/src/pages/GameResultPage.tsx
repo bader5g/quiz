@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '../hooks/use-toast';
 import { Loader2, Trophy, Home, RotateCcw } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { apiRequest } from '../lib/queryClient';
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from '../components/ui/button';
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from '../components/ui/badge';
+import { Separator } from '../components/ui/separator';
 import confetti from 'canvas-confetti';
 
 interface GameTeam {

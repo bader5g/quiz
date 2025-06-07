@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from "../ui/skeleton";
+import { Card, CardContent } from "../ui/card";
 import { Trophy, Medal, Award, Star } from 'lucide-react';
 
 interface UserStats {

@@ -1,78 +1,94 @@
 import { Request, Response } from "express";
 import { storage } from "./storage";
 import { GameSession } from "@shared/schema";
+import * as util from 'util'; // إضافة util للطباعة المتقدمة
+
+function parseSelectedCategories(rawCategories: any): number[] {
+  let selectedCategories: number[] = [];
+  try {
+    if (typeof rawCategories === 'string') {
+      // دعم تنسيقات {1,2,3} أو [1,2,3] أو JSON
+      const match = rawCategories.match(/^\{(.+)\}$/) || rawCategories.match(/^\[(.+)\]$/);
+      if (match) {
+        selectedCategories = match[1].split(',').map(x => Number(x.trim()));
+      } else {
+        selectedCategories = JSON.parse(rawCategories);
+      }
+    } else if (Array.isArray(rawCategories)) {
+      selectedCategories = rawCategories.map(Number);
+    } else if (rawCategories && typeof rawCategories === 'object') {
+      selectedCategories = Object.values(rawCategories).filter(v => typeof v === 'number' || !isNaN(Number(v))).map(Number);
+    }
+    selectedCategories = selectedCategories.map((id: any) => Number(id)).filter((id: any) => !isNaN(id));
+  } catch {
+    selectedCategories = [];
+  }
+  return selectedCategories;
+}
+
+function getSelectedCategoriesCompat(game: any) {
+  return game.selected_categories !== undefined
+    ? game.selected_categories
+    : game.selectedCategories;
+}
 
 export async function getGameDetails(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
-    console.log("Getting game details for ID:", gameId);
-    
     const game = await storage.getGameById(gameId);
-    console.log("Game data retrieved:", JSON.stringify(game, null, 2));
-
     if (!game) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
-
-    // تحويل البيانات المخزنة في قاعدة البيانات إلى الشكل المطلوب
-    // التعامل مع البيانات المخزنة في حقول نصية JSON
     let teams = [];
     try {
       teams = typeof game.teams === 'string' ? JSON.parse(game.teams) : (Array.isArray(game.teams) ? game.teams : []);
-    } catch (e) {
-      console.error("Error parsing teams:", e);
+    } catch {
       teams = [];
     }
-
-    let selectedCategories = [];
-    try {
-      selectedCategories = typeof game.selectedCategories === 'string' ? 
-        JSON.parse(game.selectedCategories) : 
-        (Array.isArray(game.selectedCategories) ? game.selectedCategories : []);
-    } catch (e) {
-      console.error("Error parsing selectedCategories:", e);
-      selectedCategories = [];
-    }
-
-    // تهيئة الأسئلة
-    const generatedQuestions = generateGameQuestions(game);
-    console.log("Generated questions:", generatedQuestions.length);
-
-    // جلب answerTimes بشكل صحيح
+    console.log('selectedCategories (raw):', getSelectedCategoriesCompat(game));
+    let selectedCategories: number[] = parseSelectedCategories(getSelectedCategoriesCompat(game));
+    console.log('selectedCategories (parsed):', selectedCategories);
+    console.log('selectedCategories (from DB):', game.selectedCategories, '=> parsed:', selectedCategories);
+    const generatedQuestions = await generateGameQuestions(game, selectedCategories, teams);
     const answerTimes = [
       game.answerTimeFirst || 30,
       game.answerTimeSecond || 15,
     ];
-
+    const categoriesWithDetails = await Promise.all(
+      selectedCategories.map(async (catId: number) => {
+        const cat = await storage.getCategoryById(catId);
+        let isActive = true;
+        let availableQuestions = 0;
+        if (cat) {
+          isActive = cat.isActive !== undefined ? cat.isActive : true;
+          const questions = await storage.getQuestionsByCategory(catId);
+          availableQuestions = Array.isArray(questions) ? questions.filter((q: any) => q.isActive !== false).length : 0;
+        }
+        return {
+          id: catId,
+          name: cat ? cat.name : await getCategoryName(catId),
+          icon: cat ? cat.icon : await getCategoryIcon(catId),
+          imageUrl: cat ? cat.imageUrl : undefined,
+          isActive,
+          availableQuestions,
+        };
+      })
+    );
     const gameDetails = {
       id: game.id,
       name: game.gameName,
-      teams: teams.map((team, index) => ({
+      teams: teams.map((team: any, index: number) => ({
         name: team.name,
         score: team.score || 0,
         color: getTeamColor(index),
       })),
-      categories: selectedCategories.map((catId) => ({
-        id: catId,
-        name: getCategoryName(catId),
-        icon: getCategoryIcon(catId),
-      })),
+      categories: categoriesWithDetails,
       questions: generatedQuestions,
-      currentTeamIndex: 0, // البدء دائمًا بالفريق الأول
+      currentTeamIndex: 0,
       answerTimes,
     };
-
-    console.log("Sending game details:", JSON.stringify({
-      id: gameDetails.id,
-      name: gameDetails.name,
-      teamsCount: gameDetails.teams.length,
-      questionsCount: gameDetails.questions.length,
-      categoriesCount: gameDetails.categories.length,
-    }));
-    
     res.status(200).json(gameDetails);
   } catch (error) {
-    console.error("Error fetching game details:", error);
     res.status(500).json({ error: "حدث خطأ أثناء محاولة جلب تفاصيل اللعبة" });
   }
 }
@@ -81,58 +97,78 @@ export async function getQuestionDetails(req: Request, res: Response) {
   try {
     const gameId = parseInt(req.params.gameId);
     const questionId = parseInt(req.params.questionId);
-
+    // استخراج المعاملات من query parameters
+    const requestedDifficulty = parseInt(req.query.difficulty as string) || 1;
+    const requestedCategoryId = req.query.categoryId ? parseInt(req.query.categoryId as string) : null;
     const game = await storage.getGameById(gameId);
-    console.log("game object in getQuestionDetails:", game);
-
+    console.log("game object in getQuestionDetails:", game, "requested difficulty:", requestedDifficulty, "requested categoryId:", requestedCategoryId);
     if (!game) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
-
-    const isImageQuestion = questionId % 3 === 1;
-    const isVideoQuestion = questionId % 3 === 2;
-
+    // استخراج الفئات المختارة بنفس منطق موحد
+    let selectedCategories: number[] = parseSelectedCategories(getSelectedCategoriesCompat(game));
+    const targetCategoryId = requestedCategoryId || (selectedCategories.length > 0 ? selectedCategories[0] : 1);
+    // الحصول على الأسئلة المعروضة مسبقاً لاستثنائها
+    let excludedQuestionIds: number[] = [];
+    try {
+      if (game.viewedQuestions) {
+        const viewedQuestionsArray = typeof game.viewedQuestions === 'string' ? 
+          JSON.parse(game.viewedQuestions) : 
+          (Array.isArray(game.viewedQuestions) ? game.viewedQuestions : []);
+        excludedQuestionIds = viewedQuestionsArray.map((id: any) => parseInt(id)).filter((id: number) => !isNaN(id));
+      }
+    } catch (e) {
+      console.error("Error parsing viewedQuestions:", e);
+      excludedQuestionIds = [];
+    }
+    // جلب سؤال حقيقي من قاعدة البيانات
+    const dbQuestion = await storage.getRandomQuestionByCategoryAndDifficulty(
+      targetCategoryId, 
+      requestedDifficulty, 
+      excludedQuestionIds
+    );
+    if (!dbQuestion) {
+      console.error(`No question found for category ${targetCategoryId}, difficulty ${requestedDifficulty}`);
+      return res.status(404).json({ 
+        error: "لا توجد أسئلة متاحة في هذه الفئة ومستوى الصعوبة المحدد. يرجى إضافة أسئلة من لوحة الإدارة أولاً." 
+      });
+    }
+    // إنشاء بيانات السؤال الحقيقي
     const question = {
-      id: questionId,
-      text: isImageQuestion
-        ? `ما اسم هذا المعلم السياحي الشهير؟`
-        : isVideoQuestion
-          ? `ما اسم هذه الرقصة التقليدية؟`
-          : `هذا هو السؤال رقم ${questionId} من الفئة ${getCategoryName(game.selectedCategories[0])}`,
-      answer: isImageQuestion
-        ? `برج إيفل`
-        : isVideoQuestion
-          ? `رقصة التنورة`
-          : `هذه هي الإجابة للسؤال رقم ${questionId}`,
-      difficulty: Math.ceil(Math.random() * 3) as 1 | 2 | 3,
-      categoryId: game.selectedCategories[0],
-      categoryName: getCategoryName(game.selectedCategories[0]),
-      categoryIcon: getCategoryIcon(game.selectedCategories[0]),
-      ...(isImageQuestion && {
+      id: dbQuestion.id,
+      text: dbQuestion.text,
+      answer: dbQuestion.answer,
+      difficulty: dbQuestion.difficulty,
+      categoryId: dbQuestion.categoryId,
+      categoryName: await getCategoryName(dbQuestion.categoryId),
+      categoryIcon: await getCategoryIcon(dbQuestion.categoryId),
+      ...(dbQuestion.imageUrl && {
         mediaType: "image" as const,
-        imageUrl:
-          "https://images.unsplash.com/photo-1543349689-9a4d426bee8e?q=80&w=1000&auto=format&fit=crop",
+        imageUrl: dbQuestion.imageUrl,
       }),
-      ...(isVideoQuestion && {
+      ...(dbQuestion.videoUrl && {
         mediaType: "video" as const,
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+        videoUrl: dbQuestion.videoUrl,
       }),
     };
-
+    // معالجة teams بشكل آمن
+    let teams = [];
+    try {
+      teams = typeof game.teams === 'string' ? JSON.parse(game.teams) : (Array.isArray(game.teams) ? game.teams : []);
+    } catch (e) {
+      console.error("Error parsing teams:", e);
+      teams = [];
+    }
     // جلب answerTimes بشكل صحيح
-    const answerTimes =
-      Array.isArray(game.answerTimes) && game.answerTimes.length > 0
-        ? game.answerTimes
-        : [
-            game.answerTimeFirst,
-            game.answerTimeSecond,
-            game.answerTimeThird,
-            game.answerTimeFourth,
-          ].filter(Boolean);
-
+    const answerTimes = [
+      game.answerTimeFirst,
+      game.answerTimeSecond,
+      game.answerTimeThird,
+      game.answerTimeFourth,
+    ].filter(Boolean);
     res.status(200).json({
       question,
-      teams: game.teams.map((team, index) => ({
+      teams: teams.map((team: any, index: number) => ({
         id: index,
         name: team.name,
         score: team.score || 0,
@@ -157,13 +193,34 @@ export async function markQuestionViewed(req: Request, res: Response) {
     const game = await storage.getGameById(gameId);
     if (!game) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
+    }    // تحليل البيانات المحفوظة
+    let viewedQuestionsArray: string[] = [];
+    try {
+      if (game.viewedQuestions) {
+        viewedQuestionsArray = typeof game.viewedQuestions === 'string' ? 
+          JSON.parse(game.viewedQuestions) : 
+          (Array.isArray(game.viewedQuestions) ? game.viewedQuestions : []);
+      }
+    } catch (e) {
+      console.error("Error parsing viewedQuestions:", e);
+      viewedQuestionsArray = [];
     }
 
-    const viewedQuestionIds = new Set(game.viewedQuestionIds || []);
+    const viewedQuestionIds = new Set(viewedQuestionsArray);
     viewedQuestionIds.add(questionId.toString());
 
-    const answeredQuestions = new Set(game.answeredQuestions || []);
+    const answeredQuestions = new Set(viewedQuestionsArray);
     answeredQuestions.add(`${categoryId}-${difficulty}-*-${questionId}`);
+
+    // توحيد استخراج الفئات المختارة
+    const selectedCategories = parseSelectedCategories(getSelectedCategoriesCompat(game));
+    // توحيد استخراج الفرق
+    let teams = [];
+    try {
+      teams = typeof game.teams === 'string' ? JSON.parse(game.teams) : (Array.isArray(game.teams) ? game.teams : []);
+    } catch (e) {
+      teams = [];
+    }
 
     const updatedGame = {
       ...game,
@@ -173,7 +230,7 @@ export async function markQuestionViewed(req: Request, res: Response) {
 
     await storage.updateGameQuestions(
       gameId,
-      generateGameQuestions(updatedGame),
+      await generateGameQuestions(updatedGame, selectedCategories, teams),
     );
 
     await storage.updateGameViewedQuestions(
@@ -199,18 +256,27 @@ export async function submitAnswer(req: Request, res: Response) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
+    // معالجة teams بشكل آمن
+    let teams = [];
+    try {
+      teams = typeof game.teams === 'string' ? JSON.parse(game.teams) : (Array.isArray(game.teams) ? game.teams : []);
+    } catch (e) {
+      console.error("Error parsing teams:", e);
+      teams = [];
+    }
+
     if (
-      !Array.isArray(game.teams) ||
+      !Array.isArray(teams) ||
       typeof teamIndex !== "number" ||
       teamIndex < 0 ||
-      teamIndex >= game.teams.length
+      teamIndex >= teams.length
     ) {
       return res.status(400).json({ error: "مؤشر الفريق غير صالح" });
     }
 
     const pointsToAdd = typeof difficulty === "number" ? difficulty : 1;
 
-    const updatedTeams = [...game.teams];
+    const updatedTeams = [...teams];
     if (isCorrect) {
       updatedTeams[teamIndex] = {
         ...updatedTeams[teamIndex],
@@ -219,23 +285,7 @@ export async function submitAnswer(req: Request, res: Response) {
     }
 
     const questionKey = `${categoryId}-${difficulty}-${teamIndex}-${questionId}`;
-    const answeredQuestions = new Set(game.answeredQuestions || []);
-    answeredQuestions.add(questionKey);
-
-    const updatedGame = {
-      ...game,
-      answeredQuestions: Array.from(answeredQuestions),
-      teams: updatedTeams,
-    };
-
-    await storage.updateGameTeams(gameId, updatedTeams);
-    await storage.updateGameQuestions(
-      gameId,
-      generateGameQuestions(updatedGame),
-    );
-
-    const nextTeamIndex = (game.currentTeamIndex + 1) % game.teams.length;
-    await storage.updateGameCurrentTeam(gameId, nextTeamIndex);
+      await storage.updateGameTeams(gameId, updatedTeams);
 
     res.status(200).json({ success: true, teams: updatedTeams });
   } catch (error) {
@@ -253,10 +303,19 @@ export async function endGame(req: Request, res: Response) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
+    // معالجة teams بشكل آمن
+    let teams: any[] = [];
+    try {
+      teams = typeof game.teams === 'string' ? JSON.parse(game.teams) : (Array.isArray(game.teams) ? game.teams : []);
+    } catch (e) {
+      console.error("Error parsing teams:", e);
+      teams = [];
+    }
+
     let winnerIndex = 0;
     let highestScore = 0;
 
-    game.teams.forEach((team, index) => {
+    teams.forEach((team: any, index: number) => {
       if (team.score > highestScore) {
         highestScore = team.score;
         winnerIndex = index;
@@ -281,33 +340,50 @@ export async function getGameResults(req: Request, res: Response) {
       return res.status(404).json({ error: "اللعبة غير موجودة" });
     }
 
+    // معالجة teams بشكل آمن
+    let teams: any[] = [];
+    try {
+      teams = typeof game.teams === 'string' ? JSON.parse(game.teams) : (Array.isArray(game.teams) ? game.teams : []);
+    } catch (e) {
+      console.error("Error parsing teams:", e);
+      teams = [];
+    }
+
+    // معالجة selectedCategories بشكل موحد
+    let selectedCategories: number[] = parseSelectedCategories(getSelectedCategoriesCompat(game));
+
     let winnerIndex = 0;
     let highestScore = 0;
 
-    game.teams.forEach((team, index) => {
+    teams.forEach((team: any, index: number) => {
       if (team.score > highestScore) {
         highestScore = team.score;
         winnerIndex = index;
       }
     });
 
+    // جلب معلومات الفئات من قاعدة البيانات
+    const categoriesWithDetails = await Promise.all(
+      selectedCategories.map(async (catId: number) => ({
+        id: catId,
+        name: await getCategoryName(catId),
+        icon: await getCategoryIcon(catId),
+      }))
+    );
+
     const gameResult = {
       id: game.id,
       name: game.gameName,
-      teams: game.teams.map((team, index) => ({
+      teams: teams.map((team: any, index: number) => ({
         name: team.name,
         score: team.score || 0,
         color: getTeamColor(index),
         isWinner: index === winnerIndex,
       })),
-      categories: game.selectedCategories.map((catId) => ({
-        id: catId,
-        name: getCategoryName(catId),
-        icon: getCategoryIcon(catId),
-      })),
-      questions: generateGameQuestions(game),
+      categories: categoriesWithDetails,
+      questions: await generateGameQuestions(game, selectedCategories, teams),
       date: new Date().toISOString(),
-      winningTeam: game.teams[winnerIndex].name,
+      winningTeam: teams[winnerIndex]?.name || "غير محدد",
     };
 
     res.status(200).json(gameResult);
@@ -345,10 +421,10 @@ export async function updateCurrentTeam(req: Request, res: Response) {
   }
 }
 
-function generateGameQuestions(game: any) {
+// دالة مساعدة لتوحيد منطق تحويل selectedCategories
+async function generateGameQuestions(game: any, selectedCategories?: number[], teams?: any[]) {
   const questions = [];
   let idCounter = 1;
-  
   // تهيئة مجموعات الأسئلة المجاب عليها والمعروضة
   let viewedQuestions = new Set<string>();
   try {
@@ -364,107 +440,85 @@ function generateGameQuestions(game: any) {
     console.error("Error parsing viewedQuestions:", e);
     viewedQuestions = new Set();
   }
-  
-  // جلب الفئات المختارة
-  let selectedCategories: number[] = [];
-  try {
-    selectedCategories = typeof game.selectedCategories === 'string' ? 
-      JSON.parse(game.selectedCategories) : 
-      (Array.isArray(game.selectedCategories) ? game.selectedCategories : []);
-  } catch (e) {
-    console.error("Error parsing selectedCategories for questions:", e);
-    selectedCategories = [];
+  // استخدام البيانات المُمررة كمعاملات أو تحليل البيانات الخام
+  let parsedSelectedCategories: number[] = selectedCategories || [];
+  let parsedTeams: any[] = teams || [];
+
+  if (!selectedCategories) {
+    parsedSelectedCategories = parseSelectedCategories(getSelectedCategoriesCompat(game));
   }
-  
-  // جلب عدد الفرق
-  let teams: any[] = [];
-  try {
-    teams = typeof game.teams === 'string' ? 
-      JSON.parse(game.teams) : 
-      (Array.isArray(game.teams) ? game.teams : []);
-  } catch (e) {
-    console.error("Error parsing teams for questions:", e);
-    teams = [];
+
+  if (!teams) {
+    try {
+      parsedTeams = typeof game.teams === 'string' ? 
+        JSON.parse(game.teams) : 
+        (Array.isArray(game.teams) ? game.teams : []);
+    } catch (e) {
+      console.error("Error parsing teams for questions:", e);
+      parsedTeams = [];
+    }
   }
-  
-  console.log(`Generating questions for ${selectedCategories.length} categories and ${teams.length} teams`);
-  
-  // إنشاء أسئلة لكل فئة ولكل فريق ولكل مستوى صعوبة
-  for (const categoryId of selectedCategories) {
-    for (let teamIndex = 0; teamIndex < teams.length; teamIndex++) {
+
+  console.log(`Generating questions for ${parsedSelectedCategories.length} categories and ${parsedTeams.length} teams`);
+    // إنشاء أسئلة لكل فئة ولكل فريق ولكل مستوى صعوبة مع جلب الأسئلة الحقيقية من قاعدة البيانات
+  for (const categoryId of parsedSelectedCategories) {
+    for (let teamIndex = 0; teamIndex < parsedTeams.length; teamIndex++) {
       for (let difficulty = 1; difficulty <= 3; difficulty++) {
         const currentId = idCounter;
-        
-        // تحقق مما إذا كان السؤال قد تم عرضه مسبقًا
         const questionKey = `${categoryId}-${difficulty}-${teamIndex}`;
         const isViewed = viewedQuestions.has(questionKey) || 
                          viewedQuestions.has(currentId.toString()) || 
                          viewedQuestions.has(`${currentId}`);
-        
+        let realQuestion = null;
+        try {
+          realQuestion = await storage.getRandomQuestionByCategoryAndDifficulty(
+            categoryId, 
+            difficulty, 
+            []
+          );
+        } catch (error) {
+          console.error(`Error fetching question for category ${categoryId}, difficulty ${difficulty}:`, error);
+        }
         questions.push({
           id: idCounter++,
           questionId: currentId,
           categoryId,
           teamIndex,
           difficulty,
-          isAnswered: isViewed, // نعتبر الأسئلة التي تم عرضها قد تم الإجابة عليها (أو تعطيلها)
+          isAnswered: isViewed,
+          realQuestion: realQuestion ? {
+            id: realQuestion.id,
+            text: realQuestion.text,
+            answer: realQuestion.answer,
+            imageUrl: realQuestion.imageUrl,
+            videoUrl: realQuestion.videoUrl,
+            tags: realQuestion.tags
+          } : null
         });
       }
     }
   }
-  
-  console.log(`Generated ${questions.length} questions`);
   return questions;
 }
 
-function getCategoryName(categoryId: number): string {
-  const categoryNames: { [key: number]: string } = {
-    1: "علوم",
-    2: "تاريخ",
-    3: "جغرافيا",
-    4: "رياضيات",
-    5: "فن وثقافة",
-    6: "رياضة",
-    7: "ترفيه",
-    8: "أدب",
-    9: "تقنية",
-    10: "دين",
-    11: "حيوانات",
-    12: "طعام",
-    13: "سينما",
-    14: "موسيقى",
-    21: "تاريخ",
-    22: "جغرافيا",
-    23: "حيوانات",
-    24: "طعام",
-    33: "علوم",
-  };
-  return categoryNames[categoryId] || `فئة ${categoryId}`;
+async function getCategoryName(categoryId: number): Promise<string> {
+  try {
+    const category = await storage.getCategoryById(categoryId);
+    return category ? category.name : `فئة ${categoryId}`;
+  } catch (error) {
+    console.error(`Error getting category name for ID ${categoryId}:`, error);
+    return `فئة ${categoryId}`;
+  }
 }
 
-function getCategoryIcon(categoryId: number): string {
-  const categoryIcons: { [key: number]: string } = {
-    1: "🔬",
-    2: "📜",
-    3: "🌍",
-    4: "🔢",
-    5: "🎭",
-    6: "⚽",
-    7: "🎮",
-    8: "📚",
-    9: "💻",
-    10: "☪️",
-    11: "🐘",
-    12: "🍔",
-    13: "🎬",
-    14: "🎵",
-    21: "📜",
-    22: "🌍",
-    23: "🐘",
-    24: "🍔",
-    33: "🔬",
-  };
-  return categoryIcons[categoryId] || "📋";
+async function getCategoryIcon(categoryId: number): Promise<string> {
+  try {
+    const category = await storage.getCategoryById(categoryId);
+    return category ? (category.icon || "📋") : "📋";
+  } catch (error) {
+    console.error(`Error getting category icon for ID ${categoryId}:`, error);
+    return "📋";
+  }
 }
 
 function getTeamColor(teamIndex: number): string {

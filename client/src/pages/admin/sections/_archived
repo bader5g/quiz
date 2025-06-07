@@ -1,0 +1,502 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Edit, BarChart2, FolderEdit } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from "@/lib/queryClient";
+import { useCategoryStore } from "@/hooks/use-category-store";
+
+// سؤال وهمي للعرض
+const demoQuestion = {
+  id: 1, 
+  text: "من فاز بكأس العالم 2022؟", 
+  answer: "الأرجنتين",
+  categoryId: 1,
+  subcategoryId: 11,
+  difficulty: 2
+};
+
+export default function QuickEditButtonsDemo() {
+  const { toast } = useToast();
+  const { categories, fetchCategories } = useCategoryStore();
+  const [question, setQuestion] = useState(demoQuestion);
+  const [realQuestion, setRealQuestion] = useState(null);
+
+  // حالة النوافذ المنبثقة
+  const [textEditOpen, setTextEditOpen] = useState(false);
+  const [answerEditOpen, setAnswerEditOpen] = useState(false);
+  const [categoryEditOpen, setCategoryEditOpen] = useState(false);
+  const [difficultyEditOpen, setDifficultyEditOpen] = useState(false);
+
+  // قيم التعديل مع حماية ضد القيم غير المحددة
+  const [editText, setEditText] = useState(question?.text || "");
+  const [editAnswer, setEditAnswer] = useState(question?.answer || "");
+  const [editCategoryId, setEditCategoryId] = useState(() => {
+    const categoryId = question?.categoryId;
+    return categoryId !== undefined && categoryId !== null ? categoryId.toString() : "";
+  });
+  const [editSubcategoryId, setEditSubcategoryId] = useState(() => {
+    const subcategoryId = question?.subcategoryId;
+    return subcategoryId !== undefined && subcategoryId !== null ? subcategoryId.toString() : "";
+  });
+  const [editDifficulty, setEditDifficulty] = useState(() => {
+    const difficulty = question?.difficulty;
+    return difficulty !== undefined && difficulty !== null ? difficulty.toString() : "1";
+  });
+
+  // جلب البيانات الحقيقية
+  useEffect(() => {
+    fetchCategories();
+    // جلب سؤال حقيقي من قاعدة البيانات
+    const fetchRealQuestion = async () => {
+      try {
+        const response = await apiRequest("GET", "/api/questions?limit=1");
+        if (response.ok) {
+          const questions = await response.json();
+          if (questions && questions.length > 0) {
+            const realQ = questions[0];
+            setRealQuestion(realQ);
+            // استخراج الفئة الصحيحة من categories عبر main_category_code
+            const categoryFound = categories.find(c => c && c.code === realQ.main_category_code);
+            setQuestion({
+              id: realQ.id,
+              text: realQ.text || "",
+              answer: realQ.answer || "",
+              categoryId: categoryFound?.id || null,
+              subcategoryId: realQ.subcategory_id || null,
+              difficulty: realQ.difficulty || 1
+            });
+            setEditText(realQ.text || "");
+            setEditAnswer(realQ.answer || "");
+            setEditCategoryId(
+              typeof categoryFound?.id === "number" ? categoryFound.id.toString() : ""
+            );
+            setEditSubcategoryId(
+              typeof realQ.subcategory_id === "number" ? realQ.subcategory_id.toString() : ""
+            );
+            setEditDifficulty(
+              typeof realQ.difficulty === "number" ? realQ.difficulty.toString() : "1"
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching real question:", error);
+      }
+    };
+    if (categories.length > 0) {
+      fetchRealQuestion();
+    }
+  }, [fetchCategories, categories]);
+
+  // حساب الفئات الفرعية بناءً على الفئة المختارة (تعريف واحد فقط)
+  const subcategories = editCategoryId 
+    ? (categories.find(c => c && c.id && typeof c.id === "number" && c.id.toString() === editCategoryId)?.children?.filter(sub => sub && sub.subcategory_id && sub.name) || [])
+    : [];
+
+  // حفظ التعديلات فعلياً في قاعدة البيانات
+  const saveTextEdit = async () => {
+    if (!editText.trim()) return;
+    await apiRequest("PATCH", `/api/questions/${question.id}`, { text: editText });
+    setQuestion({ ...question, text: editText });
+    setTextEditOpen(false);
+    toast({
+      title: "تم التعديل",
+      description: "تم تعديل نص السؤال بنجاح",
+    });
+  };
+
+  const saveAnswerEdit = async () => {
+    if (!editAnswer.trim()) return;
+    await apiRequest("PATCH", `/api/questions/${question.id}`, { answer: editAnswer });
+    setQuestion({ ...question, answer: editAnswer });
+    setAnswerEditOpen(false);
+    toast({
+      title: "تم التعديل",
+      description: "تم تعديل الإجابة بنجاح",
+    });
+  };
+
+  const saveCategoryEdit = async () => {
+    if (!editCategoryId) return;
+    const categoryId = parseInt(editCategoryId);
+    const subcategoryId = editSubcategoryId ? parseInt(editSubcategoryId) : null;
+    const category = categories.find(c => c && c.id === categoryId);
+    if (!category) {
+      toast({
+        title: "خطأ",
+        description: "الفئة المختارة غير صالحة",
+        variant: "destructive",
+      });
+      return;
+    }
+    // إرسال main_category_code وليس id
+    await apiRequest("PATCH", `/api/questions/${question.id}`, { 
+      main_category_code: category.code, 
+      subcategory_id: subcategoryId 
+    });
+    setQuestion({ ...question, categoryId, subcategoryId });
+    setCategoryEditOpen(false);
+    toast({
+      title: "تم التعديل",
+      description: "تم تعديل الفئة بنجاح",
+    });
+  };
+
+  const saveDifficultyEdit = async () => {
+    const difficulty = parseInt(editDifficulty);
+    await apiRequest("PATCH", `/api/questions/${question.id}`, { difficulty });
+    setQuestion({ ...question, difficulty });
+    setDifficultyEditOpen(false);
+    toast({
+      title: "تم التعديل",
+      description: "تم تعديل مستوى الصعوبة بنجاح",
+    });
+  };
+
+  // حالة إظهار debug
+  const [showDebug, setShowDebug] = useState(false);
+
+  // حماية شاملة ضد البيانات غير الصالحة
+  const isCategoriesValid = Array.isArray(categories) && categories.every(c => c && c.id && c.name);
+  const isSubcategoriesValid = Array.isArray(subcategories) && subcategories.every(s => s && s.subcategory_id && s.name);
+  const isQuestionValid = question && question.id && question.text && question.answer;
+
+  if (!isCategoriesValid) {
+    console.error("[QuickEditButtonsDemo] فئات غير صالحة:", categories);
+    return <div className="p-6 text-red-600 font-bold">⚠️ خطأ في تحميل الفئات. تحقق من بيانات الفئات في قاعدة البيانات.</div>;
+  }
+  if (!isQuestionValid) {
+    console.error("[QuickEditButtonsDemo] سؤال غير صالح:", question);
+    return <div className="p-6 text-red-600 font-bold">⚠️ خطأ في تحميل السؤال. تحقق من بيانات السؤال في قاعدة البيانات.</div>;
+  }
+  if (!isSubcategoriesValid && subcategories.length > 0) {
+    console.error("[QuickEditButtonsDemo] فئات فرعية غير صالحة:", subcategories);
+    return <div className="p-6 text-red-600 font-bold">⚠️ خطأ في تحميل الفئات الفرعية. تحقق من بيانات الفئات الفرعية في قاعدة البيانات.</div>;
+  }
+
+  return (
+    <div className="p-6 container">
+      <h2 className="text-2xl font-bold mb-6">نموذج أيقونات التعديل السريع</h2>
+      
+      <div className="border rounded-lg p-6 bg-white shadow-sm">
+        <h3 className="text-xl font-semibold mb-4">تفاصيل السؤال</h3>
+        
+        <div className="space-y-4">
+          {/* السؤال */}
+          <div className="flex items-center justify-between gap-2 border-b pb-3">
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">السؤال:</div>
+              <div className="font-medium">{question.text}</div>
+            </div>
+            <button 
+              className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+              onClick={() => {
+                setEditText(question.text);
+                setTextEditOpen(true);
+              }}
+              title="تعديل السؤال"
+            >
+              <Edit className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+          
+          {/* الإجابة */}
+          <div className="flex items-center justify-between gap-2 border-b pb-3">
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">الإجابة:</div>
+              <div className="font-medium">{question.answer}</div>
+            </div>
+            <button 
+              className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+              onClick={() => {
+                setEditAnswer(question.answer);
+                setAnswerEditOpen(true);
+              }}
+              title="تعديل الإجابة"
+            >
+              <Edit className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+          
+          {/* الفئة */}
+          <div className="flex items-center justify-between gap-2 border-b pb-3">
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">الفئة:</div>
+              <div className="font-medium">
+                {categories.find(c => c && c.id === question.categoryId)?.name || "-"}
+                {question.subcategoryId && (
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full mr-2">
+                    {categories.find(c => c && c.id === question.categoryId)?.children?.find(s => s && s.subcategory_id === question.subcategoryId)?.name || ""}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button 
+              className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+              onClick={() => {
+                const catId = question.categoryId;
+                const subId = question.subcategoryId;
+                setEditCategoryId(
+                  typeof catId === "number" && catId !== null && catId !== undefined 
+                    ? catId.toString() 
+                    : ""
+                );
+                setEditSubcategoryId(
+                  typeof subId === "number" && subId !== null && subId !== undefined 
+                    ? subId.toString() 
+                    : ""
+                );
+                setCategoryEditOpen(true);
+              }}
+              title="تغيير الفئة"
+            >
+              <FolderEdit className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+          
+          {/* مستوى الصعوبة */}
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">مستوى الصعوبة:</div>
+              <div className="font-medium">
+                {question.difficulty === 1 ? "سهل" : 
+                 question.difficulty === 2 ? "متوسط" : "صعب"}
+              </div>
+            </div>
+            <button 
+              className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
+              onClick={() => {
+                const diff = question.difficulty;
+                setEditDifficulty(
+                  typeof diff === "number" && diff !== null && diff !== undefined 
+                    ? diff.toString() 
+                    : "1"
+                );
+                setDifficultyEditOpen(true);
+              }}
+              title="تغيير مستوى الصعوبة"
+            >
+              <BarChart2 className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* نافذة تعديل السؤال */}
+      <Dialog open={textEditOpen} onOpenChange={setTextEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل السؤال</DialogTitle>
+            <DialogDescription>قم بتعديل نص السؤال ثم اضغط حفظ.</DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Input
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTextEditOpen(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={saveTextEdit}>
+              حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* نافذة تعديل الإجابة */}
+      <Dialog open={answerEditOpen} onOpenChange={setAnswerEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل الإجابة</DialogTitle>
+            <DialogDescription>قم بتعديل نص الإجابة ثم اضغط حفظ.</DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Input
+              value={editAnswer}
+              onChange={(e) => setEditAnswer(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAnswerEditOpen(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={saveAnswerEdit}>
+              حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* نافذة تعديل الفئة */}
+      <Dialog open={categoryEditOpen} onOpenChange={setCategoryEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل الفئة</DialogTitle>
+            <DialogDescription>اختر الفئة الرئيسية والفئة الفرعية ثم اضغط حفظ.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {categories.length === 0 && (
+              <div className="text-center text-red-500 text-sm font-bold mb-2">لا توجد فئات متاحة حاليًا. يرجى إضافة فئات أولاً.</div>
+            )}
+            <div>
+              <label className="block mb-2 text-sm">الفئة الرئيسية</label>
+              <Select
+                value={editCategoryId || "no-categories"}
+                onValueChange={(value) => {
+                  if (value === "no-categories") return;
+                  setEditCategoryId(value);
+                  setEditSubcategoryId("");
+                }}
+                disabled={categories.length === 0}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="اختر الفئة الرئيسية" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.length > 0 ? (
+                    categories
+                      .filter(category => typeof category?.id === "number" && !!category.name)
+                      .map(category => (
+                        <SelectItem key={category.id.toString()} value={category.id.toString()}>
+                          <span className="flex items-center gap-2">
+                            {category.icon && <span>{category.icon}</span>}
+                            <span>{category.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))
+                  ) : (
+                    <SelectItem value="no-categories" disabled>
+                      لا توجد فئات متاحة
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block mb-2 text-sm">الفئة الفرعية</label>
+              <Select
+                value={editSubcategoryId}
+                onValueChange={(value) => setEditSubcategoryId(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="اختر الفئة الفرعية (اختياري)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">بدون فئة فرعية</SelectItem>
+                  {subcategories.length > 0 ? (
+                    subcategories
+                      .filter(subcategory => typeof subcategory?.subcategory_id === "number" && !!subcategory.name)
+                      .map(subcategory => (
+                        <SelectItem key={subcategory.subcategory_id.toString()} value={subcategory.subcategory_id.toString()}>
+                          <span className="flex items-center gap-2">
+                            {subcategory.icon && <span>{subcategory.icon}</span>}
+                            <span>{subcategory.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))
+                  ) : (
+                    <SelectItem value="no-subs" disabled>
+                      لا توجد فئات فرعية لهذه الفئة
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCategoryEditOpen(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={saveCategoryEdit}>
+              حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* نافذة تعديل مستوى الصعوبة */}
+      <Dialog open={difficultyEditOpen} onOpenChange={setDifficultyEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل مستوى الصعوبة</DialogTitle>
+            <DialogDescription>اختر مستوى الصعوبة الجديد ثم اضغط حفظ.</DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Select
+              value={editDifficulty}
+              onValueChange={(value) => setEditDifficulty(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="اختر مستوى الصعوبة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">سهل</SelectItem>
+                <SelectItem value="2">متوسط</SelectItem>
+                <SelectItem value="3">صعب</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDifficultyEditOpen(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={saveDifficultyEdit}>
+              حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* قسم debug */}
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+        <h3 className="text-lg font-semibold mb-4">قسم debug</h3>
+        
+        {/* زر عرض الأخطاء */}
+        <div className="mt-4">
+          <Button variant="outline" size="sm" onClick={() => {
+            // عرض معلومات debug في الكونسول فقط
+            console.log('debug info:', {
+              categories,
+              editCategoryId,
+              subcategories,
+              editSubcategoryId
+            });
+            setShowDebug(true);
+          }}>
+            عرض الأخطاء (debug)
+          </Button>
+          {showDebug && (
+            <div className="w-full mt-2">
+              <pre
+                style={{
+                  background: '#f3f3f3',
+                  border: '1px solid #ccc',
+                  borderRadius: 4,
+                  padding: 8,
+                  fontSize: 12,
+                  direction: 'ltr',
+                  userSelect: 'all',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {`categories: ${JSON.stringify(categories, null, 2)}\neditCategoryId: ${editCategoryId}\nsubcategories: ${JSON.stringify(subcategories, null, 2)}\neditSubcategoryId: ${editSubcategoryId}`}
+              </pre>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

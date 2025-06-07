@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
+import { getQueryFn } from "../lib/queryClient";
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import Layout from '@/components/layout/Layout';
+import Layout from '../components/layout/Layout';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,13 +19,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "../components/ui/table";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "../components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -33,11 +33,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+} from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
+import { Progress } from "../components/ui/progress";
+import { Skeleton } from "../components/ui/skeleton";
+import { Badge } from "../components/ui/badge";
 import {
   CircleHelp,
   Star,

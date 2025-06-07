@@ -95,3 +95,189 @@
 .animate-slideInUp {
   animation: slideInUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* RTL Support and Arabic Typography */
+@layer utilities {
+  /* RTL Direction Utilities */
+  .rtl {
+    direction: rtl;
+  }
+  
+  .ltr {
+    direction: ltr;
+  }
+  
+  /* Arabic Typography */
+  .arabic-text {
+    font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+  }
+  
+  /* RTL Flexbox Helpers */
+  .flex-row-reverse-rtl {
+    flex-direction: row-reverse;
+  }
+  
+  .text-start-rtl {
+    text-align: start;
+  }
+  
+  .text-end-rtl {
+    text-align: end;
+  }
+  
+  /* RTL Spacing */
+  .ml-auto-rtl {
+    margin-inline-start: auto;
+  }
+  
+  .mr-auto-rtl {
+    margin-inline-end: auto;
+  }
+  
+  /* RTL Borders */
+  .border-l-rtl {
+    border-inline-start-width: 1px;
+  }
+  
+  .border-r-rtl {
+    border-inline-end-width: 1px;
+  }
+  
+  /* RTL Padding */
+  .pl-rtl {
+    padding-inline-start: 1rem;
+  }
+  
+  .pr-rtl {
+    padding-inline-end: 1rem;
+  }
+  
+  /* Tab Styling for RTL */
+  .tabs-rtl [data-orientation="horizontal"] {
+    flex-direction: row-reverse;
+  }
+  
+  .tabs-rtl .tabs-list {
+    justify-content: flex-start;
+  }
+  
+  /* Question Cards RTL */
+  .question-card-rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  .question-card-rtl .flex {
+    flex-direction: row-reverse;
+  }
+  
+  .question-card-rtl .justify-between {
+    justify-content: space-between;
+  }
+  
+  /* Button Group RTL */
+  .button-group-rtl {
+    flex-direction: row-reverse;
+  }
+  
+  .button-group-rtl > * + * {
+    margin-inline-start: 0.5rem;
+    margin-inline-end: 0;
+  }
+  
+  /* Form Controls RTL */
+  .form-rtl label {
+    text-align: right;
+  }
+  
+  .form-rtl input,
+  .form-rtl textarea,
+  .form-rtl select {
+    text-align: right;
+    direction: rtl;
+  }
+  
+  /* Navigation RTL */
+  .nav-rtl {
+    direction: rtl;
+  }
+  
+  .nav-rtl .nav-items {
+    flex-direction: row-reverse;
+  }
+  
+  /* Header RTL */
+  .header-rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  .header-rtl .flex {
+    flex-direction: row-reverse;
+  }
+  
+  /* Card Content RTL */
+  .card-rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  .card-rtl .card-header {
+    text-align: right;
+  }
+  
+  .card-rtl .card-content {
+    text-align: right;
+  }
+  
+  /* List Items RTL */
+  .list-rtl {
+    direction: rtl;
+  }
+  
+  .list-rtl li {
+    text-align: right;
+  }
+  
+  .list-rtl .list-item-content {
+    flex-direction: row-reverse;
+  }
+  
+  /* Dialog RTL */
+  .dialog-rtl {
+    direction: rtl;
+  }
+  
+  .dialog-rtl .dialog-content {
+    text-align: right;
+  }
+  
+  /* Tooltip RTL */
+  .tooltip-rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  /* Progress Bar RTL */
+  .progress-rtl {
+    direction: rtl;
+  }
+  
+  /* Responsive RTL adjustments */
+  @media (max-width: 768px) {
+    .mobile-rtl {
+      direction: rtl;
+      text-align: right;
+    }
+    
+    .mobile-rtl .flex {
+      flex-direction: column;
+    }
+    
+    .mobile-rtl .flex-row-reverse {
+      flex-direction: column;
+    }
+  }
+}

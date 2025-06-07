@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Layout from "@/components/layout/Layout";
+import { Button } from "../components/ui/button";
+import Layout from "../components/layout/Layout";
 import { useLocation } from "wouter";
 
 export default function NotFound() {

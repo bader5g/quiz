@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import { Input } from '@/components/ui/input';
+import { Input } from "./ui/input";
 
 interface SafeNumberInputProps {
   value: number | undefined | null;

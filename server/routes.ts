@@ -1,7 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { pool } from "./db";
+import { pool, db } from "./db";
+import { webSocketManager } from "./websocket";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import multer from "multer";
@@ -18,8 +19,6 @@ import {
   updateCategorySchema,
   insertSubcategorySchema,
   updateSubcategorySchema,
-  insertQuestionSchema,
-  updateQuestionSchema,
 } from "@shared/schema";
 import {
   getGameDetails,
@@ -32,6 +31,10 @@ import {
   updateCurrentTeam,
 } from "./game-controller";
 import { z } from "zod";
+import { categoriesRouter } from "./routes/index";
+import { questionsRouter } from "./routes/questions-simple";
+import { main_categories, subcategories_v2 } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 // Helper function to validate request with Zod schema
 const validateRequest = <T>(schema: z.ZodSchema<T>) => {
@@ -102,308 +105,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
 
-  // استيراد الأسئلة من ملف
-  app.post("/api/import-questions", async (req, res) => {
-    try {
-      const { questions } = req.body;
-
-      if (!Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({ error: "بيانات الأسئلة غير صالحة" });
-      }
-
-      console.log("استلام طلب استيراد الأسئلة:", questions);
-
-      const importedQuestions = [];
-
-      for (const question of questions) {
-        // التأكد من وجود الحقول الإلزامية (فقط السؤال والإجابة والفئة)
-        if (!question.text || !question.answer || !question.categoryId) {
-          console.log("تخطي سؤال غير مكتمل:", question);
-          continue;
-        }
-
-        // إعداد بيانات السؤال (فقط المطلوبة)
-        const questionData = {
-          text: question.text,
-          answer: question.answer,
-          categoryId: question.categoryId,
-          // إذا كانت هناك فئة فرعية، أضفها
-          subcategoryId: question.subcategoryId || 0,
-          // إضافة الصعوبة (افتراضي: سهل)
-          difficulty: question.difficulty || 1,
-          // إضافة الوسائط إذا وجدت
-          imageUrl: question.imageUrl || "",
-          videoUrl: question.videoUrl || "",
-          mediaType: question.mediaType || "none",
-          // إضافة الكلمات المفتاحية إذا وجدت
-          keywords: question.keywords || "",
-          // تعيين السؤال كغير فعال افتراضياً
-          isActive: false,
-        };
-
-        console.log("إضافة سؤال جديد:", questionData);
-
-        // إضافة السؤال إلى قاعدة البيانات
-        const newQuestion = await storage.createQuestion(questionData);
-        importedQuestions.push(newQuestion);
-      }
-
-      res.status(201).json({
-        message: "تم استيراد الأسئلة بنجاح",
-        imported: importedQuestions.length,
-      });
-    } catch (error) {
-      console.error("خطأ في استيراد الأسئلة:", error);
-      res.status(500).json({ error: "حدث خطأ أثناء استيراد الأسئلة" });
-    }
-  });
-
-  // استيراد الأسئلة من رابط خارجي
-  app.post("/api/import-questions-from-url", async (req, res) => {
-    try {
-      const { url } = req.body;
-
-      if (!url) {
-        return res.status(400).json({ error: "الرابط غير صالح" });
-      }
-
-      console.log("استلام طلب استيراد الأسئلة من الرابط:", url);
-
-      // التحقق مما إذا كان الرابط من Google Sheets
-      let sheetData;
-
-      try {
-        // الحصول على البيانات من الرابط
-        const response = await axios.get(url);
-
-        // فحص نوع الاستجابة
-        const contentType = response.headers["content-type"];
-
-        if (contentType.includes("application/json")) {
-          // إذا كان الرابط يعيد JSON
-          sheetData = response.data;
-        } else if (
-          contentType.includes("text/csv") ||
-          contentType.includes("application/vnd.ms-excel") ||
-          contentType.includes(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          )
-        ) {
-          // إذا كان الرابط يعيد ملف CSV/Excel
-          const workbook = XLSX.read(response.data, { type: "binary" });
-          const sheetName = workbook.SheetNames[0];
-          sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-        } else {
-          throw new Error("تنسيق الملف غير مدعوم");
-        }
-      } catch (error) {
-        console.error("خطأ في الحصول على البيانات من الرابط:", error);
-        return res
-          .status(400)
-          .json({ error: "فشل في استيراد البيانات من الرابط المحدد" });
-      }
-
-      if (!Array.isArray(sheetData) || sheetData.length === 0) {
-        return res
-          .status(400)
-          .json({ error: "لم يتم العثور على بيانات صالحة في الرابط" });
-      }
-
-      console.log("تم الحصول على البيانات من الرابط:", sheetData.length, "سجل");
-
-      // تحويل البيانات إلى تنسيق الأسئلة
-      const questionsToImport = [];
-
-      for (const row of sheetData) {
-        // البحث عن الفئة الرئيسية والفرعية
-        const categoryName = row["الفئة"] || row["category"] || "";
-        const subcategoryName =
-          row["الفئة الفرعية"] || row["subcategory"] || "";
-
-        let categoryId = 0;
-        let subcategoryId = 0;
-
-        // البحث عن معرف الفئة
-        if (categoryName) {
-          const categories = await storage.getCategories();
-          const category = categories.find((c) => c.name === categoryName);
-
-          if (category) {
-            categoryId = category.id;
-
-            // البحث عن معرف الفئة الفرعية
-            if (subcategoryName) {
-              const subcategories = await storage.getSubcategories(category.id);
-              const subcategory = subcategories.find(
-                (s) => s.name === subcategoryName,
-              );
-
-              if (subcategory) {
-                subcategoryId = subcategory.id;
-              }
-            }
-          }
-        }
-
-        // تحديد مستوى الصعوبة
-        let difficulty = 1;
-        const difficultyText = row["الصعوبة"] || row["difficulty"] || "";
-
-        if (typeof difficultyText === "string") {
-          if (difficultyText.includes("متوسط")) {
-            difficulty = 2;
-          } else if (difficultyText.includes("صعب")) {
-            difficulty = 3;
-          }
-        } else if (typeof difficultyText === "number") {
-          difficulty =
-            difficultyText >= 1 && difficultyText <= 3 ? difficultyText : 1;
-        }
-
-        // تحضير بيانات السؤال
-        const questionText =
-          row["نص السؤال"] || row["السؤال"] || row["question"] || "";
-        const answer = row["الإجابة"] || row["answer"] || "";
-        const imageUrl = row["رابط الصورة"] || row["image"] || "";
-        const videoUrl = row["رابط الفيديو"] || row["video"] || "";
-        const keywords = row["الكلمات المفتاحية"] || row["keywords"] || "";
-
-        // التحقق من وجود البيانات الإلزامية
-        if (!questionText || !answer || !categoryId) {
-          console.log("تخطي سؤال غير مكتمل من الرابط:", row);
-          continue;
-        }
-
-        // إعداد بيانات السؤال
-        const questionData = {
-          text: questionText,
-          answer,
-          categoryId,
-          subcategoryId: subcategoryId || 0,
-          difficulty,
-          imageUrl,
-          videoUrl,
-          mediaType: imageUrl ? "image" : videoUrl ? "video" : "none",
-          keywords,
-          isActive: false, // الأسئلة المستوردة تكون غير فعالة افتراضياً
-        };
-
-        console.log("إضافة سؤال جديد من الرابط:", questionData);
-        questionsToImport.push(questionData);
-      }
-
-      // التحقق من وجود أسئلة للاستيراد
-      if (questionsToImport.length === 0) {
-        return res
-          .status(400)
-          .json({ error: "لم يتم العثور على أسئلة صالحة للاستيراد" });
-      }
-
-      // إضافة الأسئلة إلى قاعدة البيانات
-      const importedQuestions = [];
-
-      for (const question of questionsToImport) {
-        const newQuestion = await storage.createQuestion(question);
-        importedQuestions.push(newQuestion);
-      }
-
-      res.status(201).json({
-        message: "تم استيراد الأسئلة بنجاح",
-        imported: importedQuestions.length,
-      });
-    } catch (error) {
-      console.error("خطأ في استيراد الأسئلة من الرابط:", error);
-      res
-        .status(500)
-        .json({ error: "حدث خطأ أثناء استيراد الأسئلة من الرابط" });
-    }
-  });
-
-  // Categories with children endpoint
-  app.get("/api/categories-with-children", async (_req, res) => {
-    try {
-      // جلب كل الفئات والأسئلة مرة واحدة
-      const categoriesList = await storage.getCategories();
-      const allQuestions = await storage.getQuestions();
-      const result = [];
-      
-      // تسجيل للتشخيص وفحص دقيق لبنية البيانات
-      console.log(`إجمالي عدد الأسئلة المسترجعة: ${allQuestions.length}`);
-      console.log(`عينة من بيانات السؤال الأول:`, JSON.stringify(allQuestions[0], null, 2));
-      console.log(`جميع حقول السؤال الأول:`, Object.keys(allQuestions[0]));
-
-      // بما أن لدينا 42 سؤال، دعنا نتحقق من كل واحد ونعرف التوزيع حسب الفئات
-      const categoryDistribution = {};
-      const subcategoryDistribution = {};
-      
-      allQuestions.forEach(q => {
-        // تسجيل توزيع الأسئلة حسب الفئة
-        categoryDistribution[q.categoryId] = (categoryDistribution[q.categoryId] || 0) + 1;
-        subcategoryDistribution[q.subcategoryId] = (subcategoryDistribution[q.subcategoryId] || 0) + 1;
-      });
-      
-      console.log("توزيع الأسئلة حسب الفئة:", categoryDistribution);
-      console.log("توزيع الأسئلة حسب الفئة الفرعية:", subcategoryDistribution);
-      
-      // دعنا نتحقق بشكل مباشر من أول 5 أسئلة
-      console.log("أول 5 أسئلة:", allQuestions.slice(0, 5).map(q => ({
-        id: q.id, 
-        text: q.text.substring(0, 30), 
-        categoryId: q.categoryId, 
-        subcategoryId: q.subcategoryId
-      })));
-
-      for (const category of categoriesList) {
-        const subcategories = await storage.getSubcategories(category.id);
-        
-        // تعديل: عد جميع الأسئلة في الفئة
-        // تحويل الرقم إلى كائن String ثم تحويله مرة أخرى إلى Number للمقارنة
-        const categoryQuestionsCount = allQuestions.filter(
-          (q) => String(q.categoryId) === String(category.id)
-        ).length;
-        
-        console.log(`الفئة ${category.name} (ID: ${category.id}, نوع: ${typeof category.id}) - عدد الأسئلة: ${categoryQuestionsCount}`);
-
-        const subcategoriesWithCounts = subcategories.map((sub) => {
-          // تعداد الأسئلة لهذه الفئة الفرعية - استخدام String() للمقارنة
-          const questionsForSub = allQuestions.filter(q => String(q.subcategoryId) === String(sub.id));
-          const subcategoryQuestionsCount = questionsForSub.length;
-          
-          console.log(`  الفئة الفرعية ${sub.name} (ID: ${sub.id}, نوع: ${typeof sub.id}) - عدد الأسئلة: ${subcategoryQuestionsCount}`);
-          
-          // طباعة أول سؤالين (إن وجدوا) للتحقق
-          if (questionsForSub.length > 0) {
-            console.log(`  أمثلة للأسئلة في ${sub.name}:`, questionsForSub.slice(0, 2).map(q => q.text.substring(0, 30)));
-          }
-          return {
-            id: sub.id,
-            name: sub.name,
-            icon: sub.icon,
-            parentId: sub.parentId,
-            imageUrl: sub.imageUrl,
-            isActive: sub.isActive,
-            availableQuestions: subcategoryQuestionsCount,
-          };
-        });
-
-        result.push({
-          id: category.id,
-          name: category.name,
-          icon: category.icon,
-          imageUrl: category.imageUrl,
-          isActive: category.isActive,
-          availableQuestions: categoryQuestionsCount,
-          children: subcategoriesWithCounts,
-        });
-      }
-
-      res.json(result);
-    } catch (error) {
-      console.error("Error fetching categories with children:", error);
-      res.status(500).json({ error: "فشل في جلب الفئات والفئات الفرعية" });
-    }
-  });
-
   // Game settings endpoint
   app.get("/api/game-settings", async (_req, res) => {
     try {
@@ -453,22 +154,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // In a real app, you would extract user ID from authenticated session
       // For now, we'll use a hard-coded user ID that exists in the database
-      const userId = 2; // تأكد من وجود مستخدم بهذا المعرف في قاعدة البيانات
+      const userId = req.body.userId || 2; // Use provided userId or default to 2
       console.log("Creating game with data:", req.body);
 
-      // Format data from new API format to storage format
-      const gameData = {
-        gameName: req.body.gameName,
-        teams: req.body.teamNames
-          .slice(0, req.body.teamsCount)
-          .map((name: string) => ({ name, score: 0 })),
-        answerTimeFirst: req.body.answerTimes[0] || 30, // وقت الإجابة الأول
-        answerTimeSecond: req.body.answerTimes[1] || 15, // وقت الإجابة الثاني
-        selectedCategories: req.body.categories,
-      };
+      // Handle both formats: legacy and simplified
+      let gameData;
+      
+      if (req.body.teamNames && req.body.teamsCount) {
+        // Legacy format with teams
+        gameData = {
+          gameName: req.body.gameName || "لعبة تجريبية",
+          teams: req.body.teamNames
+            .slice(0, req.body.teamsCount)
+            .map((name: string) => ({ name, score: 0 })),
+          answerTimeFirst: req.body.answerTimes?.[0] || 30,
+          answerTimeSecond: req.body.answerTimes?.[1] || 15,
+          selectedCategories: req.body.categories || req.body.selectedCategories || [],
+        };
+      } else if (req.body.teams && Array.isArray(req.body.teams)) {
+        // New format from test page
+        gameData = {
+          gameName: req.body.gameName || "لعبة تجريبية",
+          teams: req.body.teams.map((team: any) => ({ 
+            name: team.name || "فريق", 
+            score: team.score || 0 
+          })),
+          answerTimeFirst: req.body.answerTimes?.first || 30,
+          answerTimeSecond: req.body.answerTimes?.second || 15,
+          selectedCategories: req.body.selectedCategories || req.body.categories || [],
+        };
+      } else {
+        // Simplified format for testing
+        gameData = {
+          gameName: req.body.gameName || "لعبة تجريبية",
+          teams: [{ name: "فريق 1", score: 0 }, { name: "فريق 2", score: 0 }],
+          answerTimeFirst: req.body.timeLimit || 30,
+          answerTimeSecond: 15,
+          selectedCategories: req.body.selectedCategories || req.body.categories || [],
+        };
+      }
 
+      // التأكد من أن selectedCategories ليست فارغة
+      if (!gameData.selectedCategories || !Array.isArray(gameData.selectedCategories) || gameData.selectedCategories.length === 0) {
+        console.warn("No categories selected, using default categories");
+        gameData.selectedCategories = [5, 12]; // فئات افتراضية للاختبار
+      }
+
+      console.log("Formatted game data:", JSON.stringify(gameData, null, 2));
+      console.log("Selected categories type:", typeof gameData.selectedCategories);
+      console.log("Selected categories value:", gameData.selectedCategories);
+      console.log("Is Array:", Array.isArray(gameData.selectedCategories));
+      
       const newSession = await storage.createGameSession(userId, gameData);
-      res.status(201).json(newSession);
+      console.log("Game created successfully with ID:", newSession.id);
+      res.status(200).json({ gameId: newSession.id, ...newSession });
     } catch (error) {
       console.error("Error creating game:", error);
       res.status(500).json({ error: "Failed to create game" });
@@ -503,6 +242,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Mark question as viewed (disable it immediately when opened)
   app.post("/api/games/:gameId/mark-question-viewed", markQuestionViewed);
+
+  // Debug endpoint للفحص المباشر لقاعدة البيانات
+  app.get("/api/debug/game/:gameId", async (req, res) => {
+    try {
+      const gameId = parseInt(req.params.gameId);
+      console.log("🔍 Debug: Getting raw game data for ID:", gameId);
+      
+      // جلب البيانات الخام مباشرة من قاعدة البيانات
+      const game = await storage.getGameById(gameId);
+      
+      if (!game) {
+        return res.status(404).json({ error: "اللعبة غير موجودة" });
+      }
+
+      // إرجاع البيانات الخام بدون أي معالجة
+      console.log("🔍 Debug: Raw game data:", JSON.stringify(game, null, 2));
+      res.status(200).json({
+        rawGame: game,
+        selectedCategoriesType: typeof game.selectedCategories,
+        selectedCategoriesValue: game.selectedCategories,
+        // استخدام خاصية selectedCategories فقط للتوافق
+        selectedCategoriesSnakeCase: game.selectedCategories,
+        selectedCategoriesSnakeCaseType: typeof game.selectedCategories,
+        isArray: Array.isArray(game.selectedCategories),
+        isArraySnakeCase: Array.isArray(game.selectedCategories),
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء فحص البيانات" });
+    }
+  });
 
   // End game
   app.post("/api/games/:gameId/end", endGame);
@@ -783,12 +553,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching subcategories count:", error);
       }
 
-      try {
-        const questionsData = await storage.getQuestions();
-        questionsCount = questionsData?.length || 0;
-      } catch (error) {
-        console.error("Error fetching questions count:", error);
-      }
+      // استخدام قيمة افتراضية للأسئلة حيث تم إزالة نظام إدارة الأسئلة
+      questionsCount = 0;
 
       // نحن نعلم أن هذه الوظيفة غير منفذة بالكامل، لذا سنتجاوزها
       try {
@@ -1100,8 +866,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // حساب النجوم من الألعاب الحقيقية
       const userGames = await storage.getUserGameSessions(userId);
-      const completedGames = userGames.filter(game => game.status === 'completed');
-      const wonGames = completedGames.filter(game => game.winnerTeamIndex !== null && game.winnerTeamIndex !== undefined);
+      const completedGames = userGames.filter(game => game.isCompleted === true);
+      const wonGames = completedGames.filter(game => game.winnerIndex !== null && game.winnerIndex !== undefined);
       
       // حساب النجوم الحقيقية: انتصار = 3 نجوم، مشاركة = 1 نجمة
       const currentStars = (wonGames.length * 3) + (completedGames.length - wonGames.length);
@@ -1379,8 +1145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // حساب الإحصائيات الحقيقية
       const totalGames = userGames.length;
-      const completedGames = userGames.filter(game => game.status === 'completed');
-      const wonGames = completedGames.filter(game => game.winnerTeamIndex !== null && game.winnerTeamIndex !== undefined);
+      const completedGames = userGames.filter(game => game.isCompleted === true);
+      const wonGames = completedGames.filter(game => game.winnerIndex !== null && game.winnerIndex !== undefined);
       const winRate = completedGames.length > 0 ? Math.round((wonGames.length / completedGames.length) * 100) : 0;
       
       // حساب متوسط النقاط من الألعاب المكتملة
@@ -1409,7 +1175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       for (const game of recentCompletedGames) {
-        if (game.winnerTeamIndex !== null && game.winnerTeamIndex !== undefined) {
+        if (game.winnerIndex !== null && game.winnerIndex !== undefined) {
           streak++;
         } else {
           break;
@@ -1516,354 +1282,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Categories Management Endpoints
-  app.get("/api/categories", async (_req, res) => {
-    try {
-      const categoriesList = await storage.getCategories();
-      res.json(categoriesList);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      res.status(500).json({ error: "فشل في جلب الفئات" });
-    }
-  });
-
-  app.get("/api/categories/:id", async (req, res) => {
-    try {
-      const category = await storage.getCategoryById(Number(req.params.id));
-      if (!category) {
-        return res.status(404).json({ error: "الفئة غير موجودة" });
-      }
-      res.json(category);
-    } catch (error) {
-      console.error("Error fetching category:", error);
-      res.status(500).json({ error: "فشل في جلب الفئة" });
-    }
-  });
-
-  app.post("/api/categories", async (req, res) => {
-    try {
-      console.log("Received data:", req.body);
-      // استخدام البيانات مباشرة من طلب المستخدم بعد التحقق الأساسي
-      const { name, icon, imageUrl, isActive } = req.body;
-
-      if (!name || !imageUrl) {
-        return res.status(400).json({ error: "الاسم وصورة الفئة مطلوبان" });
-      }
-
-      // استخدام SQL مباشر لإنشاء الفئة (الآن أصبحت حقول التاريخ من نوع TIMESTAMP)
-      const query = `
-        INSERT INTO categories (name, icon, image_url, is_active)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, name, icon, image_url as "imageUrl", is_active as "isActive", created_at, updated_at
-      `;
-
-      const result = await pool.query(query, [
-        name,
-        icon,
-        imageUrl || null,
-        isActive === undefined ? true : isActive,
-      ]);
-
-      if (result.rows.length > 0) {
-        // تنسيق البيانات المرسلة للعميل
-        const category = {
-          id: result.rows[0].id,
-          name: result.rows[0].name,
-          icon: result.rows[0].icon,
-          imageUrl: result.rows[0].imageUrl,
-          isActive: result.rows[0].is_active,
-        };
-
-        console.log("Category created successfully:", category);
-        res.status(201).json(category);
-      } else {
-        res.status(500).json({ error: "لم يتم إنشاء الفئة" });
-      }
-    } catch (error: any) {
-      console.error("SQL Error creating category:", error, error.message);
-      res
-        .status(400)
-        .json({ error: "فشل في إنشاء الفئة", details: error.message });
-    }
-  });
-
-  app.put("/api/categories/:id", async (req, res) => {
-    try {
-      const categoryId = Number(req.params.id);
-      const categoryData = updateCategorySchema.parse(req.body);
-      const updatedCategory = await storage.updateCategory(
-        categoryId,
-        categoryData,
-      );
-      if (!updatedCategory) {
-        return res.status(404).json({ error: "الفئة غير موجودة" });
-      }
-      res.json(updatedCategory);
-    } catch (error) {
-      console.error("Error updating category:", error);
-      res.status(400).json({ error: "فشل في تحديث الفئة" });
-    }
-  });
-
-  app.delete("/api/categories/:id", async (req, res) => {
-    try {
-      const categoryId = Number(req.params.id);
-      await storage.deleteCategory(categoryId);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      res.status(500).json({ error: "فشل في حذف الفئة" });
-    }
-  });
-
-  // Subcategories Management Endpoints
-  app.get("/api/subcategories", async (req, res) => {
-    try {
-      const categoryId = req.query.categoryId
-        ? Number(req.query.categoryId)
-        : undefined;
-      const subcategoriesList = await storage.getSubcategories(categoryId);
-      res.json(subcategoriesList);
-    } catch (error) {
-      console.error("Error fetching subcategories:", error);
-      res.status(500).json({ error: "فشل في جلب الفئات الفرعية" });
-    }
-  });
-
-  app.get("/api/subcategories/:id", async (req, res) => {
-    try {
-      const subcategory = await storage.getSubcategoryById(
-        Number(req.params.id),
-      );
-      if (!subcategory) {
-        return res.status(404).json({ error: "الفئة الفرعية غير موجودة" });
-      }
-      res.json(subcategory);
-    } catch (error) {
-      console.error("Error fetching subcategory:", error);
-      res.status(500).json({ error: "فشل في جلب الفئة الفرعية" });
-    }
-  });
-
-  app.post("/api/subcategories", async (req, res) => {
-    try {
-      console.log("Received subcategory data:", req.body);
-      // تحقق من وجود البيانات المطلوبة مباشرة
-      const { name, imageUrl, parentId } = req.body;
-
-      if (!name || !imageUrl || !parentId) {
-        return res
-          .status(400)
-          .json({ error: "اسم الفئة الفرعية وصورتها والفئة الأم مطلوبان" });
-      }
-
-      const subcategoryData = insertSubcategorySchema.parse(req.body);
-      const newSubcategory = await storage.createSubcategory(subcategoryData);
-      console.log("Subcategory created successfully:", newSubcategory);
-      res.status(201).json(newSubcategory);
-    } catch (error) {
-      console.error("Error creating subcategory:", error);
-      res.status(400).json({ error: "فشل في إنشاء الفئة الفرعية" });
-    }
-  });
-
-  app.put("/api/subcategories/:id", async (req, res) => {
-    try {
-      const subcategoryId = Number(req.params.id);
-      const subcategoryData = updateSubcategorySchema.parse(req.body);
-      const updatedSubcategory = await storage.updateSubcategory(
-        subcategoryId,
-        subcategoryData,
-      );
-      if (!updatedSubcategory) {
-        return res.status(404).json({ error: "الفئة الفرعية غير موجودة" });
-      }
-      res.json(updatedSubcategory);
-    } catch (error) {
-      console.error("Error updating subcategory:", error);
-      res.status(400).json({ error: "فشل في تحديث الفئة الفرعية" });
-    }
-  });
-
-  app.delete("/api/subcategories/:id", async (req, res) => {
-    try {
-      const subcategoryId = Number(req.params.id);
-      await storage.deleteSubcategory(subcategoryId);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting subcategory:", error);
-      res.status(500).json({ error: "فشل في حذف الفئة الفرعية" });
-    }
-  });
-
-  // Questions Management Endpoints
-  app.get("/api/questions", async (req, res) => {
-    try {
-      const questions = await storage.getQuestions();
-      res.json(questions);
-    } catch (error) {
-      console.error("Error fetching questions:", error);
-      res.status(500).json({ error: "فشل في جلب الأسئلة" });
-    }
-  });
-
-  app.get("/api/questions/category/:categoryId", async (req, res) => {
-    try {
-      const categoryId = Number(req.params.categoryId);
-      const subcategoryId = req.query.subcategoryId
-        ? Number(req.query.subcategoryId)
-        : undefined;
-      const questions = await storage.getQuestionsByCategory(
-        categoryId,
-        subcategoryId,
-      );
-      res.json(questions);
-    } catch (error) {
-      console.error("Error fetching questions by category:", error);
-      res.status(500).json({ error: "فشل في جلب الأسئلة حسب الفئة" });
-    }
-  });
-
-  app.get("/api/questions/:id", async (req, res) => {
-    try {
-      const question = await storage.getQuestionById(Number(req.params.id));
-      if (!question) {
-        return res.status(404).json({ error: "السؤال غير موجود" });
-      }
-      res.json(question);
-    } catch (error) {
-      console.error("Error fetching question:", error);
-      res.status(500).json({ error: "فشل في جلب السؤال" });
-    }
-  });
-
-  app.post("/api/questions", async (req, res) => {
-    try {
-      const questionData = insertQuestionSchema.parse(req.body);
-      const newQuestion = await storage.createQuestion(questionData);
-      res.status(201).json(newQuestion);
-    } catch (error) {
-      console.error("Error creating question:", error);
-      res.status(400).json({ error: "فشل في إنشاء السؤال" });
-    }
-  });
-
-  app.put("/api/questions/:id", async (req, res) => {
-    try {
-      const questionId = Number(req.params.id);
-      const questionData = updateQuestionSchema.parse(req.body);
-      const updatedQuestion = await storage.updateQuestion(
-        questionId,
-        questionData,
-      );
-      if (!updatedQuestion) {
-        return res.status(404).json({ error: "السؤال غير موجود" });
-      }
-      res.json(updatedQuestion);
-    } catch (error) {
-      console.error("Error updating question:", error);
-      res.status(400).json({ error: "فشل في تحديث السؤال" });
-    }
-  });
+  // Register categories router for all category endpoints
+  app.use("/api/categories", categoriesRouter);
   
-  // نقطة نهاية جديدة لتحديثات جزئية للأسئلة (مثل تغيير الفئة أو الصعوبة فقط)
-  app.patch("/api/questions/:id", async (req, res) => {
-    try {
-      const questionId = Number(req.params.id);
-      
-      // التحقق من وجود السؤال
-      const existingQuestion = await storage.getQuestionById(questionId);
-      if (!existingQuestion) {
-        return res.status(404).json({ error: "السؤال غير موجود" });
-      }
-      
-      // دمج الحقول الموجودة مع الحقول المُحدثة
-      const updatedData = {
-        ...existingQuestion,
-        ...req.body,
-        // الحفاظ على الحقول التي لا نريد تغييرها
-        id: existingQuestion.id,
-        createdAt: existingQuestion.createdAt,
-        updatedAt: new Date()
-      };
-      
-      const updatedQuestion = await storage.updateQuestion(
-        questionId,
-        updatedData
-      );
-      
-      res.json(updatedQuestion);
-    } catch (error) {
-      console.error("Error patching question:", error);
-      res.status(400).json({ error: "فشل في تحديث السؤال جزئياً" });
-    }
-  });
+  // Register questions router for all questions endpoints
+  app.use("/api/questions", questionsRouter);
 
-  app.delete("/api/questions/:id", async (req, res) => {
+  // Debugging endpoint to check database connection
+  app.get("/api/debug/db", async (req, res) => {
     try {
-      const questionId = Number(req.params.id);
-      await storage.deleteQuestion(questionId);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting question:", error);
-      res.status(500).json({ error: "فشل في حذف السؤال" });
-    }
-  });
-
-  // تحميل ملفات الوسائط للأسئلة (صور وفيديو)
-  app.post("/api/upload-media", upload.single('file'), (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "لم يتم تحميل أي ملف" });
-      }
-      
-      // إنشاء عنوان URL للملف المحمل
-      const fileUrl = `/uploads/${req.file.filename}`;
-      
-      // إرجاع البيانات
+      // تنفيذ استعلام بسيط للتحقق من الاتصال بقاعدة البيانات
+      const result = await pool.query("SELECT NOW()");
       res.json({
-        success: true,
-        url: fileUrl,
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype
+        message: "Database connection is active",
+        serverTime: result.rows[0].now,
       });
-    } catch (error: any) {
-      console.error("Error uploading media:", error);
-      res.status(500).json({ 
-        error: "فشل تحميل الملف",
-        message: error.message
-      });
+    } catch (error) {
+      console.error("Database connection error:", error);
+      res.status(500).json({ error: "Failed to connect to the database" });
     }
   });
 
-  // Footer settings API endpoints
-  app.get("/api/footer-settings", (_req, res) => {
-    // Sample footer settings data
-    const footerSettings = {
-      links: [
-        { label: "من نحن", url: "/about" },
-        { label: "اتصل بنا", url: "/contact" },
-        { label: "سياسة الخصوصية", url: "/privacy" },
-        { label: "الشروط والأحكام", url: "/terms" },
-        { label: "الأسئلة الشائعة", url: "/faq" },
-        { label: "English", url: "/en" },
-      ],
-      socialLinks: {
-        twitter: "https://twitter.com/jaweb",
-        whatsapp: "https://wa.me/966500000000",
-        telegram: "https://t.me/jaweb",
-        instagram: "https://instagram.com/jaweb",
-      },
-      copyright: "© 2025 جاوب - جميع الحقوق محفوظة",
-    };
-
-    res.json(footerSettings);
+  // WebSocket status endpoint
+  app.get("/api/websocket/status", (req, res) => {
+    try {
+      const status = webSocketManager.getStatus();
+      res.json({
+        ...status,
+        message: "WebSocket server status retrieved successfully"
+      });
+    } catch (error) {
+      console.error("WebSocket status error:", error);
+      res.status(500).json({ error: "Failed to get WebSocket status" });
+    }
   });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  // Endpoint to broadcast test activity
+  app.post("/api/websocket/test-activity", (req, res) => {
+    try {
+      const { message, type } = req.body;
+      
+      if (type === 'activity') {
+        const testActivity = webSocketManager.generateMockActivity();
+        if (message) {
+          testActivity.details = message;
+        }
+        webSocketManager.broadcastActivity(testActivity);
+        res.json({ 
+          success: true, 
+          message: "Test activity broadcasted successfully",
+          activity: testActivity
+        });
+      } else if (type === 'notification') {
+        webSocketManager.broadcastSystemNotification(
+          message || "تجريب إشعار النظام", 
+          "info"
+        );
+        res.json({ 
+          success: true, 
+          message: "Test notification broadcasted successfully" 
+        });
+      } else {
+        res.status(400).json({ error: "Invalid test type. Use 'activity' or 'notification'" });
+      }
+    } catch (error) {
+      console.error("WebSocket test broadcast error:", error);
+      res.status(500).json({ error: "Failed to broadcast test message" });
+    }
+  });
 
   const httpServer = createServer(app);
 

@@ -1,7 +1,7 @@
 import React from "react";
-import { DialogContent as ShadcnDialogContent } from "@/components/ui/dialog";
-import { useSite } from "@/context/SiteContext";
-import { cn } from "@/lib/utils";
+import { DialogContent as ShadcnDialogContent } from "./dialog";
+import { useSite } from "../../context/SiteContext";
+import { cn } from "../../lib/utils";
 
 interface ModalDialogContentProps extends React.ComponentPropsWithoutRef<typeof ShadcnDialogContent> {
   children: React.ReactNode;

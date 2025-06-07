@@ -1,11 +1,13 @@
 import { Edit, BarChart2, FolderEdit } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import { useToast } from "../../hooks/use-toast";
+import { apiRequest } from "../../lib/queryClient";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from "../ui/alert-dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { useCategorySelector } from "../../hooks/use-category-selector";
+import { useCategoryStore } from "../../hooks/use-category-store";
 
 // األنواع
 interface QuickEditProps {
@@ -23,27 +25,33 @@ interface QuickDifficultyProps {
 
 interface QuickCategoryProps {
   id: number;
-  categoryId: number;
+  categoryId: string; // Changed to string to work with category codes
   subcategoryId: number | null;
   categories: any[];
-  onUpdate: (id: number, categoryId: number, subcategoryId: number | null) => void;
+  onUpdate: (id: number, categoryId: string, subcategoryId: number | null) => void;
 }
 
 // مكونات التعديل السريع
-export function QuickEditText({ id, text, field, onUpdate }: QuickEditProps) {
-  const [open, setOpen] = useState(false);
+interface QuickEditTextProps extends QuickEditProps {
+  isEditing: boolean;
+  setEditing: (v: boolean) => void;
+}
+
+export function QuickEditText({ id, text, field, onUpdate, isEditing, setEditing }: QuickEditTextProps) {
   const [value, setValue] = useState(text);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  // تحديث القيمة عند تغيير النص الأصلي
+  useEffect(() => { setValue(text); }, [text]);
+
   const handleSave = async () => {
     if (!value.trim()) return;
-    
     setIsSaving(true);
     try {
       await apiRequest("PUT", `/api/questions/${id}`, { [field]: value });
       onUpdate(id, field, value);
-      setOpen(false);
+      setEditing(false);
       toast({
         title: "تم التعديل",
         description: "تم تعديل البيانات بنجاح",
@@ -60,67 +68,50 @@ export function QuickEditText({ id, text, field, onUpdate }: QuickEditProps) {
     }
   };
 
-  return (
-    <>
-      <button 
-        className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-        onClick={() => setOpen(true)}
-        title={`تعديل ${field === 'text' ? 'السؤال' : 'الإجابة'}`}
-      >
-        <Edit className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+  if (isEditing) {
+    return (
+      <span className="flex items-center gap-1">
+        <Input
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          className="w-32 h-7 px-2 text-xs"
+          autoFocus
+        />
+        <Button size="sm" variant="outline" className="px-2 py-1 text-xs" onClick={handleSave} disabled={isSaving}>
+          حفظ
+        </Button>
+        <Button size="sm" variant="ghost" className="px-2 py-1 text-xs" onClick={() => { setEditing(false); setValue(text); }}>
+          إلغاء
+        </Button>
+      </span>
+    );
+  }
 
-      <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {field === 'text' ? 'تعديل السؤال' : 'تعديل الإجابة'}
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-          
-          <div className="py-4">
-            <Input
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          
-          <AlertDialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setOpen(false)}
-            >
-              إلغاء
-            </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? 'جاري الحفظ...' : 'حفظ'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+  return (
+    <button className="p-1 rounded hover:bg-muted opacity-80" onClick={() => setEditing(true)} title={`تعديل ${field === 'text' ? 'السؤال' : 'الإجابة'}`}>
+      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.65 3.35a2.121 2.121 0 0 1 3 3L6.5 15.5H3v-3.5l9.65-8.65Z"/></svg>
+    </button>
   );
 }
 
 export function QuickEditDifficulty({ id, difficulty, onUpdate }: QuickDifficultyProps) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(difficulty.toString());
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(
+    typeof difficulty === "number" && difficulty !== null && difficulty !== undefined 
+      ? difficulty.toString() 
+      : "1"
+  );
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const handleSave = async () => {
     const newDifficulty = parseInt(value);
     if (isNaN(newDifficulty)) return;
-    
     setIsSaving(true);
     try {
       await apiRequest("PUT", `/api/questions/${id}`, { difficulty: newDifficulty });
       onUpdate(id, newDifficulty);
-      setOpen(false);
+      setEditing(false);
       toast({
         title: "تم التعديل",
         description: "تم تعديل مستوى الصعوبة بنجاح",
@@ -137,84 +128,65 @@ export function QuickEditDifficulty({ id, difficulty, onUpdate }: QuickDifficult
     }
   };
 
-  return (
-    <>
-      <button 
-        className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-        onClick={() => setOpen(true)}
-        title="تغيير مستوى الصعوبة"
-      >
-        <BarChart2 className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+  if (editing) {
+    return (
+      <span className="flex items-center gap-1">
+        <Select value={value} onValueChange={setValue}>
+          <SelectTrigger className="w-24 h-7 text-xs">
+            <SelectValue placeholder="اختر مستوى الصعوبة" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">سهل</SelectItem>
+            <SelectItem value="2">متوسط</SelectItem>
+            <SelectItem value="3">صعب</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button size="sm" variant="outline" className="px-2 py-1 text-xs" onClick={handleSave} disabled={isSaving}>
+          حفظ
+        </Button>
+        <Button size="sm" variant="ghost" className="px-2 py-1 text-xs" onClick={() => { setEditing(false); setValue(difficulty?.toString() || "1"); }}>
+          إلغاء
+        </Button>
+      </span>
+    );
+  }
 
-      <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              تعديل مستوى الصعوبة
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-          
-          <div className="py-4">
-            <Select 
-              value={value} 
-              onValueChange={setValue}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="اختر مستوى الصعوبة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">سهل</SelectItem>
-                <SelectItem value="2">متوسط</SelectItem>
-                <SelectItem value="3">صعب</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <AlertDialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setOpen(false)}
-            >
-              إلغاء
-            </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? 'جاري الحفظ...' : 'حفظ'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+  return (
+    <button className="text-xs text-blue-600 underline hover:text-blue-800 px-1" onClick={() => setEditing(true)} title="تعديل الصعوبة">
+      تعديل
+    </button>
   );
 }
 
-export function QuickEditCategory({ id, categoryId, subcategoryId, categories, onUpdate }: QuickCategoryProps) {
-  const [open, setOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(categoryId.toString());
-  const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryId?.toString() || "");
+export function QuickEditCategory({ id, categoryId, subcategoryId, categories: _categories, onUpdate }: QuickCategoryProps) {
+  const { categories } = useCategoryStore();
+  const [editing, setEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const subcategories = categories.find(c => c.id.toString() === selectedCategory)?.children || [];
+  // استخدم hook موحد لإدارة اختيار الفئة والفئة الفرعية
+  const {
+    categoryId: selectedCategory,
+    setCategoryId: setSelectedCategory,
+    subcategoryId: selectedSubcategory,
+    setSubcategoryId: setSelectedSubcategory,
+    availableSubcategories: subcategories,
+  } = useCategorySelector({
+    categories,
+    initialCategoryId: categoryId,
+    initialSubcategoryId: subcategoryId,
+  });
 
   const handleSave = async () => {
-    const catId = parseInt(selectedCategory);
-    const subcatId = selectedSubcategory ? parseInt(selectedSubcategory) : null;
-    
-    if (isNaN(catId)) return;
-    
+    if (!selectedCategory) return;
     setIsSaving(true);
     try {
-      await apiRequest("PUT", `/api/questions/${id}`, { 
-        categoryId: catId,
-        subcategoryId: subcatId
+      await apiRequest("PUT", `/api/questions/${id}`, {
+        main_category_code: selectedCategory, // Use category code
+        subcategory_id: selectedSubcategory || null,
       });
-      
-      onUpdate(id, catId, subcatId);
-      setOpen(false);
+      onUpdate(id, selectedCategory, selectedSubcategory || null);
+      setEditing(false);
       toast({
         title: "تم التعديل",
         description: "تم تعديل الفئة بنجاح",
@@ -231,86 +203,56 @@ export function QuickEditCategory({ id, categoryId, subcategoryId, categories, o
     }
   };
 
-  return (
-    <>
-      <button 
-        className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-        onClick={() => setOpen(true)}
-        title="تغيير الفئة"
-      >
-        <FolderEdit className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+  if (editing) {
+    return (
+      <span className="flex items-center gap-1">
+        <Select
+          value={selectedCategory || ""}
+          onValueChange={(value) => {
+            setSelectedCategory(value);
+            setSelectedSubcategory(null);
+          }}
+        >
+          <SelectTrigger className="w-28 h-7 text-xs">
+            <SelectValue placeholder="اختر الفئة الرئيسية" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.filter((category: any) => category && category.code && category.name).map((category: any) => (
+              <SelectItem key={category.code} value={category.code}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {subcategories.length > 0 && (          <Select
+            value={typeof selectedSubcategory === "number" && selectedSubcategory !== null && selectedSubcategory !== undefined ? selectedSubcategory.toString() : "none"}
+            onValueChange={(value) => setSelectedSubcategory(value && value !== "none" ? parseInt(value) : null)}
+          >
+            <SelectTrigger className="w-28 h-7 text-xs">
+              <SelectValue placeholder="اختر الفئة الفرعية" />
+            </SelectTrigger>            <SelectContent>
+              <SelectItem value="none">بدون فئة فرعية</SelectItem>
+              {subcategories.filter((subcategory) => subcategory && typeof subcategory.id === "number").map((subcategory) => (
+                <SelectItem key={subcategory.id.toString()} value={subcategory.id.toString()}>
+                  {subcategory.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Button size="sm" variant="outline" className="px-2 py-1 text-xs" onClick={handleSave} disabled={isSaving}>
+          حفظ
+        </Button>
+        <Button size="sm" variant="ghost" className="px-2 py-1 text-xs" onClick={() => setEditing(false)}>
+          إلغاء
+        </Button>
+      </span>
+    );
+  }
 
-      <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              تعديل الفئة
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-          
-          <div className="py-4 space-y-4">
-            <div>
-              <label className="block mb-2 text-sm">الفئة الرئيسية</label>
-              <Select 
-                value={selectedCategory} 
-                onValueChange={(value) => {
-                  setSelectedCategory(value);
-                  setSelectedSubcategory("");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="اختر الفئة الرئيسية" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {subcategories.length > 0 && (
-              <div>
-                <label className="block mb-2 text-sm">الفئة الفرعية</label>
-                <Select 
-                  value={selectedSubcategory} 
-                  onValueChange={setSelectedSubcategory}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="اختر الفئة الفرعية" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">بدون فئة فرعية</SelectItem>
-                    {subcategories.map((subcategory) => (
-                      <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
-                        {subcategory.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-          
-          <AlertDialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setOpen(false)}
-            >
-              إلغاء
-            </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? 'جاري الحفظ...' : 'حفظ'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+  return (
+    <button className="text-xs text-blue-600 underline hover:text-blue-800 px-1" onClick={() => setEditing(true)} title="تعديل الفئة">
+      تعديل
+    </button>
   );
 }

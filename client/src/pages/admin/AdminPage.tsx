@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Route, Switch, Link, useLocation } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '../../hooks/use-toast';
+import { apiRequest } from '../../lib/queryClient';
+import { ScrollArea } from '../../components/ui/scroll-area';
+import { useSite } from '../../context/SiteContext';
 import Dashboard from './Dashboard';
 import UserManagement from './sections/UserManagement';
 import CategoriesManagement from './sections/CategoriesManagement';
-import QuestionsManagement from './sections/QuestionsManagement';
+import QuestionsManagementTabbed from './questions/QuestionsManagementTabbed';
 import GameSettingsManagement from './sections/GameSettingsManagement';
 import PackagesManagement from './sections/PackagesManagement';
 import LevelsManagement from './sections/LevelsManagement';
@@ -27,11 +29,9 @@ import {
   Home,
   Globe,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useSite } from '@/context/SiteContext';
+import { Button } from '../../components/ui/button';
+import { cn } from '../../lib/utils';
+import { Separator } from '../../components/ui/separator';
 
 // مكون عنصر القائمة الجانبية
 interface SidebarItemProps {
@@ -95,17 +95,32 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
   const { toast } = useToast();
-  const { siteSettings } = useSite();
+  
+  // معالجة آمنة لـ SiteContext
+  let siteSettings = null;
+  try {
+    const site = useSite();
+    siteSettings = site.siteSettings;
+  } catch (error) {
+    console.error('Error accessing SiteContext:', error);
+    siteSettings = { appName: 'جاوب' }; // قيمة افتراضية
+  }
+  
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [password, setPassword] = useState('');
-
   // التحقق من حالة تسجيل الدخول
   useEffect(() => {
     const checkAuth = () => {
-      const isLoggedIn = localStorage.getItem('adminAuth') === 'true';
-      setIsAuthenticated(isLoggedIn);
-      setIsLoading(false);
+      try {
+        const isLoggedIn = localStorage.getItem('adminAuth') === 'true';
+        setIsAuthenticated(isLoggedIn);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setIsAuthenticated(false);
+        setIsLoading(false);
+      }
     };
 
     checkAuth();
@@ -167,8 +182,7 @@ export default function AdminPage() {
         <div className="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
           <div className="p-6 pb-4 bg-primary text-white text-center">
             <SlidersHorizontal className="h-12 w-12 mx-auto mb-2" />
-            <h2 className="text-xl font-bold">لوحة تحكم الإدارة</h2>
-            <p className="text-sm opacity-80 mt-1">
+            <h2 className="text-xl font-bold">لوحة تحكم الإدارة</h2>            <p className="text-sm opacity-80 mt-1">
               {siteSettings?.appName || 'تطبيق جاوب'}
             </p>
           </div>
@@ -215,8 +229,7 @@ export default function AdminPage() {
           )}
         >
           <div className="p-6 flex flex-col h-full">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-bold">
+            <div className="flex items-center justify-between">              <span className="text-lg font-bold">
                 {siteSettings?.appName || 'جاوب'}
               </span>
               <Button 
@@ -298,12 +311,11 @@ export default function AdminPage() {
             sidebarOpen && "lg:pr-72"
           )}
         >
-          <div className="container p-4 md:p-8">
-            <Switch>
+          <div className="container p-4 md:p-8">            <Switch>
               <Route path="/admin" component={Dashboard} />
               <Route path="/admin/users" component={UserManagement} />
               <Route path="/admin/categories" component={CategoriesManagement} />
-              <Route path="/admin/questions" component={QuestionsManagement} />
+              <Route path="/admin/questions" component={QuestionsManagementTabbed} />
               <Route path="/admin/game-settings" component={GameSettingsManagement} />
               <Route path="/admin/packages" component={PackagesManagement} />
               <Route path="/admin/levels" component={LevelsManagement} />

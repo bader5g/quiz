@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Edit, BarChart2, FolderEdit } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "../../hooks/use-toast";
+import { apiRequest } from "../../lib/queryClient";
+import { useCategorySelector } from "../../hooks/use-category-selector";
+import { useCategoryStore } from "../../hooks/use-category-store";
 
 // تعريف أنواع البيانات
 interface CategoryChild {
@@ -26,11 +28,12 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  DialogFooter, 
+  DialogDescription 
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 // زر تعديل النص (سؤال أو إجابة)
 export function EditTextButton({ 
@@ -142,54 +145,60 @@ export function EditTextButton({
 // زر تعديل الفئة
 interface EditCategoryButtonProps {
   id: number;
-  categoryId: number;
+  categoryId: string; // تغيير من number إلى string لتمثيل main_category_code
   subcategoryId: number | null;
   categories: Category[];
-  onUpdate: (id: number, categoryId: number, subcategoryId: number | null, categoryName: string, categoryIcon: string, subcategoryName: string | null) => void;
+  onUpdate: (id: number, categoryId: string, subcategoryId: number | null, categoryName: string, categoryIcon: string, subcategoryName: string | null) => void;
 }
 
 export function EditCategoryButton({
   id,
   categoryId,
   subcategoryId,
-  categories,
+  categories: propCategories,
   onUpdate
 }: EditCategoryButtonProps) {
+  const store = useCategoryStore();
+  const categories = (propCategories && propCategories.length > 0) ? propCategories : store.categories;
+  const loading = store.loading;
   const [open, setOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(categoryId.toString());
-  const [selectedSubcategory, setSelectedSubcategory] = useState(
-    subcategoryId ? subcategoryId.toString() : ""
-  );
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const subcategories: CategoryChild[] = categories.find((c: Category) => c.id.toString() === selectedCategory)?.children || [];
+  // تحويل كود الفئة إلى ID للعمل مع useCategorySelector - الآن نستخدم الكود مباشرة
+  const {
+    categoryId: selectedCategory,
+    setCategoryId: setSelectedCategory,
+    subcategoryId: selectedSubcategory,
+    setSubcategoryId: setSelectedSubcategory,
+    availableSubcategories: subcategories,
+  } = useCategorySelector({
+    categories,
+    initialCategoryId: categoryId, // استخدم الكود مباشرة
+    initialSubcategoryId: subcategoryId,
+  });
 
   const handleSave = async () => {
-    const catId = parseInt(selectedCategory);
-    const subcatId = selectedSubcategory ? parseInt(selectedSubcategory) : null;
-    
-    if (isNaN(catId)) return;
-    
+    if (!selectedCategory) return;
     setIsSaving(true);
     try {
-      await apiRequest("PATCH", `/api/questions/${id}`, { 
-        categoryId: catId,
-        subcategoryId: subcatId
+      // الحصول على كود الفئة - selectedCategory الآن هو الكود مباشرة
+      const category = categories.find((c: any) => c.code === selectedCategory);
+      const main_category_code = selectedCategory; // الكود مباشرة
+      const subcategory_id = selectedSubcategory || null;
+      await apiRequest("PATCH", `/api/questions/${id}`, {
+        main_category_code,
+        subcategory_id,
       });
-      
-      const category = categories.find((c: Category) => c.id === catId);
-      const subcategory = category?.children.find((s: CategoryChild) => s.id === subcatId);
-      
+      const subcategory = category?.children.find((s: any) => s.id === selectedSubcategory);
       onUpdate(
-        id, 
-        catId, 
-        subcatId, 
-        category?.name || '', 
-        category?.icon || '', 
+        id,
+        main_category_code,
+        subcategory_id,
+        category?.name || '',
+        category?.icon || '',
         subcategory?.name || null
       );
-      
       setOpen(false);
       toast({
         title: "تم التعديل بنجاح",
@@ -198,10 +207,7 @@ export function EditCategoryButton({
       });
     } catch (error) {
       console.error("Error updating category:", error);
-      
-      // تحسين رسائل الخطأ لتكون أكثر تحديدًا
       let errorMessage = "حدث خطأ أثناء تعديل الفئة";
-      
       if (error instanceof Error) {
         if (error.message.includes("timeout")) {
           errorMessage = "انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.";
@@ -215,7 +221,6 @@ export function EditCategoryButton({
           errorMessage = "الفئة المحددة غير موجودة.";
         }
       }
-      
       toast({
         title: "خطأ في تعديل الفئة",
         description: errorMessage,
@@ -229,9 +234,20 @@ export function EditCategoryButton({
   return (
     <>
       <button 
-        className="hover:bg-muted p-1 rounded opacity-70 hover:opacity-100" 
-        onClick={() => setOpen(true)}
+        className={`hover:bg-muted p-1 rounded opacity-70 hover:opacity-100 ${loading || !categories || categories.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+        onClick={() => {
+          if (loading) {
+            toast({ title: "جاري تحميل الفئات...", description: "يرجى الانتظار حتى يتم تحميل الفئات.", variant: "default" });
+            return;
+          }
+          if (!categories || categories.length === 0) {
+            toast({ title: "لا توجد فئات متاحة", description: "يرجى إضافة فئات أولاً.", variant: "destructive" });
+            return;
+          }
+          setOpen(true);
+        }}
         title="تغيير الفئة"
+        disabled={loading || !categories || categories.length === 0}
       >
         <FolderEdit className="h-3.5 w-3.5 text-muted-foreground" />
       </button>
@@ -242,68 +258,136 @@ export function EditCategoryButton({
             <DialogTitle>
               تعديل الفئة
             </DialogTitle>
+            <DialogDescription>
+              اختر الفئة الرئيسية والفرعية للسؤال ثم اضغط حفظ. إذا لم تظهر الفئات، استخدم زر debug أدناه.
+            </DialogDescription>
             <div className="text-sm text-muted-foreground mt-2">
               اختر الفئة الرئيسية والفرعية للسؤال
             </div>
           </DialogHeader>
-          
           <div className="py-4 space-y-4">
-            <div>
-              <label className="block mb-2 text-sm">الفئة الرئيسية</label>
-              <Select 
-                value={selectedCategory} 
-                onValueChange={(value) => {
-                  setSelectedCategory(value);
-                  setSelectedSubcategory("");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="اختر الفئة الرئيسية" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category: Category) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {subcategories.length > 0 && (
-              <div>
-                <label className="block mb-2 text-sm">الفئة الفرعية</label>
-                <Select 
-                  value={selectedSubcategory} 
-                  onValueChange={setSelectedSubcategory}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="اختر الفئة الفرعية" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">بدون فئة فرعية</SelectItem>
-                    {subcategories.map((subcategory: CategoryChild) => (
-                      <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
-                        {subcategory.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {loading ? (
+              <div className="text-center text-muted-foreground text-xs mt-2">جاري تحميل الفئات...</div>
+            ) : (
+              <>
+                <div>
+                  <label className="block mb-2 text-sm font-bold text-primary">الفئة الرئيسية</label>
+                  <Select
+                    value={selectedCategory || "no-categories"}
+                    onValueChange={(value) => {
+                      if (value === "no-categories") return;
+                      setSelectedCategory(value);
+                      setSelectedSubcategory(null);
+                    }}
+                    disabled={!categories || categories.length === 0}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="اختر الفئة الرئيسية" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories && categories.length > 0 ? (
+                        categories.filter((category: any) => category && category.code && category.name).map((category: any) => (
+                          <SelectItem key={category.code} value={category.code}>
+                            <span className="flex items-center gap-2">
+                              {category.icon && <span className="text-lg">{category.icon}</span>}
+                              <span>{category.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-categories" disabled>
+                          لا توجد فئات متاحة
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {subcategories && subcategories.length > 0 && (
+                  <div>
+                    <label className="block mb-2 text-sm">الفئة الفرعية</label>
+                    <Select
+                      value={
+                        typeof selectedSubcategory === "number" && selectedSubcategory !== null && selectedSubcategory !== undefined
+                          ? selectedSubcategory.toString()
+                          : "none"
+                      }
+                      onValueChange={(value) => setSelectedSubcategory(value && value !== "none" ? parseInt(value) : null)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="اختر الفئة الفرعية" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون فئة فرعية</SelectItem>
+                        {subcategories
+                          .filter((subcategory: any) => subcategory && typeof subcategory.id === 'number' && !isNaN(subcategory.id))
+                          .map((subcategory: any) => (
+                            <SelectItem key={subcategory.id.toString()} value={subcategory.id.toString()}>
+                              {subcategory.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {/* زر debug لعرض معلومات الحالة */}
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // eslint-disable-next-line no-alert
+                      alert(
+                        `categories: ${JSON.stringify(categories, null, 2)}\n` +
+                        `selectedCategory: ${selectedCategory}\n` +
+                        `subcategories: ${JSON.stringify(subcategories, null, 2)}\n` +
+                        `selectedSubcategory: ${selectedSubcategory}`
+                      );
+                    }}
+                  >
+                    عرض الأخطاء (debug)
+                  </Button>
+                </div>
+                {/* معالجة حالة عدم وجود فئات */}
+                {(!categories || categories.length === 0) && (
+                  <div className="text-center text-muted-foreground text-xs mt-2">لا توجد فئات متاحة حاليًا. يرجى إضافة فئات أولاً.</div>
+                )}
+              </>
             )}
+            
+            {/* زر debug لمعلومات الحالة */}
+            <details className="mt-4">
+              <summary className="cursor-pointer text-xs text-muted-foreground hover:text-primary">
+                🐛 معلومات Debug
+              </summary>
+              <div className="mt-2 p-3 bg-muted rounded-md">
+                <textarea
+                  readOnly
+                  className="w-full h-32 text-xs font-mono bg-background border rounded p-2 resize-none"
+                  value={JSON.stringify({
+                    questionId: id,
+                    currentCategoryId: categoryId,
+                    currentSubcategoryId: subcategoryId,
+                    selectedCategory,
+                    selectedSubcategory,
+                    categoriesCount: categories?.length || 0,
+                    categoriesLoading: loading,
+                    storeCategories: store.categories?.length || 0,
+                    propCategories: propCategories?.length || 0,
+                    availableSubcategories: subcategories?.length || 0,
+                    categories: categories?.map(c => ({ id: c.id, code: c.code, name: c.name })) || []
+                  }, null, 2)}
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  يمكنك نسخ هذه المعلومات لمساعدة المطور في حل المشاكل
+                </div>
+              </div>
+            </details>
           </div>
-          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setOpen(false)}>
               إلغاء
             </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-            >
+            <Button onClick={() => handleSave()} disabled={isSaving || !categories || categories.length === 0 || loading}>
               {isSaving ? 'جاري الحفظ...' : 'حفظ'}
             </Button>
           </DialogFooter>
@@ -326,7 +410,11 @@ export function EditDifficultyButton({
   onUpdate
 }: EditDifficultyButtonProps) {
   const [open, setOpen] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState(difficulty.toString());
+  const [selectedDifficulty, setSelectedDifficulty] = useState(
+    typeof difficulty === "number" && difficulty !== null && difficulty !== undefined 
+      ? difficulty.toString() 
+      : "1"
+  );
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -347,7 +435,7 @@ export function EditDifficultyButton({
       
       toast({
         title: "تم التعديل بنجاح",
-        description: `تم تعديل مستوى الصعوبة إلى "${difficultyLabels[difficultyLevel.toString()] || difficultyLevel}"`,
+        description: `تم تعديل مستوى الصعوبة إلى "${difficultyLabels[difficultyLevel.toString() as keyof typeof difficultyLabels] || difficultyLevel}"`,
         variant: "default",
       });
     } catch (error) {
@@ -396,27 +484,37 @@ export function EditDifficultyButton({
             <DialogTitle>
               تعديل مستوى الصعوبة
             </DialogTitle>
+            <DialogDescription>
+              اختر مستوى صعوبة السؤال المناسب ثم اضغط حفظ.
+            </DialogDescription>
             <div className="text-sm text-muted-foreground mt-2">
               اختر مستوى صعوبة السؤال المناسب
             </div>
           </DialogHeader>
-          
           <div className="py-4">
-            <Select 
-              value={selectedDifficulty} 
-              onValueChange={setSelectedDifficulty}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="اختر مستوى الصعوبة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">سهل</SelectItem>
-                <SelectItem value="2">متوسط</SelectItem>
-                <SelectItem value="3">صعب</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <label className="block mb-1 font-medium">مستوى الصعوبة</label>
+              <Select 
+                value={selectedDifficulty} 
+                onValueChange={setSelectedDifficulty}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="اختر مستوى الصعوبة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">
+                    <span className="font-bold text-green-700">سهل</span>
+                  </SelectItem>
+                  <SelectItem value="2">
+                    <span className="font-bold text-yellow-700">متوسط</span>
+                  </SelectItem>
+                  <SelectItem value="3">
+                    <span className="font-bold text-red-700">صعب</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
           <DialogFooter>
             <Button 
               variant="outline" 

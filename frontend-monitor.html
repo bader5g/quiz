@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مراقب الواجهة الأمامية - تتبع النقرات والأخطاء</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .monitor-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-card h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+            color: #4fc3f7;
+        }
+        
+        .logs-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .log-entry {
+            background: rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #4fc3f7;
+        }
+        
+        .log-entry.error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        
+        .log-entry.success {
+            border-left-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .log-entry.warning {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+        
+        .log-time {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .test-area {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .test-btn {
+            background: linear-gradient(45deg, #4fc3f7, #29b6f6);
+            border: none;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .test-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(79, 195, 247, 0.4);
+        }
+        
+        .iframe-container {
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 600px;
+        }
+        
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="monitor-container">
+        <div class="header">
+            <h1>🔍 مراقب الواجهة الأمامية الشامل</h1>
+            <p>تتبع جميع النقرات والأخطاء والطلبات في الوقت الفعلي</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3 id="clickCount">0</h3>
+                <p>النقرات</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="errorCount">0</h3>
+                <p>الأخطاء</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="apiCount">0</h3>
+                <p>طلبات API</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="successRate">100%</h3>
+                <p>معدل النجاح</p>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="clearLogs()">مسح السجلات</button>
+            <button class="btn" onclick="exportLogs()">تصدير السجلات</button>
+            <button class="btn" onclick="toggleMonitoring()">إيقاف/تشغيل المراقبة</button>
+            <button class="btn" onclick="testErrorHandling()">اختبار معالجة الأخطاء</button>
+        </div>
+        
+        <div class="logs-container" id="logsContainer">
+            <div class="log-entry success">
+                <div class="log-time" id="startTime">بدء المراقبة...</div>
+                <div>🟢 نظام المراقبة جاهز للعمل</div>
+            </div>
+        </div>
+        
+        <div class="test-area">
+            <h3>🧪 منطقة الاختبار - اختبر التفاعلات هنا</h3>
+            <div class="test-buttons">
+                <button class="test-btn" onclick="testCategoryChange()">اختبار تغيير الفئة</button>
+                <button class="test-btn" onclick="testDifficultyChange()">اختبار تغيير الصعوبة</button>
+                <button class="test-btn" onclick="testActiveToggle()">اختبار تفعيل/إلغاء</button>
+                <button class="test-btn" onclick="testTextEdit()">اختبار تعديل النص</button>
+                <button class="test-btn" onclick="testApiCall()">اختبار طلب API</button>
+                <button class="test-btn" onclick="simulateError()">محاكاة خطأ</button>
+            </div>
+        </div>
+        
+        <div class="iframe-container">
+            <iframe src="http://localhost:5000/admin" id="adminFrame"></iframe>
+        </div>
+    </div>
+
+    <script>
+        class FrontendMonitor {
+            constructor() {
+                this.logs = [];
+                this.stats = {
+                    clicks: 0,
+                    errors: 0,
+                    apiCalls: 0,
+                    successful: 0
+                };
+                this.isMonitoring = true;
+                this.startTime = new Date();
+                
+                this.initializeMonitoring();
+                this.updateStartTime();
+                this.startPeriodicUpdates();
+            }
+            
+            initializeMonitoring() {
+                this.log('info', '🎯 بدء مراقبة الواجهة الأمامية', { timestamp: new Date() });
+                
+                // مراقبة النقرات في الـ iframe
+                this.monitorIframeClicks();
+                
+                // مراقبة أخطاء JavaScript
+                this.monitorErrors();
+                
+                // مراقبة طلبات الشبكة
+                this.monitorNetworkRequests();
+                
+                // مراقبة تغييرات DOM
+                this.monitorDOMChanges();
+                
+                // مراقبة Local Storage
+                this.monitorLocalStorage();
+            }
+            
+            monitorIframeClicks() {
+                const iframe = document.getElementById('adminFrame');
+                
+                iframe.onload = () => {
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        
+                        iframeDoc.addEventListener('click', (event) => {
+                            if (!this.isMonitoring) return;
+                            
+                            this.stats.clicks++;
+                            this.updateStats();
+                            
+                            const element = event.target;
+                            const elementInfo = {
+                                tagName: element.tagName,
+                                className: element.className,
+                                id: element.id,
+                                textContent: element.textContent?.substring(0, 50),
+                                coordinates: { x: event.clientX, y: event.clientY }
+                            };
+                            
+                            this.log('click', `👆 نقرة على ${element.tagName}`, elementInfo);
+                            
+                            // إرسال معلومات النقرة للخادم
+                            this.sendToServer('user_action', {
+                                action: 'click',
+                                element: elementInfo,
+                                timestamp: new Date()
+                            });
+                            
+                        }, true);
+                        
+                        this.log('success', '✅ تم ربط مراقب النقرات بـ iframe', {});
+                        
+                    } catch (error) {
+                        this.log('error', '❌ فشل في الوصول لمحتوى iframe (مشاكل CORS)', { error: error.message });
+                    }
+                };
+            }
+            
+            monitorErrors() {
+                window.addEventListener('error', (event) => {
+                    if (!this.isMonitoring) return;
+                    
+                    this.stats.errors++;
+                    this.updateStats();
+                    
+                    const errorInfo = {
+                        message: event.message,
+                        filename: event.filename,
+                        line: event.lineno,
+                        column: event.colno,
+                        stack: event.error?.stack
+                    };
+                    
+                    this.log('error', `🚨 خطأ JavaScript: ${event.message}`, errorInfo);
+                    
+                    this.sendToServer('error', errorInfo);
+                });
+                
+                window.addEventListener('unhandledrejection', (event) => {
+                    if (!this.isMonitoring) return;
+                    
+                    this.stats.errors++;
+                    this.updateStats();
+                    
+                    const errorInfo = {
+                        reason: event.reason,
+                        promise: event.promise.toString()
+                    };
+                    
+                    this.log('error', `🚨 Promise مرفوض: ${event.reason}`, errorInfo);
+                    
+                    this.sendToServer('error', errorInfo);
+                });
+            }
+            
+            monitorNetworkRequests() {
+                // Monkey patch fetch
+                const originalFetch = window.fetch;
+                window.fetch = async (...args) => {
+                    if (!this.isMonitoring) return originalFetch(...args);
+                    
+                    const startTime = Date.now();
+                    const url = args[0];
+                    const options = args[1] || {};
+                    
+                    this.stats.apiCalls++;
+                    this.updateStats();
+                    
+                    try {
+                        const response = await originalFetch(...args);
+                        const endTime = Date.now();
+                        const duration = endTime - startTime;
+                        
+                        if (response.ok) {
+                            this.stats.successful++;
+                        }
+                        
+                        this.updateStats();
+                        
+                        const requestInfo = {
+                            url,
+                            method: options.method || 'GET',
+                            status: response.status,
+                            duration,
+                            headers: Object.fromEntries(response.headers.entries())
+                        };
+                        
+                        const logType = response.ok ? 'success' : 'error';
+                        const icon = response.ok ? '✅' : '❌';
+                        
+                        this.log(logType, `${icon} ${options.method || 'GET'} ${url} - ${response.status} (${duration}ms)`, requestInfo);
+                        
+                        this.sendToServer('api_call', requestInfo);
+                        
+                        return response;
+                    } catch (error) {
+                        const endTime = Date.now();
+                        const duration = endTime - startTime;
+                        
+                        this.stats.errors++;
+                        this.updateStats();
+                        
+                        const errorInfo = {
+                            url,
+                            method: options.method || 'GET',
+                            error: error.message,
+                            duration
+                        };
+                        
+                        this.log('error', `❌ فشل طلب ${options.method || 'GET'} ${url}: ${error.message}`, errorInfo);
+                        
+                        this.sendToServer('network_error', errorInfo);
+                        
+                        throw error;
+                    }
+                };
+            }
+            
+            monitorDOMChanges() {
+                const observer = new MutationObserver((mutations) => {
+                    if (!this.isMonitoring) return;
+                    
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            const changeInfo = {
+                                type: mutation.type,
+                                addedNodes: mutation.addedNodes.length,
+                                target: mutation.target.tagName
+                            };
+                            
+                            this.log('info', `🔄 تغيير في DOM: إضافة ${mutation.addedNodes.length} عناصر`, changeInfo);
+                        }
+                    });
+                });
+                
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+            
+            monitorLocalStorage() {
+                const originalSetItem = localStorage.setItem;
+                localStorage.setItem = function(key, value) {
+                    monitor.log('info', `💾 تحديث Local Storage: ${key}`, { key, value: value.substring(0, 100) });
+                    return originalSetItem.call(this, key, value);
+                };
+            }
+            
+            async sendToServer(type, data) {
+                try {
+                    await fetch('http://localhost:3001/monitor/log', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type,
+                            data,
+                            timestamp: new Date(),
+                            source: 'frontend'
+                        })
+                    });
+                } catch (error) {
+                    console.warn('فشل في إرسال البيانات للخادم:', error);
+                }
+            }
+            
+            log(type, message, data = {}) {
+                const logEntry = {
+                    timestamp: new Date(),
+                    type,
+                    message,
+                    data
+                };
+                
+                this.logs.push(logEntry);
+                this.displayLog(logEntry);
+                
+                // الاحتفاظ بآخر 100 سجل فقط
+                if (this.logs.length > 100) {
+                    this.logs = this.logs.slice(-100);
+                }
+            }
+            
+            displayLog(logEntry) {
+                const container = document.getElementById('logsContainer');
+                const logDiv = document.createElement('div');
+                logDiv.className = `log-entry ${logEntry.type}`;
+                
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'log-time';
+                timeDiv.textContent = logEntry.timestamp.toLocaleTimeString();
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.textContent = logEntry.message;
+                
+                if (Object.keys(logEntry.data).length > 0) {
+                    const dataDiv = document.createElement('div');
+                    dataDiv.style.fontSize = '0.8em';
+                    dataDiv.style.opacity = '0.8';
+                    dataDiv.style.marginTop = '5px';
+                    dataDiv.textContent = JSON.stringify(logEntry.data, null, 2);
+                    logDiv.appendChild(dataDiv);
+                }
+                
+                logDiv.appendChild(timeDiv);
+                logDiv.appendChild(messageDiv);
+                
+                container.appendChild(logDiv);
+                container.scrollTop = container.scrollHeight;
+                
+                // إزالة السجلات القديمة من DOM
+                while (container.children.length > 50) {
+                    container.removeChild(container.firstChild);
+                }
+            }
+            
+            updateStats() {
+                document.getElementById('clickCount').textContent = this.stats.clicks;
+                document.getElementById('errorCount').textContent = this.stats.errors;
+                document.getElementById('apiCount').textContent = this.stats.apiCalls;
+                
+                const successRate = this.stats.apiCalls > 0 ? 
+                    ((this.stats.successful / this.stats.apiCalls) * 100).toFixed(1) + '%' : 
+                    '100%';
+                document.getElementById('successRate').textContent = successRate;
+            }
+            
+            updateStartTime() {
+                const startTimeElement = document.getElementById('startTime');
+                if (startTimeElement) {
+                    startTimeElement.textContent = `بدء المراقبة في: ${this.startTime.toLocaleTimeString()}`;
+                }
+            }
+            
+            startPeriodicUpdates() {
+                setInterval(() => {
+                    this.updateStats();
+                }, 1000);
+            }
+            
+            exportLogs() {
+                const dataStr = JSON.stringify(this.logs, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `frontend-logs-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+                
+                this.log('info', '📥 تم تصدير السجلات', { count: this.logs.length });
+            }
+            
+            clearLogs() {
+                this.logs = [];
+                this.stats = { clicks: 0, errors: 0, apiCalls: 0, successful: 0 };
+                document.getElementById('logsContainer').innerHTML = '';
+                this.updateStats();
+                this.log('info', '🗑️ تم مسح جميع السجلات', {});
+            }
+            
+            toggleMonitoring() {
+                this.isMonitoring = !this.isMonitoring;
+                const status = this.isMonitoring ? 'تشغيل' : 'إيقاف';
+                this.log('info', `🔄 تم ${status} المراقبة`, { isMonitoring: this.isMonitoring });
+            }
+        }
+        
+        // إنشاء مراقب الواجهة الأمامية
+        const monitor = new FrontendMonitor();
+        
+        // وظائف الاختبار
+        function clearLogs() {
+            monitor.clearLogs();
+        }
+        
+        function exportLogs() {
+            monitor.exportLogs();
+        }
+        
+        function toggleMonitoring() {
+            monitor.toggleMonitoring();
+        }
+        
+        function testErrorHandling() {
+            throw new Error('هذا خطأ تجريبي لاختبار نظام المراقبة');
+        }
+        
+        function testCategoryChange() {
+            monitor.log('test', '🧪 اختبار تغيير الفئة', { test: 'category_change' });
+            // محاكاة طلب API
+            fetch('/api/test/category-change', { method: 'POST' }).catch(() => {});
+        }
+        
+        function testDifficultyChange() {
+            monitor.log('test', '🧪 اختبار تغيير الصعوبة', { test: 'difficulty_change' });
+            fetch('/api/test/difficulty-change', { method: 'PATCH' }).catch(() => {});
+        }
+        
+        function testActiveToggle() {
+            monitor.log('test', '🧪 اختبار تفعيل/إلغاء', { test: 'active_toggle' });
+            fetch('/api/test/active-toggle', { method: 'PUT' }).catch(() => {});
+        }
+        
+        function testTextEdit() {
+            monitor.log('test', '🧪 اختبار تعديل النص', { test: 'text_edit' });
+            fetch('/api/test/text-edit', { method: 'PATCH' }).catch(() => {});
+        }
+        
+        function testApiCall() {
+            monitor.log('test', '🧪 اختبار طلب API ناجح', { test: 'api_call' });
+            fetch('http://localhost:5000/api/questions?limit=1')
+                .then(response => response.json())
+                .then(data => {
+                    monitor.log('success', '✅ نجح اختبار API', { data: data.length });
+                });
+        }
+        
+        function simulateError() {
+            monitor.log('test', '🧪 محاكاة خطأ', { test: 'error_simulation' });
+            fetch('/api/nonexistent-endpoint')
+                .catch(error => {
+                    monitor.log('error', '❌ خطأ محاكي', { error: error.message });
+                });
+        }
+        
+        // تحديث الوقت كل ثانية
+        setInterval(() => {
+            const now = new Date();
+            document.title = `🔍 مراقب - ${now.toLocaleTimeString()}`;
+        }, 1000);
+        
+        console.log('🔍 نظام مراقبة الواجهة الأمامية جاهز للعمل!');
+    </script>
+</body>
+</html>

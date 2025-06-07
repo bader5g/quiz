@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useToast } from '../../../hooks/use-toast';
+import { apiRequest, queryClient } from "../../../lib/queryClient";
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import SafeNumberInput from '@/components/SafeNumberInput';
+import SafeNumberInput from "../../../components/SafeNumberInput";
 
 import {
   Card,
@@ -13,7 +13,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "../../../components/ui/card";
 import {
   Form,
   FormControl,
@@ -22,23 +22,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "../../../components/ui/form";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "../../../components/ui/tabs";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Separator } from "../../../components/ui/separator";
+import { Switch } from "../../../components/ui/switch";
+import { Slider } from "../../../components/ui/slider";
+import { Checkbox } from "../../../components/ui/checkbox";
 import { Loader2, Settings, Users, Timer, HelpCircle, FileText } from 'lucide-react';
 
 // مخطط التحقق من الإدخالات الأساسية
-const gameSettingsBaseSchema = z.object({
+const gameSettingsSchema = z.object({
   minCategories: z.coerce.number().min(1, { message: 'عدد الفئات الأدنى يجب أن يكون 1 على الأقل' }).max(20),
   maxCategories: z.coerce.number().min(1).max(20),
   minTeams: z.coerce.number().min(2, { message: 'يجب أن يكون هناك فريقان على الأقل' }).max(10),
@@ -50,16 +50,7 @@ const gameSettingsBaseSchema = z.object({
   minQuestionsPerCategory: z.coerce.number().min(1).max(20).optional(),
   modalTitle: z.string().min(1, { message: 'يجب إدخال عنوان النافذة' }),
   pageDescription: z.string().min(1, { message: 'يجب إدخال وصف الصفحة' }),
-});
-
-// تعريف هيكل خيارات أوقات الإجابة
-const answerTimeOptionSchema = z.object({
-  default: z.number().min(3).max(120),
-  options: z.array(z.number())
-});
-
-// تعريف هيكل مخطط إعدادات اللعبة الكامل
-const gameSettingsSchema = gameSettingsBaseSchema.extend({
+  
   timerEnabled: z.boolean().default(true),
   showTimerAnimation: z.boolean().default(true),
   pauseTimerOnQuestionView: z.boolean().default(false),
@@ -88,10 +79,22 @@ const gameSettingsSchema = gameSettingsBaseSchema.extend({
   historyRetentionDays: z.number().min(1).max(365).default(30),
   
   answerTimeOptions: z.object({
-    first: answerTimeOptionSchema,
-    second: answerTimeOptionSchema,
-    third: answerTimeOptionSchema,
-    fourth: answerTimeOptionSchema
+    first: z.object({
+      default: z.number().min(3).max(120),
+      options: z.array(z.number())
+    }),
+    second: z.object({
+      default: z.number().min(3).max(120),
+      options: z.array(z.number())
+    }),
+    third: z.object({
+      default: z.number().min(3).max(120),
+      options: z.array(z.number())
+    }),
+    fourth: z.object({
+      default: z.number().min(3).max(120),
+      options: z.array(z.number())
+    })
   })
 });
 
@@ -109,9 +112,8 @@ export default function GameSettingsManagement() {
   const [newTimeForSecond, setNewTimeForSecond] = useState('');
   const [newTimeForThird, setNewTimeForThird] = useState('');
   const [newTimeForFourth, setNewTimeForFourth] = useState('');
-  
-  // تهيئة نموذج الإعدادات
-  const form = useForm<GameSettingsFormValues>({
+    // تهيئة نموذج الإعدادات
+  const form = useForm({
     resolver: zodResolver(gameSettingsSchema),
     defaultValues: {
       minCategories: 4,

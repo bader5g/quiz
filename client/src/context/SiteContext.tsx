@@ -22,11 +22,18 @@ interface SiteContextType {
 const SiteContext = createContext<SiteContextType | null>(null);
 
 export function SiteProvider({ children }: { children: ReactNode }) {
-  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
+  // استخدم إعدادات افتراضية فوراً لتجنب مشاكل التحميل
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>({
+    id: 1,
+    logoUrl: '',
+    appName: 'جاوب',
+    faviconUrl: '',
+    modalStyle: 'default',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);  useEffect(() => {
     const fetchSiteSettings = async () => {
       try {
         setIsLoading(true);
@@ -34,12 +41,14 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         setSiteSettings(response.data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error occurred'));
-        console.error('Error fetching site settings:', err);
+        console.warn('Could not fetch site settings, using defaults:', err);
+        // Keep default settings if API fails - no need to set again
       } finally {
         setIsLoading(false);
       }
     };
 
+    // Don't block the UI, fetch in background
     fetchSiteSettings();
   }, []);
 

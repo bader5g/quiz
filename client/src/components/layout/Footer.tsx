@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import axios from 'axios';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from "../ui/skeleton";
 import { 
   Twitter, 
   Instagram,

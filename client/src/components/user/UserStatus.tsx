@@ -6,10 +6,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Skeleton } from "../ui/skeleton";
+import { Progress } from "../ui/progress";
 
 interface UserLevel {
   level: string;

@@ -307,13 +307,36 @@ export type Subcategory = typeof subcategories.$inferSelect;
 export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
 export type UpdateSubcategory = z.infer<typeof updateSubcategorySchema>;
 
-// جدول الأسئلة
+// جدول الفئات الرئيسية الجديد (معرف نصي)
+export const main_categories = pgTable("main_categories", {
+  code: varchar("code", { length: 32 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  icon: varchar("icon", { length: 32 }),
+  imageUrl: text("image_url"),
+  isActive: boolean("is_active").default(true)
+});
+
+// جدول الفئات الفرعية الجديد (رقم متسلسل لكل فئة رئيسية)
+export const subcategories_v2 = pgTable("subcategories_v2", {
+  main_category_code: varchar("main_category_code", { length: 32 }).notNull(),
+  subcategory_id: integer("subcategory_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  icon: varchar("icon", { length: 32 }),
+  imageUrl: text("image_url"),
+  isActive: boolean("is_active").default(true)
+},
+  (table) => ({
+    pk: [table.main_category_code, table.subcategory_id]
+  })
+);
+
+// جدول الأسئلة بالنظام الجديد
 export const questions = pgTable("questions", {
   id: serial("id").primaryKey(),
   text: text("text").notNull(),
   answer: text("answer").notNull(),
-  categoryId: integer("category_id").notNull().references(() => categories.id),
-  subcategoryId: integer("subcategory_id").notNull().references(() => subcategories.id),
+  main_category_code: varchar("main_category_code", { length: 32 }).notNull().references(() => main_categories.code),
+  subcategory_id: integer("subcategory_id").notNull(),
   difficulty: integer("difficulty").notNull(),
   imageUrl: text("image_url"),
   videoUrl: text("video_url"),
@@ -340,3 +363,34 @@ export const updateQuestionSchema = createInsertSchema(questions).omit({
 export type Question = typeof questions.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export type UpdateQuestion = z.infer<typeof updateQuestionSchema>;
+
+// جدول الأسئلة المبسط للإدارة
+export const questions_simple = pgTable("questions_simple", {
+  id: serial("id").primaryKey(),
+  text: text("text").notNull(), // نص السؤال
+  correctAnswer: text("correct_answer").notNull(), // الإجابة الصحيحة
+  wrongAnswers: jsonb("wrong_answers").notNull(), // الإجابات الخاطئة (مصفوفة)
+  categoryId: integer("category_id"), // معرف الفئة (اختياري)
+  subcategoryId: integer("subcategory_id"), // معرف الفئة الفرعية (اختياري)
+  difficulty: text("difficulty").notNull().default("medium"), // مستوى الصعوبة: easy, medium, hard
+  points: integer("points").notNull().default(10), // النقاط المكتسبة
+  isActive: boolean("is_active").notNull().default(true), // هل السؤال نشط
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertQuestionSimpleSchema = createInsertSchema(questions_simple).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateQuestionSimpleSchema = createInsertSchema(questions_simple).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type QuestionSimple = typeof questions_simple.$inferSelect;
+export type InsertQuestionSimple = z.infer<typeof insertQuestionSimpleSchema>;
+export type UpdateQuestionSimple = z.infer<typeof updateQuestionSimpleSchema>;

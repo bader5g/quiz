@@ -3,22 +3,21 @@ import axios from 'axios';
 import { useLocation } from 'wouter';
 import { formatDistance } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { CalendarIcon, ClipboardIcon, RefreshCwIcon, Users, Clock, SearchXIcon, ArrowRightIcon, PlayIcon } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-// @ts-ignore - تجاهل مشكلة استيراد المكون
-import ReplayGameModal from '@/components/game/ReplayGameModal';
-import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/hooks/use-auth';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { Skeleton } from '../components/ui/skeleton';
+import { Input } from '../components/ui/input';
+import ReplayGameModal from '../components/game/ReplayGameModal';
+import { useAuth } from '../hooks/use-auth';
+import { useToast } from '../hooks/use-toast';
+import { CalendarIcon, Clipboard, RefreshCwIcon, Users, Clock, SearchXIcon, ArrowRightIcon, PlayIcon } from 'lucide-react';
+import Layout from '../components/layout/Layout';
 
-// تعريف نوع Category لتحويل البيانات من API
+// تعريف نوع GameCategory
 interface GameCategory {
-  id: number; 
+  id: number;
   name: string;
   icon: string;
 }
@@ -390,7 +389,7 @@ export default function MyGamesPage() {
         {games.length === 0 && (
           <div className="text-center py-10">
             <div className="mb-4 text-gray-500">
-              <ClipboardIcon className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+              <Clipboard className="mx-auto h-12 w-12 text-gray-300 mb-3" />
               <p className="text-lg font-medium">لم يتم العثور على ألعاب مطابقة للفلاتر</p>
               <p className="text-sm mt-1">حاول تغيير معايير البحث أو إعادة تعيين الفلاتر</p>
             </div>
@@ -453,7 +452,7 @@ export default function MyGamesPage() {
                   className="text-indigo-700 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs md:text-sm whitespace-nowrap px-2 md:px-3"
                   onClick={() => handleViewGameLog(game.id)}
                 >
-                  <ClipboardIcon className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> سجل اللعبة
+                  <Clipboard className="h-3.5 w-3.5 ml-0.5 md:mr-1 rtl:rotate-180" /> سجل اللعبة
                 </Button>
                 
                 <div className="flex gap-2">
@@ -509,7 +508,7 @@ export default function MyGamesPage() {
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={!pagination.hasNextPage}
               >
-                التالي
+                next
               </Button>
             </div>
           </div>

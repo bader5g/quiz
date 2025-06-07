@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
-import { useAuth } from '@/hooks/use-auth';
-import axios from 'axios';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
+import { useAuth } from "../../hooks/use-auth";
+import { apiRequest } from "../../lib/queryClient";
+import { Skeleton } from "../ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../ui/button";
 import { 
   Popover, 
   PopoverContent, 
   PopoverTrigger 
-} from '@/components/ui/popover';
+} from "../ui/popover";
 import { 
   Zap, 
   GamepadIcon, 
@@ -18,8 +18,8 @@ import {
   LogOut, 
   Star
 } from 'lucide-react';
-import LeaderboardModal from '@/components/user/LeaderboardModal';
-import UserStatus from '@/components/user/UserStatus'; 
+import LeaderboardModal from "../user/LeaderboardModal";
+import UserStatus from "../user/UserStatus"; 
 
 interface SiteSettings {
   logoUrl: string;
@@ -45,7 +45,7 @@ interface UserCards {
 }
 
 export default function Header() {
-  const { user, logoutMutation } = useAuth();
+  const { user, logoutMutation, isLoading: authLoading } = useAuth();
   const isAuthenticated = !!user;
   const [, navigate] = useLocation();
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -58,19 +58,31 @@ export default function Header() {
     const fetchHeaderData = async () => {
       setIsLoading(true);
       try {
-        // Fetch site settings
-        const siteResponse = await axios.get<SiteSettings>('/api/site-settings');
-        setSiteSettings(siteResponse.data);
-        setSiteLogoUrl(siteResponse.data.logoUrl);
+        // Fetch site settings (always available)
+        const siteResponse = await apiRequest('GET', '/api/site-settings');
+        const siteData = await siteResponse.json();
+        setSiteSettings(siteData);
+        setSiteLogoUrl(siteData.logoUrl);
 
-        // If user is authenticated, fetch user level and cards
-        if (isAuthenticated) {
-          const [levelResponse, cardsResponse] = await Promise.all([
-            axios.get<UserLevel>('/api/user-level'),
-            axios.get<UserCards>('/api/user-cards')
-          ]);
-          setUserLevel(levelResponse.data);
-          setUserCards(cardsResponse.data);
+        // Only fetch user data if authenticated and not still loading auth
+        if (isAuthenticated && !authLoading) {
+          try {
+            const [levelResponse, cardsResponse] = await Promise.all([
+              apiRequest('GET', '/api/user-level'),
+              apiRequest('GET', '/api/user-cards')
+            ]);
+            const levelData = await levelResponse.json();
+            const cardsData = await cardsResponse.json();
+            setUserLevel(levelData);
+            setUserCards(cardsData);
+          } catch (userDataError) {
+            console.warn('Error fetching user data:', userDataError);
+            // Don't reset site logo if user data fails
+          }
+        } else {
+          // Clear user data if not authenticated
+          setUserLevel(null);
+          setUserCards(null);
         }
       } catch (error) {
         console.error('Error fetching header data:', error);
@@ -80,8 +92,11 @@ export default function Header() {
       }
     };
 
-    fetchHeaderData();
-  }, [isAuthenticated]);
+    // Only fetch data when auth loading is complete
+    if (!authLoading) {
+      fetchHeaderData();
+    }
+  }, [isAuthenticated, authLoading]);
 
   return (
     <header className="bg-white shadow-sm py-3">
