@@ -76,7 +76,8 @@ export const MainCategoryItem: React.FC<MainCategoryItemProps> = ({
               <TableHead className="text-center">عدد الأسئلة</TableHead>
               <TableHead className="text-left">الإجراءات</TableHead>
             </TableRow>
-          </TableHeader>          <TableBody>
+          </TableHeader>
+          <TableBody>
             {category.children.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
@@ -85,7 +86,7 @@ export const MainCategoryItem: React.FC<MainCategoryItemProps> = ({
               </TableRow>
             ) : (
               category.children
-                .filter(child => child.id !== undefined && child.id !== null) // تصفية البيانات غير الصالحة
+                .filter(child => child.id !== undefined && child.id !== null)
                 .map(child => (
                   <TableRow key={child.id}>
                     <TableCell>
