@@ -1,0 +1,440 @@
+======== 🖥️ Basic System Info ======== 
+
+Host Name:                     DESKTOP-GREG4TV
+OS Name:                       Microsoft Windows 11 Home
+OS Version:                    10.0.26100 N/A Build 26100
+OS Manufacturer:               Microsoft Corporation
+OS Configuration:              Standalone Workstation
+OS Build Type:                 Multiprocessor Free
+Registered Owner:              hp
+Registered Organization:       
+Product ID:                    00325-96752-80758-AAOEM
+Original Install Date:         19/2/2025, 16:43:12
+System Boot Time:              30/5/2025, 21:19:25
+System Manufacturer:           HP
+System Model:                  HP Laptop 15-dw2xxx
+System Type:                   x64-based PC
+Processor(s):                  1 Processor(s) Installed.
+                               [01]: Intel64 Family 6 Model 126 Stepping 5 GenuineIntel ~991 Mhz
+BIOS Version:                  Insyde F.68, 14/10/2024
+Windows Directory:             C:\WINDOWS
+System Directory:              C:\WINDOWS\system32
+Boot Device:                   \Device\HarddiskVolume3
+System Locale:                 en-us;English (United States)
+Input Locale:                  en-us;English (United States)
+Time Zone:                     (UTC+03:00) Kuwait, Riyadh
+Total Physical Memory:         16,166 MB
+Available Physical Memory:     9,774 MB
+Virtual Memory: Max Size:      23,862 MB
+Virtual Memory: Available:     16,785 MB
+Virtual Memory: In Use:        7,077 MB
+Page File Location(s):         C:\pagefile.sys
+                               D:\pagefile.sys
+Domain:                        WORKGROUP
+Logon Server:                  \\DESKTOP-GREG4TV
+Hotfix(s):                     4 Hotfix(s) Installed.
+                               [01]: KB5054979
+                               [02]: KB5058411
+                               [03]: KB5058538
+                               [04]: KB5058523
+Network Card(s):               2 NIC(s) Installed.
+                               [01]: Realtek PCIe GbE Family Controller
+                                     Connection Name: Ethernet
+                                     Status:          Media disconnected
+                               [02]: Realtek RTL8821CE 802.11ac PCIe Adapter
+                                     Connection Name: Wi-Fi
+                                     DHCP Enabled:    Yes
+                                     DHCP Server:     192.168.232.20
+                                     IP address(es)
+                                     [01]: 192.168.232.178
+                                     [02]: fe80::a1bf:77f3:b5fc:5cca
+Virtualization-based security: Status: Running
+                               Required Security Properties:
+                               Available Security Properties:
+                                     Base Virtualization Support
+                                     Secure Boot
+                                     DMA Protection
+                                     UEFI Code Readonly
+                                     SMM Security Mitigations 1.0
+                                     Mode Based Execution Control
+                                     APIC Virtualization
+                               Services Configured:
+                                     Hypervisor enforced Code Integrity
+                               Services Running:
+                                     Hypervisor enforced Code Integrity
+                               App Control for Business policy: Enforced
+                               App Control for Business user mode policy: Off
+                               Security Features Enabled:
+Hyper-V Requirements:          A hypervisor has been detected. Features required for Hyper-V will not be displayed.
+ 
+======== ⚙️ Running Processes (Top 20 CPU) ======== 
+
+_Total                            801                   
+AggregatorHost                    0                     
+AppHelperCap                      0                     
+ApplicationFrameHost              0                     
+armsvc                            0                     
+audiodg                           0                     
+backgroundTaskHost                0                     
+backgroundTaskHost#1              0                     
+backgroundTaskHost#2              0                     
+backgroundTaskHost#3              0                     
+backgroundTaskHost#4              0                     
+backgroundTaskHost#5              0                     
+BridgeCommunication               0                     
+chrome                            11                    
+chrome#1                          0                     
+chrome#10                         0                     
+chrome#11                         23                    
+chrome#12                         0                     
+chrome#13                         0                     
+chrome#14                         0                     
+chrome#15                         0                     
+chrome#16                         0                     
+chrome#17                         0                     
+chrome#2                          5                     
+chrome#3                          0                     
+chrome#4                          0                     
+chrome#5                          0                     
+chrome#6                          0                     
+chrome#7                          0                     
+chrome#8                          0                     
+chrome#9                          0                     
+cmd                               0                     
+conhost                           0                     
+conhost#1                         0                     
+conhost#2                         0                     
+conhost#3                         0                     
+csrss                             0                     
+csrss#1                           0                     
+ctfmon                            0                     
+DiagsCap                          0                     
+dllhost                           0                     
+dwm                               5                     
+esif_uf                           0                     
+ETDCtrl                           0                     
+ETDService                        0                     
+explorer                          0                     
+fontdrvhost                       0                     
+fontdrvhost#1                     0                     
+HPSIsvc                           0                     
+Idle                              621                   
+igfxCUIService                    0                     
+IntelCpHDCPSvc                    0                     
+jhi_service                       0                     
+LMS                               0                     
+LsaIso                            0                     
+lsass                             0                     
+Memory Compression                0                     
+MicrosoftEdgeUpdate               0                     
+MpDefenderCoreService             0                     
+msedgewebview2                    0                     
+msedgewebview2#1                  0                     
+msedgewebview2#2                  0                     
+msedgewebview2#3                  0                     
+msedgewebview2#4                  0                     
+msedgewebview2#5                  0                     
+MsMpEng                           0                     
+Name                              PercentProcessorTime  
+NetworkCap                        0                     
+NgcIso                            0                     
+NisSrv                            0                     
+Notepad                           0                     
+nvcontainer                       0                     
+nvcontainer#1                     0                     
+NVDisplay.Container               0                     
+NVDisplay.Container#1             0                     
+NVIDIA Web Helper                 0                     
+OfficeClickToRun                  0                     
+OneApp.IGCC.WinService            0                     
+OpenConsole                       0                     
+pg_ctl                            0                     
+postgres                          0                     
+postgres#1                        0                     
+postgres#2                        0                     
+postgres#3                        0                     
+postgres#4                        0                     
+postgres#5                        0                     
+postgres#6                        0                     
+Registry                          0                     
+RstMwService                      0                     
+RtkAudUService64                  0                     
+RtkBtManServ                      0                     
+rundll32                          0                     
+RuntimeBroker                     0                     
+RuntimeBroker#1                   0                     
+RuntimeBroker#2                   0                     
+RuntimeBroker#3                   0                     
+RuntimeBroker#4                   0                     
+RuntimeBroker#5                   0                     
+SearchFilterHost                  0                     
+SearchHost                        0                     
+SearchIndexer                     98                    
+SearchProtocolHost                0                     
+SECOCL64                          0                     
+SECOMN64                          0                     
+Secure System                     0                     
+services                          0                     
+ShellExperienceHost               0                     
+ShellHost                         0                     
+sihost                            0                     
+smartscreen                       0                     
+smss                              0                     
+sort                              0                     
+spoolsv                           0                     
+StartMenuExperienceHost           0                     
+svchost                           0                     
+svchost#1                         0                     
+svchost#10                        0                     
+svchost#11                        0                     
+svchost#12                        0                     
+svchost#13                        0                     
+svchost#14                        0                     
+svchost#15                        0                     
+svchost#16                        0                     
+svchost#17                        0                     
+svchost#18                        0                     
+svchost#19                        0                     
+svchost#2                         0                     
+svchost#20                        0                     
+svchost#21                        0                     
+svchost#22                        0                     
+svchost#23                        0                     
+svchost#24                        0                     
+svchost#25                        0                     
+svchost#26                        0                     
+svchost#27                        0                     
+svchost#28                        0                     
+svchost#29                        0                     
+svchost#3                         0                     
+svchost#30                        0                     
+svchost#31                        0                     
+svchost#32                        0                     
+svchost#33                        0                     
+svchost#34                        0                     
+svchost#35                        0                     
+svchost#36                        0                     
+svchost#37                        0                     
+svchost#38                        0                     
+svchost#39                        0                     
+svchost#4                         0                     
+svchost#40                        0                     
+svchost#41                        0                     
+svchost#42                        0                     
+svchost#43                        0                     
+svchost#44                        0                     
+svchost#45                        0                     
+svchost#46                        0                     
+svchost#47                        0                     
+svchost#48                        0                     
+svchost#49                        0                     
+svchost#5                         0                     
+svchost#50                        0                     
+svchost#51                        0                     
+svchost#52                        0                     
+svchost#53                        0                     
+svchost#54                        0                     
+svchost#55                        0                     
+svchost#56                        0                     
+svchost#57                        0                     
+svchost#58                        0                     
+svchost#59                        0                     
+svchost#6                         0                     
+svchost#60                        0                     
+svchost#61                        0                     
+svchost#62                        0                     
+svchost#63                        0                     
+svchost#64                        0                     
+svchost#65                        0                     
+svchost#66                        0                     
+svchost#67                        0                     
+svchost#68                        0                     
+svchost#69                        0                     
+svchost#7                         0                     
+svchost#70                        0                     
+svchost#71                        0                     
+svchost#72                        0                     
+svchost#73                        0                     
+svchost#74                        0                     
+svchost#75                        0                     
+svchost#76                        0                     
+svchost#77                        0                     
+svchost#78                        0                     
+svchost#79                        0                     
+svchost#8                         0                     
+svchost#80                        0                     
+svchost#81                        0                     
+svchost#9                         0                     
+SysInfoCap                        0                     
+System                            23                    
+SystemSettings                    0                     
+taskhostw                         0                     
+taskhostw#1                       0                     
+TiWorker                          0                     
+TouchpointAnalyticsClientService  0                     
+TrustedInstaller                  0                     
+unsecapp                          0                     
+UserOOBEBroker                    0                     
+vds                               0                     
+Widgets                           0                     
+WindowsTerminal                   0                     
+wininit                           0                     
+winlogon                          0                     
+WmiApSrv                          0                     
+WMIC                              0                     
+WmiPrvSE                          0                     
+WmiPrvSE#1                        0                     
+WmiPrvSE#2                        11                    
+WMIRegistrationService            0                     
+wslservice                        0                     
+WUDFHost                          0                     
+WUDFHost#1                        0                     
+ 
+======== 💾 RAM Usage ======== 
+ 
+  
+ F r e e P h y s i c a l M e m o r y = 9 8 8 3 1 0 4  
+ T o t a l V i s i b l e M e m o r y S i z e = 1 6 5 5 3 7 7 6  
+  
+  
+  
+======== 🔄 Startup Programs ======== 
+C a p t i o n                                                                                                       C o m m a n d                                                                                                                                                                                                                                              
+ O p e n V P N - G U I                                                                                               C : \ P r o g r a m   F i l e s \ O p e n V P N \ b i n \ o p e n v p n - g u i . e x e                                                                                                                                                                    
+ M i c r o s o f t   E d g e   U p d a t e                                                                           " C : \ U s e r s \ h p \ A p p D a t a \ L o c a l \ M i c r o s o f t \ E d g e U p d a t e \ 1 . 3 . 1 9 5 . 6 1 \ M i c r o s o f t E d g e U p d a t e C o r e . e x e "                                                                              
+ O p e r a   S t a b l e                                                                                             C : \ U s e r s \ h p \ A p p D a t a \ L o c a l \ P r o g r a m s \ O p e r a \ o p e r a . e x e                                                                                                                                                        
+ A d o b e   R e a d e r   S y n c h r o n i z e r                                                                   " C : \ P r o g r a m   F i l e s   ( x 8 6 ) \ A d o b e \ A c r o b a t   R e a d e r   D C \ R e a d e r \ A d o b e C o l l a b S y n c . e x e "                                                                                                      
+ M i c r o s o f t E d g e A u t o L a u n c h _ F 0 7 2 E 8 F 0 8 0 C 5 A 3 1 F E 1 5 0 A 3 C A 4 B 3 5 F B 6 A     " C : \ P r o g r a m   F i l e s   ( x 8 6 ) \ M i c r o s o f t \ E d g e \ A p p l i c a t i o n \ m s e d g e . e x e "   - - n o - s t a r t u p - w i n d o w   - - w i n - s e s s i o n - s t a r t                                                
+ O p e n V P N - G U I                                                                                               C : \ P r o g r a m   F i l e s \ O p e n V P N \ b i n \ o p e n v p n - g u i . e x e                                                                                                                                                                    
+ S e c u r i t y H e a l t h                                                                                         % w i n d i r % \ s y s t e m 3 2 \ S e c u r i t y H e a l t h S y s t r a y . e x e                                                                                                                                                                      
+ R t k A u d U S e r v i c e                                                                                         " C : \ W I N D O W S \ S y s t e m 3 2 \ D r i v e r S t o r e \ F i l e R e p o s i t o r y \ r e a l t e k s e r v i c e . i n f _ a m d 6 4 _ 1 c 0 a 3 1 3 1 6 5 0 8 e f f a \ R t k A u d U S e r v i c e 6 4 . e x e "   - b a c k g r o u n d      
+  
+======== 🔥 Active Services ======== 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+        STATE              : 4  RUNNING 
+ 
+======== ⏱️ Uptime ======== 
+Statistics since 30/5/2025 21:19:53
+ 
+======== ✅ DONE ======== 
