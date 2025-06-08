@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { X, Plus, Trash2, Save } from "lucide-react";
+import { X, Save } from "lucide-react";
 import type { Question } from './QuestionsPage';
 
 interface QuestionFormProps {
@@ -27,7 +27,6 @@ export default function QuestionForm({ question, onClose, onSave }: QuestionForm
   const [formData, setFormData] = useState({
     text: '',
     correctAnswer: '',
-    wrongAnswers: ['', '', ''],
     categoryId: '',
     subcategoryId: '',
     difficulty: 'medium',
@@ -48,9 +47,6 @@ export default function QuestionForm({ question, onClose, onSave }: QuestionForm
       setFormData({
         text: question.text,
         correctAnswer: question.correctAnswer,
-        wrongAnswers: question.wrongAnswers.length >= 3 
-          ? question.wrongAnswers.slice(0, 3)
-          : [...question.wrongAnswers, ...Array(3 - question.wrongAnswers.length).fill('')],
         categoryId: question.categoryId.toString(),
         subcategoryId: question.subcategoryId?.toString() || '',
         difficulty: question.difficulty,
@@ -97,28 +93,6 @@ export default function QuestionForm({ question, onClose, onSave }: QuestionForm
     }
   };
 
-  // تحديث إجابة خاطئة
-  const updateWrongAnswer = (index: number, value: string) => {
-    const newWrongAnswers = [...formData.wrongAnswers];
-    newWrongAnswers[index] = value;
-    updateFormData('wrongAnswers', newWrongAnswers);
-  };
-
-  // إضافة إجابة خاطئة جديدة
-  const addWrongAnswer = () => {
-    if (formData.wrongAnswers.length < 4) {
-      updateFormData('wrongAnswers', [...formData.wrongAnswers, '']);
-    }
-  };
-
-  // حذف إجابة خاطئة
-  const removeWrongAnswer = (index: number) => {
-    if (formData.wrongAnswers.length > 2) {
-      const newWrongAnswers = formData.wrongAnswers.filter((_, i) => i !== index);
-      updateFormData('wrongAnswers', newWrongAnswers);
-    }
-  };
-
   // التحقق من صحة البيانات
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -131,11 +105,6 @@ export default function QuestionForm({ question, onClose, onSave }: QuestionForm
 
     if (!formData.correctAnswer.trim()) {
       newErrors.correctAnswer = 'الإجابة الصحيحة مطلوبة';
-    }
-
-    const validWrongAnswers = formData.wrongAnswers.filter(answer => answer.trim());
-    if (validWrongAnswers.length < 2) {
-      newErrors.wrongAnswers = 'يجب إضافة خيارين خاطئين على الأقل';
     }
 
     if (!formData.categoryId) {
@@ -160,7 +129,6 @@ export default function QuestionForm({ question, onClose, onSave }: QuestionForm
         ...formData,
         categoryId: parseInt(formData.categoryId),
         subcategoryId: formData.subcategoryId ? parseInt(formData.subcategoryId) : undefined,
-        wrongAnswers: formData.wrongAnswers.filter(answer => answer.trim())
       };
 
       const url = question ? `/api/questions/${question.id}` : '/api/questions';
@@ -226,43 +194,6 @@ export default function QuestionForm({ question, onClose, onSave }: QuestionForm
               className={errors.correctAnswer ? 'border-red-500' : ''}
             />
             {errors.correctAnswer && <p className="text-red-500 text-sm">{errors.correctAnswer}</p>}
-          </div>
-
-          {/* الإجابات الخاطئة */}
-          <div className="space-y-2">
-            <Label>الإجابات الخاطئة * (على الأقل 2)</Label>
-            {formData.wrongAnswers.map((answer, index) => (
-              <div key={index} className="flex gap-2">
-                <Input
-                  placeholder={`الإجابة الخاطئة ${index + 1}`}
-                  value={answer}
-                  onChange={(e) => updateWrongAnswer(index, e.target.value)}
-                />
-                {formData.wrongAnswers.length > 2 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeWrongAnswer(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            {formData.wrongAnswers.length < 4 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addWrongAnswer}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                إضافة إجابة خاطئة
-              </Button>
-            )}
-            {errors.wrongAnswers && <p className="text-red-500 text-sm">{errors.wrongAnswers}</p>}
           </div>
 
           {/* اختيار الفئة */}

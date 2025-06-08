@@ -20,7 +20,6 @@ interface Category {
 interface QuestionFormData {
   text: string;
   correctAnswer: string;
-  wrongAnswers: string[];
   categoryId: number | null;
   subcategoryId: number | null;
   difficulty: "easy" | "medium" | "hard";
@@ -46,7 +45,6 @@ export default function QuestionEditForm({
   const [formData, setFormData] = useState<QuestionFormData>({
     text: "",
     correctAnswer: "",
-    wrongAnswers: ["", "", ""],
     categoryId: null,
     subcategoryId: null,
     difficulty: "medium",
@@ -61,7 +59,6 @@ export default function QuestionEditForm({
       setFormData({
         text: question.text || "",
         correctAnswer: question.correctAnswer || "",
-        wrongAnswers: question.wrongAnswers || ["", "", ""],
         categoryId: question.categoryId || null,
         subcategoryId: question.subcategoryId || null,
         difficulty: question.difficulty || "medium",
@@ -80,11 +77,6 @@ export default function QuestionEditForm({
 
     if (!formData.correctAnswer.trim()) {
       newErrors.correctAnswer = "الإجابة الصحيحة مطلوبة";
-    }
-
-    const validWrongAnswers = formData.wrongAnswers.filter(answer => answer.trim());
-    if (validWrongAnswers.length < 2) {
-      newErrors.wrongAnswers = "يجب إدخال إجابتين خاطئتين على الأقل";
     }
 
     if (!formData.categoryId) {
@@ -109,8 +101,7 @@ export default function QuestionEditForm({
 
     try {
       const submitData = {
-        ...formData,
-        wrongAnswers: formData.wrongAnswers.filter(answer => answer.trim())
+        ...formData
       };
       
       await onSave(submitData);
@@ -126,7 +117,6 @@ export default function QuestionEditForm({
       setFormData({
         text: question.text || "",
         correctAnswer: question.correctAnswer || "",
-        wrongAnswers: question.wrongAnswers || ["", "", ""],
         categoryId: question.categoryId || null,
         subcategoryId: question.subcategoryId || null,
         difficulty: question.difficulty || "medium",
@@ -137,7 +127,6 @@ export default function QuestionEditForm({
       setFormData({
         text: "",
         correctAnswer: "",
-        wrongAnswers: ["", "", ""],
         categoryId: null,
         subcategoryId: null,
         difficulty: "medium",
@@ -146,33 +135,6 @@ export default function QuestionEditForm({
       });
     }
     setErrors({});
-  };
-
-  const addWrongAnswer = () => {
-    if (formData.wrongAnswers.length < 5) {
-      setFormData(prev => ({
-        ...prev,
-        wrongAnswers: [...prev.wrongAnswers, ""]
-      }));
-    }
-  };
-
-  const removeWrongAnswer = (index: number) => {
-    if (formData.wrongAnswers.length > 2) {
-      setFormData(prev => ({
-        ...prev,
-        wrongAnswers: prev.wrongAnswers.filter((_, i) => i !== index)
-      }));
-    }
-  };
-
-  const updateWrongAnswer = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      wrongAnswers: prev.wrongAnswers.map((answer, i) => 
-        i === index ? value : answer
-      )
-    }));
   };
 
   return (
@@ -210,45 +172,6 @@ export default function QuestionEditForm({
               className={errors.correctAnswer ? "border-red-500" : ""}
             />
             {errors.correctAnswer && <p className="text-sm text-red-600">{errors.correctAnswer}</p>}
-          </div>
-
-          {/* Wrong Answers */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>الإجابات الخاطئة *</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addWrongAnswer}
-                disabled={formData.wrongAnswers.length >= 5}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                إضافة
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {formData.wrongAnswers.map((answer, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    value={answer}
-                    onChange={(e) => updateWrongAnswer(index, e.target.value)}
-                    placeholder={`الإجابة الخاطئة ${index + 1}...`}
-                  />
-                  {formData.wrongAnswers.length > 2 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeWrongAnswer(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {errors.wrongAnswers && <p className="text-sm text-red-600">{errors.wrongAnswers}</p>}
           </div>
 
           <Separator />

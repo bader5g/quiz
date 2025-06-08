@@ -37,7 +37,6 @@ export class QuestionsSimpleStorage {
       const [newQuestion] = await db.insert(questions_simple).values({
         text: questionData.text,
         correctAnswer: questionData.correctAnswer,
-        wrongAnswers: questionData.wrongAnswers,
         categoryId: questionData.categoryId,
         subcategoryId: questionData.subcategoryId,
         difficulty: questionData.difficulty || "medium",

@@ -1,5 +1,5 @@
 // Schema for Simple Questions Management System
-import { pgTable, serial, text, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,7 +8,6 @@ export const questions_simple = pgTable("questions_simple", {
   id: serial("id").primaryKey(),
   text: text("text").notNull(), // نص السؤال
   correctAnswer: text("correct_answer").notNull(), // الإجابة الصحيحة
-  wrongAnswers: jsonb("wrong_answers").notNull(), // الإجابات الخاطئة (مصفوفة)
   categoryId: integer("category_id"), // معرف الفئة (اختياري)
   subcategoryId: integer("subcategory_id"), // معرف الفئة الفرعية (اختياري)
   difficulty: text("difficulty").notNull().default("medium"), // مستوى الصعوبة: easy, medium, hard
@@ -41,7 +40,6 @@ export type UpdateQuestionSimple = z.infer<typeof updateQuestionSimpleSchema>;
 export const questionValidationSchema = z.object({
   text: z.string().min(5, "نص السؤال يجب أن يكون 5 أحرف على الأقل"),
   correctAnswer: z.string().min(1, "الإجابة الصحيحة مطلوبة"),
-  wrongAnswers: z.array(z.string().min(1)).min(1, "يجب إضافة إجابة خاطئة واحدة على الأقل").max(3, "يمكن إضافة 3 إجابات خاطئة كحد أقصى"),
   categoryId: z.number().int().positive().optional(),
   subcategoryId: z.number().int().positive().optional(),
   difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
