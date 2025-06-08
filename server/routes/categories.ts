@@ -32,15 +32,13 @@ router.get('/sub/:mainCategoryCode', async (req, res) => {
 // إضافة فئة رئيسية جديدة
 router.post('/main', async (req, res) => {
   const { code, name, icon, imageUrl, isActive } = req.body;
-  
   // إضافة تسجيل للتشخيص
   console.log('POST /main received data:', { code, name, icon, imageUrl, isActive });
-  
   // التحقق من أن الكود غير فارغ
   if (!code || code.trim() === '') {
     return res.status(400).json({ error: 'كود الفئة مطلوب ولا يمكن أن يكون فارغاً' });
   }
-    try {
+  try {
     await db.insert(main_categories).values({ code, name, icon, imageUrl, isActive });
     res.status(201).json({ success: true });
   } catch (error) {
@@ -72,6 +70,8 @@ router.put('/main/:code', async (req, res) => {
 // إضافة فئة فرعية جديدة (توليد رقم متسلسل تلقائي)
 router.post('/sub', async (req, res) => {
   const { main_category_code, name, icon, imageUrl, isActive } = req.body;
+  // إضافة تسجيل للتشخيص
+  console.log('POST /sub received data:', { main_category_code, name, icon, imageUrl, isActive });
   try {
     // جلب آخر رقم للفئة الفرعية لهذه الفئة الرئيسية
     const last = await db.select().from(subcategories_v2)
